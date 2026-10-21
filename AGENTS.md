@@ -20,7 +20,7 @@ O papel deste repositório, `pingo-android`, é o aplicativo Android: o listener
   - `core:*` nunca depende de `feature` nem de `app`.
   - `feature:*` depende apenas dos `core:*` que usa. O `AndroidFeatureConventionPlugin` já adiciona `core:model`, `core:ui` e `core:designsystem`; qualquer outro `core:*` precisa ser declarado explicitamente no módulo.
   - `feature:*:impl` depende do próprio `feature:*:api`.
-  - As regras são impostas pelos convention plugins em `build-logic`, não por convenção verbal.
+  - Os convention plugins em `build-logic` adicionam as dependências padrão (`core:model`, `core:ui` e `core:designsystem`); as regras são garantidas por revisão (humana e Pullfrog) e por este documento.
 - ADR-03: Kotlin + Jetpack Compose como stack única do app.
 - ADR-09: dois repositórios (`pingo-api` e `pingo-android`), app Android multimódulo, AGENTS.md como documentação viva e Pullfrog para revisão assistida de PRs.
 
@@ -128,6 +128,7 @@ Regra estrita: código sem comentários. Nenhum comentário em fontes Kotlin, Gr
 
 ## 8. PRs
 
-- Título curto no formato `<tipo>: <descrição>` (ex.: `feat: parser de transferências`), corpo explicando o porquê e o impacto.
-- Checks obrigatórios: CI verde (`./gradlew build`, que roda compilação, testes, detekt e ktlint) e revisão do Pullfrog.
-- PRs pequenos, por feature ou correção; atualizar o AGENTS.md quando a arquitetura ou os comandos mudarem.
+- Título no padrão `STR-xxx — descrição curta` (ex.: `STR-172 — design system e protótipos`), corpo explicando o porquê e o impacto.
+- Checks obrigatórios: CI verde (`./gradlew build`, que roda compilação, testes, detekt e ktlint) e revisão do Pullfrog (o GitHub App dispara o workflow `pullfrog.yml` por `workflow_dispatch`; a revisão aparece como review no PR).
+- PRs pequenos, por feature ou correção; PRs de fundação podem agrupar os cards do mesmo épico, com justificativa no corpo.
+- Atualizar o AGENTS.md quando a arquitetura ou os comandos mudarem.
