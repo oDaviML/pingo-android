@@ -3,6 +3,7 @@
 
     <application
         android:name=".PingoApplication"
+        android:allowBackup="false"
         android:label="Pingo"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
 

@@ -54,6 +54,17 @@ class DatabaseKeyProviderTest {
         assertTrue(novaPassphrase.isNotEmpty())
     }
 
+    @Test
+    fun missingPassphraseWithExistingDatabaseDeletesTheDatabase() {
+        context.openOrCreateDatabase(PingoDatabase.NAME, Context.MODE_PRIVATE, null).close()
+        assertTrue(context.getDatabasePath(PingoDatabase.NAME).exists())
+
+        val provider = DatabaseKeyProvider(context)
+        provider.loadOrCreate()
+
+        assertFalse(context.getDatabasePath(PingoDatabase.NAME).exists())
+    }
+
     private fun deleteKeystoreKey() {
         val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
 

@@ -16,7 +16,7 @@ interface RegraParserDao {
     @Query("SELECT * FROM regras_parser WHERE publicId = :publicId")
     suspend fun buscar(publicId: String): RegraParserEntity?
 
-    @Query("SELECT * FROM regras_parser WHERE instituicao = :instituicao AND ativa = 1 LIMIT 1")
+    @Query("SELECT * FROM regras_parser WHERE instituicao = :instituicao AND ativa = 1 ORDER BY versao DESC LIMIT 1")
     suspend fun buscarAtiva(instituicao: InstituicaoFinanceira): RegraParserEntity?
 
     @Query("SELECT * FROM regras_parser WHERE atualizadoEm >= :desde")
@@ -27,7 +27,4 @@ interface RegraParserDao {
 
     @Upsert
     suspend fun upsertAll(regras: List<RegraParserEntity>)
-
-    @Query("DELETE FROM regras_parser")
-    suspend fun limpar()
 }

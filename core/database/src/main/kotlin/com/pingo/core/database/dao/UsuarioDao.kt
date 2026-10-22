@@ -22,7 +22,4 @@ interface UsuarioDao {
 
     @Query("DELETE FROM usuarios WHERE publicId = :publicId")
     suspend fun deletar(publicId: String)
-
-    @Query("DELETE FROM usuarios")
-    suspend fun limpar()
 }

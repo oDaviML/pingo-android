@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "9a4c36d5d743220867f4c6348593a4c1",
+    "identityHash": "c45a2fcb182abd078f73a25c381315b9",
     "entities": [
       {
         "tableName": "usuarios",
@@ -93,12 +93,12 @@
         "indices": [
           {
             "name": "index_usuarios_sub",
-            "unique": true,
+            "unique": false,
             "columnNames": [
               "sub"
             ],
             "orders": [],
-            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_usuarios_sub` ON `${TABLE_NAME}` (`sub`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_usuarios_sub` ON `${TABLE_NAME}` (`sub`)"
           }
         ]
       },
@@ -1103,13 +1103,13 @@
         "indices": [
           {
             "name": "index_regras_parser_instituicao_versao",
-            "unique": true,
+            "unique": false,
             "columnNames": [
               "instituicao",
               "versao"
             ],
             "orders": [],
-            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_regras_parser_instituicao_versao` ON `${TABLE_NAME}` (`instituicao`, `versao`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_regras_parser_instituicao_versao` ON `${TABLE_NAME}` (`instituicao`, `versao`)"
           },
           {
             "name": "index_regras_parser_atualizadoEm",
@@ -1125,7 +1125,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9a4c36d5d743220867f4c6348593a4c1')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'c45a2fcb182abd078f73a25c381315b9')"
     ]
   }
 }

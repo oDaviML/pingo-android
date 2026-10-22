@@ -31,6 +31,10 @@ class DatabaseKeyProvider @Inject constructor(@param:ApplicationContext private 
             apagarBanco()
         }
 
+        if (context.getDatabasePath(PingoDatabase.NAME).exists()) {
+            apagarBanco()
+        }
+
         return criarPassphrase(chave)
     }
 

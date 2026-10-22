@@ -32,7 +32,4 @@ interface LancamentoDao {
 
     @Query("UPDATE lancamentos SET excluidoEm = :quando, atualizadoEm = :quando WHERE publicId = :publicId")
     suspend fun marcarExcluido(publicId: String, quando: Instant)
-
-    @Query("DELETE FROM lancamentos")
-    suspend fun limpar()
 }

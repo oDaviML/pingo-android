@@ -26,7 +26,4 @@ interface AssinaturaDao {
 
     @Query("UPDATE assinaturas SET excluidoEm = :quando, atualizadoEm = :quando WHERE publicId = :publicId")
     suspend fun marcarExcluida(publicId: String, quando: Instant)
-
-    @Query("DELETE FROM assinaturas")
-    suspend fun limpar()
 }

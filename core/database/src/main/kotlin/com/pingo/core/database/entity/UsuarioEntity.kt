@@ -7,7 +7,7 @@ import java.time.Instant
 
 @Entity(
     tableName = "usuarios",
-    indices = [Index(value = ["sub"], unique = true)],
+    indices = [Index("sub")],
 )
 data class UsuarioEntity(
     @PrimaryKey val publicId: String,

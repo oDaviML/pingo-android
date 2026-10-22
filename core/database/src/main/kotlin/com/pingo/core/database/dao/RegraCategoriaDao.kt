@@ -15,7 +15,13 @@ interface RegraCategoriaDao {
     @Query("SELECT * FROM regras_categoria WHERE publicId = :publicId")
     suspend fun buscar(publicId: String): RegraCategoriaEntity?
 
-    @Query("SELECT * FROM regras_categoria WHERE estabelecimentoNormalizado = :estabelecimento AND excluidoEm IS NULL LIMIT 1")
+    @Query(
+        """
+        SELECT * FROM regras_categoria
+        WHERE estabelecimentoNormalizado = :estabelecimento AND excluidoEm IS NULL
+        ORDER BY publicId LIMIT 1
+        """,
+    )
     suspend fun buscarPorEstabelecimento(estabelecimento: String): RegraCategoriaEntity?
 
     @Query("SELECT * FROM regras_categoria WHERE atualizadoEm >= :desde")
@@ -29,7 +35,4 @@ interface RegraCategoriaDao {
 
     @Query("UPDATE regras_categoria SET excluidoEm = :quando, atualizadoEm = :quando WHERE publicId = :publicId")
     suspend fun marcarExcluida(publicId: String, quando: Instant)
-
-    @Query("DELETE FROM regras_categoria")
-    suspend fun limpar()
 }

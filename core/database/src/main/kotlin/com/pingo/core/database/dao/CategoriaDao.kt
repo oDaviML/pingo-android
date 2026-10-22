@@ -26,7 +26,4 @@ interface CategoriaDao {
 
     @Query("UPDATE categorias SET excluidoEm = :quando, atualizadoEm = :quando WHERE publicId = :publicId")
     suspend fun marcarExcluida(publicId: String, quando: Instant)
-
-    @Query("DELETE FROM categorias")
-    suspend fun limpar()
 }

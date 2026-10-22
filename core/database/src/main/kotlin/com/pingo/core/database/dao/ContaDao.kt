@@ -26,7 +26,4 @@ interface ContaDao {
 
     @Query("UPDATE contas SET excluidoEm = :quando, atualizadoEm = :quando WHERE publicId = :publicId")
     suspend fun marcarExcluida(publicId: String, quando: Instant)
-
-    @Query("DELETE FROM contas")
-    suspend fun limpar()
 }

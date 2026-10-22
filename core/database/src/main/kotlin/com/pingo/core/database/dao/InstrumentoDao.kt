@@ -29,7 +29,4 @@ interface InstrumentoDao {
 
     @Query("UPDATE instrumentos SET excluidoEm = :quando, atualizadoEm = :quando WHERE publicId = :publicId")
     suspend fun marcarExcluido(publicId: String, quando: Instant)
-
-    @Query("DELETE FROM instrumentos")
-    suspend fun limpar()
 }

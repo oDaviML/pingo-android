@@ -9,7 +9,7 @@ import java.time.Instant
 @Entity(
     tableName = "regras_parser",
     indices = [
-        Index(value = ["instituicao", "versao"], unique = true),
+        Index("instituicao", "versao"),
         Index("atualizadoEm"),
     ],
 )
