@@ -1,0 +1,506 @@
+{"command":"page.select","params":{"index":1}}
+{"command":"frame.create","params":{"name":"Board/Inputs","props":{"layout":"vertical","gap":28,"padding":48,"cornerRadius":28,"fill":"#FFFFFF","sizingH":"hug","sizingV":"hug"}}}
+{"command":"node.set","params":{"ids":[{"$step":1}],"x":1600,"y":0}}
+{"command":"text.create","params":{"parent":{"$step":1},"text":"Campos de entrada"}}
+{"command":"style.apply","params":{"ids":[{"$step":3}],"style":"Headline"}}
+{"command":"variable.bind","params":{"ids":[{"$step":3}],"field":"fill","variable":"color/onBackground"}}
+{"command":"text.create","params":{"parent":{"$step":1},"text":"TextField com 6 estados, busca, select (fechado/aberto), campo de valor, área de texto, PIN de desbloqueio e teclado numérico do lançamento manual."}}
+{"command":"style.apply","params":{"ids":[{"$step":6}],"style":"Body Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":6}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"frame.create","params":{"name":"Group/TextField","props":{"layout":"vertical","gap":16,"sizingH":"hug","sizingV":"hug","fills":[]},"parent":{"$step":1}}}
+{"command":"text.create","params":{"parent":{"$step":9},"text":"TextField"}}
+{"command":"style.apply","params":{"ids":[{"$step":10}],"style":"Overline"}}
+{"command":"variable.bind","params":{"ids":[{"$step":10}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"node.set","params":{"ids":[{"$step":10}],"textCase":"upper","letterSpacing":"8%"}}
+{"command":"frame.create","params":{"name":"State=Default","props":{"layout":"vertical","gap":6,"sizingH":"fixed","sizingV":"hug","fills":[]},"parent":{"$step":9},"width":320}}
+{"command":"text.create","params":{"parent":{"$step":14},"text":"Estabelecimento"}}
+{"command":"style.apply","params":{"ids":[{"$step":15}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":15}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"frame.create","params":{"name":"Field","props":{"layout":"horizontal","gap":10,"padding":[13,14,13,14],"cornerRadius":12,"crossAlign":"center","sizingH":"fill","sizingV":"hug","strokeAlign":"inside"},"parent":{"$step":14}}}
+{"command":"variable.bind","params":{"ids":[{"$step":18}],"field":"fill","variable":"color/surface"}}
+{"command":"variable.bind","params":{"ids":[{"$step":18}],"field":"stroke","variable":"color/outline"}}
+{"command":"node.set","params":{"ids":[{"$step":18}],"strokeWeight":1}}
+{"command":"instance.create","params":{"component":{"@ref":"Icon/store"},"parent":{"$step":18}}}
+{"command":"node.set","params":{"ids":[{"$step":22}],"name":"Leading"}}
+{"command":"text.create","params":{"parent":{"$step":18},"text":"Ex.: Padaria do Zé","props":{"sizingH":"fill"}}}
+{"command":"style.apply","params":{"ids":[{"$step":24}],"style":"Body"}}
+{"command":"variable.bind","params":{"ids":[{"$step":24}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"text.create","params":{"parent":{"$step":14},"text":"Como aparece na notificação"}}
+{"command":"style.apply","params":{"ids":[{"$step":27}],"style":"Caption"}}
+{"command":"variable.bind","params":{"ids":[{"$step":27}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"component.create","params":{"ids":[{"$step":14}]}}
+{"command":"component.addProperty","params":{"id":{"$step":14},"name":"Label","type":"text","default":"Estabelecimento","layer":{"$step":15}}}
+{"command":"component.addProperty","params":{"id":{"$step":14},"name":"Value","type":"text","default":"Ex.: Padaria do Zé","layer":{"$step":24}}}
+{"command":"component.addProperty","params":{"id":{"$step":14},"name":"Supporting","type":"text","default":"Como aparece na notificação","layer":{"$step":27}}}
+{"command":"component.addProperty","params":{"id":{"$step":14},"name":"Leading icon","type":"boolean","default":true,"layer":{"$step":22}}}
+{"command":"component.addProperty","params":{"id":{"$step":14},"name":"Leading","type":"instanceSwap","default":{"@ref":"Icon/store"},"layer":{"$step":22}}}
+{"command":"frame.create","params":{"name":"State=Focused","props":{"layout":"vertical","gap":6,"sizingH":"fixed","sizingV":"hug","fills":[]},"parent":{"$step":9},"width":320}}
+{"command":"text.create","params":{"parent":{"$step":36},"text":"Estabelecimento"}}
+{"command":"style.apply","params":{"ids":[{"$step":37}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":37}],"field":"fill","variable":"color/primary"}}
+{"command":"frame.create","params":{"name":"Field","props":{"layout":"horizontal","gap":10,"padding":[13,14,13,14],"cornerRadius":12,"crossAlign":"center","sizingH":"fill","sizingV":"hug","strokeAlign":"inside"},"parent":{"$step":36}}}
+{"command":"variable.bind","params":{"ids":[{"$step":40}],"field":"fill","variable":"color/surface"}}
+{"command":"variable.bind","params":{"ids":[{"$step":40}],"field":"stroke","variable":"color/primary"}}
+{"command":"node.set","params":{"ids":[{"$step":40}],"strokeWeight":2}}
+{"command":"instance.create","params":{"component":{"@ref":"Icon/store"},"parent":{"$step":40}}}
+{"command":"node.set","params":{"ids":[{"$step":44}],"name":"Leading"}}
+{"command":"text.create","params":{"parent":{"$step":40},"text":"Padaria do","props":{"sizingH":"fill"}}}
+{"command":"style.apply","params":{"ids":[{"$step":46}],"style":"Body"}}
+{"command":"variable.bind","params":{"ids":[{"$step":46}],"field":"fill","variable":"color/onBackground"}}
+{"command":"frame.create","params":{"name":"Caret","props":{"sizingH":"fixed","sizingV":"fixed","cornerRadius":1},"parent":{"$step":40},"width":2,"height":22}}
+{"command":"variable.bind","params":{"ids":[{"$step":49}],"field":"fill","variable":"color/primary"}}
+{"command":"file.import","params":{"path":".build/icons/muted/x.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":51}],"parent":{"$step":40}}}
+{"command":"node.set","params":{"ids":[{"$step":51}],"name":"Trailing"}}
+{"command":"text.create","params":{"parent":{"$step":36},"text":"Como aparece na notificação"}}
+{"command":"style.apply","params":{"ids":[{"$step":54}],"style":"Caption"}}
+{"command":"variable.bind","params":{"ids":[{"$step":54}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"component.create","params":{"ids":[{"$step":36}]}}
+{"command":"component.addProperty","params":{"id":{"$step":36},"name":"Label","type":"text","default":"Estabelecimento","layer":{"$step":37}}}
+{"command":"component.addProperty","params":{"id":{"$step":36},"name":"Value","type":"text","default":"Padaria do","layer":{"$step":46}}}
+{"command":"component.addProperty","params":{"id":{"$step":36},"name":"Supporting","type":"text","default":"Como aparece na notificação","layer":{"$step":54}}}
+{"command":"component.addProperty","params":{"id":{"$step":36},"name":"Leading icon","type":"boolean","default":true,"layer":{"$step":44}}}
+{"command":"component.addProperty","params":{"id":{"$step":36},"name":"Leading","type":"instanceSwap","default":{"@ref":"Icon/store"},"layer":{"$step":44}}}
+{"command":"frame.create","params":{"name":"State=Filled","props":{"layout":"vertical","gap":6,"sizingH":"fixed","sizingV":"hug","fills":[]},"parent":{"$step":9},"width":320}}
+{"command":"text.create","params":{"parent":{"$step":63},"text":"Estabelecimento"}}
+{"command":"style.apply","params":{"ids":[{"$step":64}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":64}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"frame.create","params":{"name":"Field","props":{"layout":"horizontal","gap":10,"padding":[13,14,13,14],"cornerRadius":12,"crossAlign":"center","sizingH":"fill","sizingV":"hug","strokeAlign":"inside"},"parent":{"$step":63}}}
+{"command":"variable.bind","params":{"ids":[{"$step":67}],"field":"fill","variable":"color/surface"}}
+{"command":"variable.bind","params":{"ids":[{"$step":67}],"field":"stroke","variable":"color/outline"}}
+{"command":"node.set","params":{"ids":[{"$step":67}],"strokeWeight":1}}
+{"command":"instance.create","params":{"component":{"@ref":"Icon/store"},"parent":{"$step":67}}}
+{"command":"node.set","params":{"ids":[{"$step":71}],"name":"Leading"}}
+{"command":"text.create","params":{"parent":{"$step":67},"text":"Padaria do Zé","props":{"sizingH":"fill"}}}
+{"command":"style.apply","params":{"ids":[{"$step":73}],"style":"Body"}}
+{"command":"variable.bind","params":{"ids":[{"$step":73}],"field":"fill","variable":"color/onBackground"}}
+{"command":"file.import","params":{"path":".build/icons/muted/x.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":76}],"parent":{"$step":67}}}
+{"command":"node.set","params":{"ids":[{"$step":76}],"name":"Trailing"}}
+{"command":"text.create","params":{"parent":{"$step":63},"text":"Como aparece na notificação"}}
+{"command":"style.apply","params":{"ids":[{"$step":79}],"style":"Caption"}}
+{"command":"variable.bind","params":{"ids":[{"$step":79}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"component.create","params":{"ids":[{"$step":63}]}}
+{"command":"component.addProperty","params":{"id":{"$step":63},"name":"Label","type":"text","default":"Estabelecimento","layer":{"$step":64}}}
+{"command":"component.addProperty","params":{"id":{"$step":63},"name":"Value","type":"text","default":"Padaria do Zé","layer":{"$step":73}}}
+{"command":"component.addProperty","params":{"id":{"$step":63},"name":"Supporting","type":"text","default":"Como aparece na notificação","layer":{"$step":79}}}
+{"command":"component.addProperty","params":{"id":{"$step":63},"name":"Leading icon","type":"boolean","default":true,"layer":{"$step":71}}}
+{"command":"component.addProperty","params":{"id":{"$step":63},"name":"Leading","type":"instanceSwap","default":{"@ref":"Icon/store"},"layer":{"$step":71}}}
+{"command":"frame.create","params":{"name":"State=Error","props":{"layout":"vertical","gap":6,"sizingH":"fixed","sizingV":"hug","fills":[]},"parent":{"$step":9},"width":320}}
+{"command":"text.create","params":{"parent":{"$step":88},"text":"Estabelecimento"}}
+{"command":"style.apply","params":{"ids":[{"$step":89}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":89}],"field":"fill","variable":"color/expense"}}
+{"command":"frame.create","params":{"name":"Field","props":{"layout":"horizontal","gap":10,"padding":[13,14,13,14],"cornerRadius":12,"crossAlign":"center","sizingH":"fill","sizingV":"hug","strokeAlign":"inside"},"parent":{"$step":88}}}
+{"command":"variable.bind","params":{"ids":[{"$step":92}],"field":"fill","variable":"color/surface"}}
+{"command":"variable.bind","params":{"ids":[{"$step":92}],"field":"stroke","variable":"color/expense"}}
+{"command":"node.set","params":{"ids":[{"$step":92}],"strokeWeight":2}}
+{"command":"instance.create","params":{"component":{"@ref":"Icon/store"},"parent":{"$step":92}}}
+{"command":"node.set","params":{"ids":[{"$step":96}],"name":"Leading"}}
+{"command":"text.create","params":{"parent":{"$step":92},"text":" ","props":{"sizingH":"fill"}}}
+{"command":"style.apply","params":{"ids":[{"$step":98}],"style":"Body"}}
+{"command":"variable.bind","params":{"ids":[{"$step":98}],"field":"fill","variable":"color/onBackground"}}
+{"command":"file.import","params":{"path":".build/icons/danger/triangle-alert.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":101}],"parent":{"$step":92}}}
+{"command":"node.set","params":{"ids":[{"$step":101}],"name":"Trailing"}}
+{"command":"text.create","params":{"parent":{"$step":88},"text":"Informe o estabelecimento"}}
+{"command":"style.apply","params":{"ids":[{"$step":104}],"style":"Caption"}}
+{"command":"variable.bind","params":{"ids":[{"$step":104}],"field":"fill","variable":"color/expense"}}
+{"command":"component.create","params":{"ids":[{"$step":88}]}}
+{"command":"component.addProperty","params":{"id":{"$step":88},"name":"Label","type":"text","default":"Estabelecimento","layer":{"$step":89}}}
+{"command":"component.addProperty","params":{"id":{"$step":88},"name":"Value","type":"text","default":" ","layer":{"$step":98}}}
+{"command":"component.addProperty","params":{"id":{"$step":88},"name":"Supporting","type":"text","default":"Informe o estabelecimento","layer":{"$step":104}}}
+{"command":"component.addProperty","params":{"id":{"$step":88},"name":"Leading icon","type":"boolean","default":true,"layer":{"$step":96}}}
+{"command":"component.addProperty","params":{"id":{"$step":88},"name":"Leading","type":"instanceSwap","default":{"@ref":"Icon/store"},"layer":{"$step":96}}}
+{"command":"frame.create","params":{"name":"State=Disabled","props":{"layout":"vertical","gap":6,"sizingH":"fixed","sizingV":"hug","fills":[]},"parent":{"$step":9},"width":320}}
+{"command":"text.create","params":{"parent":{"$step":113},"text":"Estabelecimento"}}
+{"command":"style.apply","params":{"ids":[{"$step":114}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":114}],"field":"fill","variable":"color/onDisabled"}}
+{"command":"frame.create","params":{"name":"Field","props":{"layout":"horizontal","gap":10,"padding":[13,14,13,14],"cornerRadius":12,"crossAlign":"center","sizingH":"fill","sizingV":"hug","strokeAlign":"inside"},"parent":{"$step":113}}}
+{"command":"variable.bind","params":{"ids":[{"$step":117}],"field":"fill","variable":"color/disabledContainer"}}
+{"command":"variable.bind","params":{"ids":[{"$step":117}],"field":"stroke","variable":"color/outlineVariant"}}
+{"command":"node.set","params":{"ids":[{"$step":117}],"strokeWeight":1}}
+{"command":"instance.create","params":{"component":{"@ref":"Icon/store"},"parent":{"$step":117}}}
+{"command":"node.set","params":{"ids":[{"$step":121}],"name":"Leading"}}
+{"command":"node.set","params":{"ids":[{"$step":121}],"opacity":0.45}}
+{"command":"text.create","params":{"parent":{"$step":117},"text":"Padaria do Zé","props":{"sizingH":"fill"}}}
+{"command":"style.apply","params":{"ids":[{"$step":124}],"style":"Body"}}
+{"command":"variable.bind","params":{"ids":[{"$step":124}],"field":"fill","variable":"color/onDisabled"}}
+{"command":"text.create","params":{"parent":{"$step":113},"text":"Bloqueado em lançamentos capturados"}}
+{"command":"style.apply","params":{"ids":[{"$step":127}],"style":"Caption"}}
+{"command":"variable.bind","params":{"ids":[{"$step":127}],"field":"fill","variable":"color/onDisabled"}}
+{"command":"component.create","params":{"ids":[{"$step":113}]}}
+{"command":"component.addProperty","params":{"id":{"$step":113},"name":"Label","type":"text","default":"Estabelecimento","layer":{"$step":114}}}
+{"command":"component.addProperty","params":{"id":{"$step":113},"name":"Value","type":"text","default":"Padaria do Zé","layer":{"$step":124}}}
+{"command":"component.addProperty","params":{"id":{"$step":113},"name":"Supporting","type":"text","default":"Bloqueado em lançamentos capturados","layer":{"$step":127}}}
+{"command":"component.addProperty","params":{"id":{"$step":113},"name":"Leading icon","type":"boolean","default":true,"layer":{"$step":121}}}
+{"command":"component.addProperty","params":{"id":{"$step":113},"name":"Leading","type":"instanceSwap","default":{"@ref":"Icon/store"},"layer":{"$step":121}}}
+{"command":"frame.create","params":{"name":"State=ReadOnly","props":{"layout":"vertical","gap":6,"sizingH":"fixed","sizingV":"hug","fills":[]},"parent":{"$step":9},"width":320}}
+{"command":"text.create","params":{"parent":{"$step":136},"text":"Estabelecimento"}}
+{"command":"style.apply","params":{"ids":[{"$step":137}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":137}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"frame.create","params":{"name":"Field","props":{"layout":"horizontal","gap":10,"padding":[13,14,13,14],"cornerRadius":12,"crossAlign":"center","sizingH":"fill","sizingV":"hug","strokeAlign":"inside"},"parent":{"$step":136}}}
+{"command":"variable.bind","params":{"ids":[{"$step":140}],"field":"fill","variable":"color/surfaceVariant"}}
+{"command":"instance.create","params":{"component":{"@ref":"Icon/store"},"parent":{"$step":140}}}
+{"command":"node.set","params":{"ids":[{"$step":142}],"name":"Leading"}}
+{"command":"text.create","params":{"parent":{"$step":140},"text":"Padaria do Zé","props":{"sizingH":"fill"}}}
+{"command":"style.apply","params":{"ids":[{"$step":144}],"style":"Body"}}
+{"command":"variable.bind","params":{"ids":[{"$step":144}],"field":"fill","variable":"color/onBackground"}}
+{"command":"file.import","params":{"path":".build/icons/muted/lock.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":147}],"parent":{"$step":140}}}
+{"command":"node.set","params":{"ids":[{"$step":147}],"name":"Trailing"}}
+{"command":"text.create","params":{"parent":{"$step":136},"text":"Lido da notificação"}}
+{"command":"style.apply","params":{"ids":[{"$step":150}],"style":"Caption"}}
+{"command":"variable.bind","params":{"ids":[{"$step":150}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"component.create","params":{"ids":[{"$step":136}]}}
+{"command":"component.addProperty","params":{"id":{"$step":136},"name":"Label","type":"text","default":"Estabelecimento","layer":{"$step":137}}}
+{"command":"component.addProperty","params":{"id":{"$step":136},"name":"Value","type":"text","default":"Padaria do Zé","layer":{"$step":144}}}
+{"command":"component.addProperty","params":{"id":{"$step":136},"name":"Supporting","type":"text","default":"Lido da notificação","layer":{"$step":150}}}
+{"command":"component.addProperty","params":{"id":{"$step":136},"name":"Leading icon","type":"boolean","default":true,"layer":{"$step":142}}}
+{"command":"component.addProperty","params":{"id":{"$step":136},"name":"Leading","type":"instanceSwap","default":{"@ref":"Icon/store"},"layer":{"$step":142}}}
+{"command":"component.combineVariants","params":{"ids":[{"$step":14},{"$step":36},{"$step":63},{"$step":88},{"$step":113},{"$step":136}]}}
+{"command":"node.set","params":{"ids":[{"$step":159}],"name":"TextField","layout":"horizontal","wrap":true,"gap":24,"crossGap":24,"padding":24,"sizingH":"fixed","width":1100,"sizingV":"hug","cornerRadius":16,"stroke":"#B794F6","strokeWeight":1,"dashes":[6,4]}}
+{"command":"frame.create","params":{"name":"Group/SearchField","props":{"layout":"vertical","gap":16,"sizingH":"hug","sizingV":"hug","fills":[]},"parent":{"$step":1}}}
+{"command":"text.create","params":{"parent":{"$step":161},"text":"SearchField"}}
+{"command":"style.apply","params":{"ids":[{"$step":162}],"style":"Overline"}}
+{"command":"variable.bind","params":{"ids":[{"$step":162}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"node.set","params":{"ids":[{"$step":162}],"textCase":"upper","letterSpacing":"8%"}}
+{"command":"frame.create","params":{"name":"State=Default","props":{"layout":"horizontal","gap":10,"padding":[12,14,12,14],"cornerRadius":12,"crossAlign":"center","sizingH":"fixed","sizingV":"hug","strokeAlign":"inside"},"parent":{"$step":161},"width":360}}
+{"command":"variable.bind","params":{"ids":[{"$step":166}],"field":"fill","variable":"color/surfaceVariant"}}
+{"command":"file.import","params":{"path":".build/icons/muted/search.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":168}],"parent":{"$step":166}}}
+{"command":"node.set","params":{"ids":[{"$step":168}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":166},"text":"Buscar lançamentos","props":{"sizingH":"fill"}}}
+{"command":"style.apply","params":{"ids":[{"$step":171}],"style":"Body"}}
+{"command":"variable.bind","params":{"ids":[{"$step":171}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"component.create","params":{"ids":[{"$step":166}]}}
+{"command":"component.addProperty","params":{"id":{"$step":166},"name":"Query","type":"text","default":"Buscar lançamentos","layer":{"$step":171}}}
+{"command":"frame.create","params":{"name":"State=Typing","props":{"layout":"horizontal","gap":10,"padding":[12,14,12,14],"cornerRadius":12,"crossAlign":"center","sizingH":"fixed","sizingV":"hug","strokeAlign":"inside"},"parent":{"$step":161},"width":360}}
+{"command":"variable.bind","params":{"ids":[{"$step":176}],"field":"fill","variable":"color/surfaceVariant"}}
+{"command":"variable.bind","params":{"ids":[{"$step":176}],"field":"stroke","variable":"color/primary"}}
+{"command":"node.set","params":{"ids":[{"$step":176}],"strokeWeight":2}}
+{"command":"file.import","params":{"path":".build/icons/primary/search.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":180}],"parent":{"$step":176}}}
+{"command":"node.set","params":{"ids":[{"$step":180}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":176},"text":"ifood","props":{"sizingH":"fill"}}}
+{"command":"style.apply","params":{"ids":[{"$step":183}],"style":"Body"}}
+{"command":"variable.bind","params":{"ids":[{"$step":183}],"field":"fill","variable":"color/onBackground"}}
+{"command":"file.import","params":{"path":".build/icons/muted/x.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":186}],"parent":{"$step":176}}}
+{"command":"node.set","params":{"ids":[{"$step":186}],"name":"Clear"}}
+{"command":"component.create","params":{"ids":[{"$step":176}]}}
+{"command":"component.addProperty","params":{"id":{"$step":176},"name":"Query","type":"text","default":"ifood","layer":{"$step":183}}}
+{"command":"component.combineVariants","params":{"ids":[{"$step":166},{"$step":176}]}}
+{"command":"node.set","params":{"ids":[{"$step":191}],"name":"SearchField","layout":"horizontal","wrap":true,"gap":24,"crossGap":24,"padding":24,"sizingH":"hug","sizingV":"hug","cornerRadius":16,"stroke":"#B794F6","strokeWeight":1,"dashes":[6,4]}}
+{"command":"frame.create","params":{"name":"Group/Select","props":{"layout":"vertical","gap":16,"sizingH":"hug","sizingV":"hug","fills":[]},"parent":{"$step":1}}}
+{"command":"text.create","params":{"parent":{"$step":193},"text":"Select"}}
+{"command":"style.apply","params":{"ids":[{"$step":194}],"style":"Overline"}}
+{"command":"variable.bind","params":{"ids":[{"$step":194}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"node.set","params":{"ids":[{"$step":194}],"textCase":"upper","letterSpacing":"8%"}}
+{"command":"frame.create","params":{"name":"State=Closed","props":{"layout":"vertical","gap":6,"sizingH":"fixed","sizingV":"hug","fills":[]},"parent":{"$step":193},"width":320}}
+{"command":"text.create","params":{"parent":{"$step":198},"text":"Instrumento"}}
+{"command":"style.apply","params":{"ids":[{"$step":199}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":199}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"frame.create","params":{"name":"Field","props":{"layout":"horizontal","gap":10,"padding":[13,14,13,14],"cornerRadius":12,"crossAlign":"center","sizingH":"fill","sizingV":"hug","strokeAlign":"inside"},"parent":{"$step":198}}}
+{"command":"variable.bind","params":{"ids":[{"$step":202}],"field":"fill","variable":"color/surface"}}
+{"command":"variable.bind","params":{"ids":[{"$step":202}],"field":"stroke","variable":"color/outline"}}
+{"command":"node.set","params":{"ids":[{"$step":202}],"strokeWeight":1}}
+{"command":"instance.create","params":{"component":{"@ref":"Icon/credit-card"},"parent":{"$step":202}}}
+{"command":"node.set","params":{"ids":[{"$step":206}],"name":"Leading"}}
+{"command":"text.create","params":{"parent":{"$step":202},"text":"Nubank · crédito","props":{"sizingH":"fill"}}}
+{"command":"style.apply","params":{"ids":[{"$step":208}],"style":"Body"}}
+{"command":"variable.bind","params":{"ids":[{"$step":208}],"field":"fill","variable":"color/onBackground"}}
+{"command":"file.import","params":{"path":".build/icons/muted/chevron-down.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":211}],"parent":{"$step":202}}}
+{"command":"node.set","params":{"ids":[{"$step":211}],"name":"Chevron"}}
+{"command":"component.create","params":{"ids":[{"$step":198}]}}
+{"command":"component.addProperty","params":{"id":{"$step":198},"name":"Label","type":"text","default":"Instrumento","layer":{"$step":199}}}
+{"command":"component.addProperty","params":{"id":{"$step":198},"name":"Value","type":"text","default":"Nubank · crédito","layer":{"$step":208}}}
+{"command":"component.addProperty","params":{"id":{"$step":198},"name":"Leading icon","type":"boolean","default":true,"layer":{"$step":206}}}
+{"command":"component.addProperty","params":{"id":{"$step":198},"name":"Leading","type":"instanceSwap","default":{"@ref":"Icon/credit-card"},"layer":{"$step":206}}}
+{"command":"frame.create","params":{"name":"State=Open","props":{"layout":"vertical","gap":6,"sizingH":"fixed","sizingV":"hug","fills":[]},"parent":{"$step":193},"width":320}}
+{"command":"text.create","params":{"parent":{"$step":219},"text":"Instrumento"}}
+{"command":"style.apply","params":{"ids":[{"$step":220}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":220}],"field":"fill","variable":"color/primary"}}
+{"command":"frame.create","params":{"name":"Field","props":{"layout":"horizontal","gap":10,"padding":[13,14,13,14],"cornerRadius":12,"crossAlign":"center","sizingH":"fill","sizingV":"hug","strokeAlign":"inside"},"parent":{"$step":219}}}
+{"command":"variable.bind","params":{"ids":[{"$step":223}],"field":"fill","variable":"color/surface"}}
+{"command":"variable.bind","params":{"ids":[{"$step":223}],"field":"stroke","variable":"color/primary"}}
+{"command":"node.set","params":{"ids":[{"$step":223}],"strokeWeight":2}}
+{"command":"instance.create","params":{"component":{"@ref":"Icon/credit-card"},"parent":{"$step":223}}}
+{"command":"node.set","params":{"ids":[{"$step":227}],"name":"Leading"}}
+{"command":"text.create","params":{"parent":{"$step":223},"text":"Nubank · crédito","props":{"sizingH":"fill"}}}
+{"command":"style.apply","params":{"ids":[{"$step":229}],"style":"Body"}}
+{"command":"variable.bind","params":{"ids":[{"$step":229}],"field":"fill","variable":"color/onBackground"}}
+{"command":"file.import","params":{"path":".build/icons/muted/chevron-up.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":232}],"parent":{"$step":223}}}
+{"command":"node.set","params":{"ids":[{"$step":232}],"name":"Chevron"}}
+{"command":"frame.create","params":{"name":"Menu","props":{"layout":"vertical","gap":2,"padding":6,"cornerRadius":16,"sizingH":"fill","sizingV":"hug"},"parent":{"$step":219}}}
+{"command":"variable.bind","params":{"ids":[{"$step":235}],"field":"fill","variable":"color/surface"}}
+{"command":"style.apply","params":{"ids":[{"$step":235}],"style":"Elevation/2"}}
+{"command":"frame.create","params":{"name":"Option","props":{"layout":"horizontal","gap":12,"cornerRadius":10,"padding":[12,12,12,12],"crossAlign":"center","sizingH":"fill","sizingV":"hug"},"parent":{"$step":235}}}
+{"command":"variable.bind","params":{"ids":[{"$step":238}],"field":"fill","variable":"color/primaryContainer"}}
+{"command":"text.create","params":{"parent":{"$step":238},"text":"Nubank · crédito","props":{"sizingH":"fill"}}}
+{"command":"style.apply","params":{"ids":[{"$step":240}],"style":"Body Strong"}}
+{"command":"variable.bind","params":{"ids":[{"$step":240}],"field":"fill","variable":"color/onPrimaryContainer"}}
+{"command":"file.import","params":{"path":".build/icons/deep/check.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":243}],"parent":{"$step":238}}}
+{"command":"node.set","params":{"ids":[{"$step":243}],"name":"Icon"}}
+{"command":"frame.create","params":{"name":"Option","props":{"layout":"horizontal","gap":12,"cornerRadius":10,"padding":[12,12,12,12],"crossAlign":"center","sizingH":"fill","sizingV":"hug"},"parent":{"$step":235}}}
+{"command":"node.set","params":{"ids":[{"$step":246}],"fills":[]}}
+{"command":"text.create","params":{"parent":{"$step":246},"text":"Inter · débito","props":{"sizingH":"fill"}}}
+{"command":"style.apply","params":{"ids":[{"$step":248}],"style":"Body"}}
+{"command":"variable.bind","params":{"ids":[{"$step":248}],"field":"fill","variable":"color/onBackground"}}
+{"command":"frame.create","params":{"name":"Option","props":{"layout":"horizontal","gap":12,"cornerRadius":10,"padding":[12,12,12,12],"crossAlign":"center","sizingH":"fill","sizingV":"hug"},"parent":{"$step":235}}}
+{"command":"node.set","params":{"ids":[{"$step":251}],"fills":[]}}
+{"command":"text.create","params":{"parent":{"$step":251},"text":"Itaú · débito","props":{"sizingH":"fill"}}}
+{"command":"style.apply","params":{"ids":[{"$step":253}],"style":"Body"}}
+{"command":"variable.bind","params":{"ids":[{"$step":253}],"field":"fill","variable":"color/onBackground"}}
+{"command":"frame.create","params":{"name":"Option","props":{"layout":"horizontal","gap":12,"cornerRadius":10,"padding":[12,12,12,12],"crossAlign":"center","sizingH":"fill","sizingV":"hug"},"parent":{"$step":235}}}
+{"command":"node.set","params":{"ids":[{"$step":256}],"fills":[]}}
+{"command":"text.create","params":{"parent":{"$step":256},"text":"Caju · VR","props":{"sizingH":"fill"}}}
+{"command":"style.apply","params":{"ids":[{"$step":258}],"style":"Body"}}
+{"command":"variable.bind","params":{"ids":[{"$step":258}],"field":"fill","variable":"color/onBackground"}}
+{"command":"component.create","params":{"ids":[{"$step":219}]}}
+{"command":"component.addProperty","params":{"id":{"$step":219},"name":"Label","type":"text","default":"Instrumento","layer":{"$step":220}}}
+{"command":"component.addProperty","params":{"id":{"$step":219},"name":"Value","type":"text","default":"Nubank · crédito","layer":{"$step":229}}}
+{"command":"component.addProperty","params":{"id":{"$step":219},"name":"Leading icon","type":"boolean","default":true,"layer":{"$step":227}}}
+{"command":"component.addProperty","params":{"id":{"$step":219},"name":"Leading","type":"instanceSwap","default":{"@ref":"Icon/credit-card"},"layer":{"$step":227}}}
+{"command":"frame.create","params":{"name":"State=Disabled","props":{"layout":"vertical","gap":6,"sizingH":"fixed","sizingV":"hug","fills":[]},"parent":{"$step":193},"width":320}}
+{"command":"text.create","params":{"parent":{"$step":266},"text":"Instrumento"}}
+{"command":"style.apply","params":{"ids":[{"$step":267}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":267}],"field":"fill","variable":"color/onDisabled"}}
+{"command":"frame.create","params":{"name":"Field","props":{"layout":"horizontal","gap":10,"padding":[13,14,13,14],"cornerRadius":12,"crossAlign":"center","sizingH":"fill","sizingV":"hug","strokeAlign":"inside"},"parent":{"$step":266}}}
+{"command":"variable.bind","params":{"ids":[{"$step":270}],"field":"fill","variable":"color/disabledContainer"}}
+{"command":"variable.bind","params":{"ids":[{"$step":270}],"field":"stroke","variable":"color/outlineVariant"}}
+{"command":"node.set","params":{"ids":[{"$step":270}],"strokeWeight":1}}
+{"command":"instance.create","params":{"component":{"@ref":"Icon/credit-card"},"parent":{"$step":270}}}
+{"command":"node.set","params":{"ids":[{"$step":274}],"name":"Leading"}}
+{"command":"node.set","params":{"ids":[{"$step":274}],"opacity":0.45}}
+{"command":"text.create","params":{"parent":{"$step":270},"text":"Nubank · crédito","props":{"sizingH":"fill"}}}
+{"command":"style.apply","params":{"ids":[{"$step":277}],"style":"Body"}}
+{"command":"variable.bind","params":{"ids":[{"$step":277}],"field":"fill","variable":"color/onDisabled"}}
+{"command":"file.import","params":{"path":".build/icons/disabled/chevron-down.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":280}],"parent":{"$step":270}}}
+{"command":"node.set","params":{"ids":[{"$step":280}],"name":"Chevron"}}
+{"command":"component.create","params":{"ids":[{"$step":266}]}}
+{"command":"component.addProperty","params":{"id":{"$step":266},"name":"Label","type":"text","default":"Instrumento","layer":{"$step":267}}}
+{"command":"component.addProperty","params":{"id":{"$step":266},"name":"Value","type":"text","default":"Nubank · crédito","layer":{"$step":277}}}
+{"command":"component.addProperty","params":{"id":{"$step":266},"name":"Leading icon","type":"boolean","default":true,"layer":{"$step":274}}}
+{"command":"component.addProperty","params":{"id":{"$step":266},"name":"Leading","type":"instanceSwap","default":{"@ref":"Icon/credit-card"},"layer":{"$step":274}}}
+{"command":"component.combineVariants","params":{"ids":[{"$step":198},{"$step":219},{"$step":266}]}}
+{"command":"node.set","params":{"ids":[{"$step":288}],"name":"Select","layout":"horizontal","wrap":true,"gap":24,"crossGap":24,"padding":24,"sizingH":"hug","sizingV":"hug","cornerRadius":16,"stroke":"#B794F6","strokeWeight":1,"dashes":[6,4]}}
+{"command":"frame.create","params":{"name":"Group/AmountField","props":{"layout":"vertical","gap":16,"sizingH":"hug","sizingV":"hug","fills":[]},"parent":{"$step":1}}}
+{"command":"text.create","params":{"parent":{"$step":290},"text":"AmountField"}}
+{"command":"style.apply","params":{"ids":[{"$step":291}],"style":"Overline"}}
+{"command":"variable.bind","params":{"ids":[{"$step":291}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"node.set","params":{"ids":[{"$step":291}],"textCase":"upper","letterSpacing":"8%"}}
+{"command":"frame.create","params":{"name":"State=Empty","props":{"layout":"vertical","gap":6,"padding":[20,16,20,16],"cornerRadius":20,"crossAlign":"center","sizingH":"fixed","sizingV":"hug"},"parent":{"$step":290},"width":320}}
+{"command":"variable.bind","params":{"ids":[{"$step":295}],"field":"fill","variable":"color/surfaceVariant"}}
+{"command":"text.create","params":{"parent":{"$step":295},"text":"Valor"}}
+{"command":"style.apply","params":{"ids":[{"$step":297}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":297}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"frame.create","params":{"name":"Amount","props":{"layout":"horizontal","gap":6,"crossAlign":"baseline","sizingH":"hug","sizingV":"hug","fills":[]},"parent":{"$step":295}}}
+{"command":"text.create","params":{"parent":{"$step":300},"text":"R$"}}
+{"command":"style.apply","params":{"ids":[{"$step":301}],"style":"Subtitle"}}
+{"command":"variable.bind","params":{"ids":[{"$step":301}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"text.create","params":{"parent":{"$step":300},"text":"0,00"}}
+{"command":"style.apply","params":{"ids":[{"$step":304}],"style":"Amount Large"}}
+{"command":"variable.bind","params":{"ids":[{"$step":304}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"text.create","params":{"parent":{"$step":295},"text":"Digite no teclado abaixo"}}
+{"command":"style.apply","params":{"ids":[{"$step":307}],"style":"Caption"}}
+{"command":"variable.bind","params":{"ids":[{"$step":307}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"component.create","params":{"ids":[{"$step":295}]}}
+{"command":"component.addProperty","params":{"id":{"$step":295},"name":"Value","type":"text","default":"0,00","layer":{"$step":304}}}
+{"command":"component.addProperty","params":{"id":{"$step":295},"name":"Supporting","type":"text","default":"Digite no teclado abaixo","layer":{"$step":307}}}
+{"command":"frame.create","params":{"name":"State=Filled","props":{"layout":"vertical","gap":6,"padding":[20,16,20,16],"cornerRadius":20,"crossAlign":"center","sizingH":"fixed","sizingV":"hug"},"parent":{"$step":290},"width":320}}
+{"command":"variable.bind","params":{"ids":[{"$step":313}],"field":"fill","variable":"color/surfaceVariant"}}
+{"command":"text.create","params":{"parent":{"$step":313},"text":"Valor"}}
+{"command":"style.apply","params":{"ids":[{"$step":315}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":315}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"frame.create","params":{"name":"Amount","props":{"layout":"horizontal","gap":6,"crossAlign":"baseline","sizingH":"hug","sizingV":"hug","fills":[]},"parent":{"$step":313}}}
+{"command":"text.create","params":{"parent":{"$step":318},"text":"R$"}}
+{"command":"style.apply","params":{"ids":[{"$step":319}],"style":"Subtitle"}}
+{"command":"variable.bind","params":{"ids":[{"$step":319}],"field":"fill","variable":"color/brand"}}
+{"command":"text.create","params":{"parent":{"$step":318},"text":"42,90"}}
+{"command":"style.apply","params":{"ids":[{"$step":322}],"style":"Amount Large"}}
+{"command":"variable.bind","params":{"ids":[{"$step":322}],"field":"fill","variable":"color/brand"}}
+{"command":"text.create","params":{"parent":{"$step":313},"text":"Digite no teclado abaixo"}}
+{"command":"style.apply","params":{"ids":[{"$step":325}],"style":"Caption"}}
+{"command":"variable.bind","params":{"ids":[{"$step":325}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"component.create","params":{"ids":[{"$step":313}]}}
+{"command":"component.addProperty","params":{"id":{"$step":313},"name":"Value","type":"text","default":"42,90","layer":{"$step":322}}}
+{"command":"component.addProperty","params":{"id":{"$step":313},"name":"Supporting","type":"text","default":"Digite no teclado abaixo","layer":{"$step":325}}}
+{"command":"frame.create","params":{"name":"State=Error","props":{"layout":"vertical","gap":6,"padding":[20,16,20,16],"cornerRadius":20,"crossAlign":"center","sizingH":"fixed","sizingV":"hug"},"parent":{"$step":290},"width":320}}
+{"command":"variable.bind","params":{"ids":[{"$step":331}],"field":"fill","variable":"color/expenseContainer"}}
+{"command":"text.create","params":{"parent":{"$step":331},"text":"Valor"}}
+{"command":"style.apply","params":{"ids":[{"$step":333}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":333}],"field":"fill","variable":"color/expense"}}
+{"command":"frame.create","params":{"name":"Amount","props":{"layout":"horizontal","gap":6,"crossAlign":"baseline","sizingH":"hug","sizingV":"hug","fills":[]},"parent":{"$step":331}}}
+{"command":"text.create","params":{"parent":{"$step":336},"text":"R$"}}
+{"command":"style.apply","params":{"ids":[{"$step":337}],"style":"Subtitle"}}
+{"command":"variable.bind","params":{"ids":[{"$step":337}],"field":"fill","variable":"color/brand"}}
+{"command":"text.create","params":{"parent":{"$step":336},"text":"0,00"}}
+{"command":"style.apply","params":{"ids":[{"$step":340}],"style":"Amount Large"}}
+{"command":"variable.bind","params":{"ids":[{"$step":340}],"field":"fill","variable":"color/expense"}}
+{"command":"text.create","params":{"parent":{"$step":331},"text":"O valor precisa ser maior que zero"}}
+{"command":"style.apply","params":{"ids":[{"$step":343}],"style":"Caption"}}
+{"command":"variable.bind","params":{"ids":[{"$step":343}],"field":"fill","variable":"color/expense"}}
+{"command":"component.create","params":{"ids":[{"$step":331}]}}
+{"command":"component.addProperty","params":{"id":{"$step":331},"name":"Value","type":"text","default":"0,00","layer":{"$step":340}}}
+{"command":"component.addProperty","params":{"id":{"$step":331},"name":"Supporting","type":"text","default":"O valor precisa ser maior que zero","layer":{"$step":343}}}
+{"command":"component.combineVariants","params":{"ids":[{"$step":295},{"$step":313},{"$step":331}]}}
+{"command":"node.set","params":{"ids":[{"$step":349}],"name":"AmountField","layout":"horizontal","wrap":true,"gap":24,"crossGap":24,"padding":24,"sizingH":"hug","sizingV":"hug","cornerRadius":16,"stroke":"#B794F6","strokeWeight":1,"dashes":[6,4]}}
+{"command":"frame.create","params":{"name":"Group/TextArea","props":{"layout":"vertical","gap":16,"sizingH":"hug","sizingV":"hug","fills":[]},"parent":{"$step":1}}}
+{"command":"text.create","params":{"parent":{"$step":351},"text":"TextArea"}}
+{"command":"style.apply","params":{"ids":[{"$step":352}],"style":"Overline"}}
+{"command":"variable.bind","params":{"ids":[{"$step":352}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"node.set","params":{"ids":[{"$step":352}],"textCase":"upper","letterSpacing":"8%"}}
+{"command":"frame.create","params":{"name":"TextArea","props":{"layout":"vertical","gap":6,"sizingH":"fixed","sizingV":"hug","fills":[]},"parent":{"$step":351},"width":360}}
+{"command":"text.create","params":{"parent":{"$step":356},"text":"Observação"}}
+{"command":"style.apply","params":{"ids":[{"$step":357}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":357}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"frame.create","params":{"name":"Field","props":{"layout":"vertical","gap":0,"padding":14,"cornerRadius":12,"sizingH":"fill","sizingV":"fixed","strokeAlign":"inside"},"parent":{"$step":356},"height":112}}
+{"command":"variable.bind","params":{"ids":[{"$step":360}],"field":"fill","variable":"color/surface"}}
+{"command":"variable.bind","params":{"ids":[{"$step":360}],"field":"stroke","variable":"color/outline"}}
+{"command":"node.set","params":{"ids":[{"$step":360}],"strokeWeight":1}}
+{"command":"text.create","params":{"parent":{"$step":360},"text":"Almoço com o time, dividido no Pix depois.","props":{"sizingH":"fill"}}}
+{"command":"style.apply","params":{"ids":[{"$step":364}],"style":"Body"}}
+{"command":"variable.bind","params":{"ids":[{"$step":364}],"field":"fill","variable":"color/onBackground"}}
+{"command":"text.create","params":{"parent":{"$step":356},"text":"42/140","props":{"textAlign":"right","sizingH":"fill"}}}
+{"command":"style.apply","params":{"ids":[{"$step":367}],"style":"Caption"}}
+{"command":"variable.bind","params":{"ids":[{"$step":367}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"component.create","params":{"ids":[{"$step":356}]}}
+{"command":"component.addProperty","params":{"id":{"$step":356},"name":"Label","type":"text","default":"Observação","layer":{"$step":357}}}
+{"command":"component.addProperty","params":{"id":{"$step":356},"name":"Value","type":"text","default":"Almoço com o time, dividido no Pix depois.","layer":{"$step":364}}}
+{"command":"frame.create","params":{"name":"Group/PinInput","props":{"layout":"vertical","gap":16,"sizingH":"hug","sizingV":"hug","fills":[]},"parent":{"$step":1}}}
+{"command":"text.create","params":{"parent":{"$step":373},"text":"PinInput"}}
+{"command":"style.apply","params":{"ids":[{"$step":374}],"style":"Overline"}}
+{"command":"variable.bind","params":{"ids":[{"$step":374}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"node.set","params":{"ids":[{"$step":374}],"textCase":"upper","letterSpacing":"8%"}}
+{"command":"frame.create","params":{"name":"State=Empty","props":{"layout":"horizontal","gap":16,"padding":[16,20,16,20],"crossAlign":"center","sizingH":"hug","sizingV":"hug","fills":[]},"parent":{"$step":373}}}
+{"command":"frame.create","params":{"name":"Dot 1","props":{"cornerRadius":999,"sizingH":"fixed","sizingV":"fixed","strokeAlign":"inside"},"parent":{"$step":378},"width":18,"height":18}}
+{"command":"node.set","params":{"ids":[{"$step":379}],"fills":[]}}
+{"command":"variable.bind","params":{"ids":[{"$step":379}],"field":"stroke","variable":"color/outline"}}
+{"command":"node.set","params":{"ids":[{"$step":379}],"strokeWeight":2}}
+{"command":"frame.create","params":{"name":"Dot 2","props":{"cornerRadius":999,"sizingH":"fixed","sizingV":"fixed","strokeAlign":"inside"},"parent":{"$step":378},"width":18,"height":18}}
+{"command":"node.set","params":{"ids":[{"$step":383}],"fills":[]}}
+{"command":"variable.bind","params":{"ids":[{"$step":383}],"field":"stroke","variable":"color/outline"}}
+{"command":"node.set","params":{"ids":[{"$step":383}],"strokeWeight":2}}
+{"command":"frame.create","params":{"name":"Dot 3","props":{"cornerRadius":999,"sizingH":"fixed","sizingV":"fixed","strokeAlign":"inside"},"parent":{"$step":378},"width":18,"height":18}}
+{"command":"node.set","params":{"ids":[{"$step":387}],"fills":[]}}
+{"command":"variable.bind","params":{"ids":[{"$step":387}],"field":"stroke","variable":"color/outline"}}
+{"command":"node.set","params":{"ids":[{"$step":387}],"strokeWeight":2}}
+{"command":"frame.create","params":{"name":"Dot 4","props":{"cornerRadius":999,"sizingH":"fixed","sizingV":"fixed","strokeAlign":"inside"},"parent":{"$step":378},"width":18,"height":18}}
+{"command":"node.set","params":{"ids":[{"$step":391}],"fills":[]}}
+{"command":"variable.bind","params":{"ids":[{"$step":391}],"field":"stroke","variable":"color/outline"}}
+{"command":"node.set","params":{"ids":[{"$step":391}],"strokeWeight":2}}
+{"command":"frame.create","params":{"name":"Dot 5","props":{"cornerRadius":999,"sizingH":"fixed","sizingV":"fixed","strokeAlign":"inside"},"parent":{"$step":378},"width":18,"height":18}}
+{"command":"node.set","params":{"ids":[{"$step":395}],"fills":[]}}
+{"command":"variable.bind","params":{"ids":[{"$step":395}],"field":"stroke","variable":"color/outline"}}
+{"command":"node.set","params":{"ids":[{"$step":395}],"strokeWeight":2}}
+{"command":"frame.create","params":{"name":"Dot 6","props":{"cornerRadius":999,"sizingH":"fixed","sizingV":"fixed","strokeAlign":"inside"},"parent":{"$step":378},"width":18,"height":18}}
+{"command":"node.set","params":{"ids":[{"$step":399}],"fills":[]}}
+{"command":"variable.bind","params":{"ids":[{"$step":399}],"field":"stroke","variable":"color/outline"}}
+{"command":"node.set","params":{"ids":[{"$step":399}],"strokeWeight":2}}
+{"command":"component.create","params":{"ids":[{"$step":378}]}}
+{"command":"frame.create","params":{"name":"State=Partial","props":{"layout":"horizontal","gap":16,"padding":[16,20,16,20],"crossAlign":"center","sizingH":"hug","sizingV":"hug","fills":[]},"parent":{"$step":373}}}
+{"command":"frame.create","params":{"name":"Dot 1","props":{"cornerRadius":999,"sizingH":"fixed","sizingV":"fixed","strokeAlign":"inside"},"parent":{"$step":404},"width":18,"height":18}}
+{"command":"variable.bind","params":{"ids":[{"$step":405}],"field":"fill","variable":"color/primary"}}
+{"command":"frame.create","params":{"name":"Dot 2","props":{"cornerRadius":999,"sizingH":"fixed","sizingV":"fixed","strokeAlign":"inside"},"parent":{"$step":404},"width":18,"height":18}}
+{"command":"variable.bind","params":{"ids":[{"$step":407}],"field":"fill","variable":"color/primary"}}
+{"command":"frame.create","params":{"name":"Dot 3","props":{"cornerRadius":999,"sizingH":"fixed","sizingV":"fixed","strokeAlign":"inside"},"parent":{"$step":404},"width":18,"height":18}}
+{"command":"variable.bind","params":{"ids":[{"$step":409}],"field":"fill","variable":"color/primary"}}
+{"command":"frame.create","params":{"name":"Dot 4","props":{"cornerRadius":999,"sizingH":"fixed","sizingV":"fixed","strokeAlign":"inside"},"parent":{"$step":404},"width":18,"height":18}}
+{"command":"variable.bind","params":{"ids":[{"$step":411}],"field":"fill","variable":"color/primary"}}
+{"command":"frame.create","params":{"name":"Dot 5","props":{"cornerRadius":999,"sizingH":"fixed","sizingV":"fixed","strokeAlign":"inside"},"parent":{"$step":404},"width":18,"height":18}}
+{"command":"node.set","params":{"ids":[{"$step":413}],"fills":[]}}
+{"command":"variable.bind","params":{"ids":[{"$step":413}],"field":"stroke","variable":"color/outline"}}
+{"command":"node.set","params":{"ids":[{"$step":413}],"strokeWeight":2}}
+{"command":"frame.create","params":{"name":"Dot 6","props":{"cornerRadius":999,"sizingH":"fixed","sizingV":"fixed","strokeAlign":"inside"},"parent":{"$step":404},"width":18,"height":18}}
+{"command":"node.set","params":{"ids":[{"$step":417}],"fills":[]}}
+{"command":"variable.bind","params":{"ids":[{"$step":417}],"field":"stroke","variable":"color/outline"}}
+{"command":"node.set","params":{"ids":[{"$step":417}],"strokeWeight":2}}
+{"command":"component.create","params":{"ids":[{"$step":404}]}}
+{"command":"frame.create","params":{"name":"State=Error","props":{"layout":"horizontal","gap":16,"padding":[16,20,16,20],"crossAlign":"center","sizingH":"hug","sizingV":"hug","fills":[]},"parent":{"$step":373}}}
+{"command":"frame.create","params":{"name":"Dot 1","props":{"cornerRadius":999,"sizingH":"fixed","sizingV":"fixed","strokeAlign":"inside"},"parent":{"$step":422},"width":18,"height":18}}
+{"command":"variable.bind","params":{"ids":[{"$step":423}],"field":"fill","variable":"color/expense"}}
+{"command":"frame.create","params":{"name":"Dot 2","props":{"cornerRadius":999,"sizingH":"fixed","sizingV":"fixed","strokeAlign":"inside"},"parent":{"$step":422},"width":18,"height":18}}
+{"command":"variable.bind","params":{"ids":[{"$step":425}],"field":"fill","variable":"color/expense"}}
+{"command":"frame.create","params":{"name":"Dot 3","props":{"cornerRadius":999,"sizingH":"fixed","sizingV":"fixed","strokeAlign":"inside"},"parent":{"$step":422},"width":18,"height":18}}
+{"command":"variable.bind","params":{"ids":[{"$step":427}],"field":"fill","variable":"color/expense"}}
+{"command":"frame.create","params":{"name":"Dot 4","props":{"cornerRadius":999,"sizingH":"fixed","sizingV":"fixed","strokeAlign":"inside"},"parent":{"$step":422},"width":18,"height":18}}
+{"command":"variable.bind","params":{"ids":[{"$step":429}],"field":"fill","variable":"color/expense"}}
+{"command":"frame.create","params":{"name":"Dot 5","props":{"cornerRadius":999,"sizingH":"fixed","sizingV":"fixed","strokeAlign":"inside"},"parent":{"$step":422},"width":18,"height":18}}
+{"command":"variable.bind","params":{"ids":[{"$step":431}],"field":"fill","variable":"color/expense"}}
+{"command":"frame.create","params":{"name":"Dot 6","props":{"cornerRadius":999,"sizingH":"fixed","sizingV":"fixed","strokeAlign":"inside"},"parent":{"$step":422},"width":18,"height":18}}
+{"command":"variable.bind","params":{"ids":[{"$step":433}],"field":"fill","variable":"color/expense"}}
+{"command":"component.create","params":{"ids":[{"$step":422}]}}
+{"command":"component.combineVariants","params":{"ids":[{"$step":378},{"$step":404},{"$step":422}]}}
+{"command":"node.set","params":{"ids":[{"$step":436}],"name":"PinInput","layout":"horizontal","wrap":true,"gap":24,"crossGap":24,"padding":24,"sizingH":"hug","sizingV":"hug","cornerRadius":16,"stroke":"#B794F6","strokeWeight":1,"dashes":[6,4]}}
+{"command":"frame.create","params":{"name":"Group/NumericKeypad","props":{"layout":"vertical","gap":16,"sizingH":"hug","sizingV":"hug","fills":[]},"parent":{"$step":1}}}
+{"command":"text.create","params":{"parent":{"$step":438},"text":"NumericKeypad"}}
+{"command":"style.apply","params":{"ids":[{"$step":439}],"style":"Overline"}}
+{"command":"variable.bind","params":{"ids":[{"$step":439}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"node.set","params":{"ids":[{"$step":439}],"textCase":"upper","letterSpacing":"8%"}}
+{"command":"frame.create","params":{"name":"NumericKeypad","props":{"layout":"grid","gridColumns":3,"gap":8,"crossGap":8,"padding":12,"cornerRadius":20,"sizingH":"fixed","sizingV":"hug"},"parent":{"$step":438},"width":360}}
+{"command":"variable.bind","params":{"ids":[{"$step":443}],"field":"fill","variable":"color/surfaceVariant"}}
+{"command":"frame.create","params":{"name":"Key 1","props":{"layout":"horizontal","mainAlign":"center","crossAlign":"center","cornerRadius":14,"sizingH":"fill","sizingV":"fixed"},"parent":{"$step":443},"height":56}}
+{"command":"variable.bind","params":{"ids":[{"$step":445}],"field":"fill","variable":"color/surface"}}
+{"command":"text.create","params":{"parent":{"$step":445},"text":"1"}}
+{"command":"style.apply","params":{"ids":[{"$step":447}],"style":"Title"}}
+{"command":"variable.bind","params":{"ids":[{"$step":447}],"field":"fill","variable":"color/onBackground"}}
+{"command":"frame.create","params":{"name":"Key 2","props":{"layout":"horizontal","mainAlign":"center","crossAlign":"center","cornerRadius":14,"sizingH":"fill","sizingV":"fixed"},"parent":{"$step":443},"height":56}}
+{"command":"variable.bind","params":{"ids":[{"$step":450}],"field":"fill","variable":"color/surface"}}
+{"command":"text.create","params":{"parent":{"$step":450},"text":"2"}}
+{"command":"style.apply","params":{"ids":[{"$step":452}],"style":"Title"}}
+{"command":"variable.bind","params":{"ids":[{"$step":452}],"field":"fill","variable":"color/onBackground"}}
+{"command":"frame.create","params":{"name":"Key 3","props":{"layout":"horizontal","mainAlign":"center","crossAlign":"center","cornerRadius":14,"sizingH":"fill","sizingV":"fixed"},"parent":{"$step":443},"height":56}}
+{"command":"variable.bind","params":{"ids":[{"$step":455}],"field":"fill","variable":"color/surface"}}
+{"command":"text.create","params":{"parent":{"$step":455},"text":"3"}}
+{"command":"style.apply","params":{"ids":[{"$step":457}],"style":"Title"}}
+{"command":"variable.bind","params":{"ids":[{"$step":457}],"field":"fill","variable":"color/onBackground"}}
+{"command":"frame.create","params":{"name":"Key 4","props":{"layout":"horizontal","mainAlign":"center","crossAlign":"center","cornerRadius":14,"sizingH":"fill","sizingV":"fixed"},"parent":{"$step":443},"height":56}}
+{"command":"variable.bind","params":{"ids":[{"$step":460}],"field":"fill","variable":"color/surface"}}
+{"command":"text.create","params":{"parent":{"$step":460},"text":"4"}}
+{"command":"style.apply","params":{"ids":[{"$step":462}],"style":"Title"}}
+{"command":"variable.bind","params":{"ids":[{"$step":462}],"field":"fill","variable":"color/onBackground"}}
+{"command":"frame.create","params":{"name":"Key 5","props":{"layout":"horizontal","mainAlign":"center","crossAlign":"center","cornerRadius":14,"sizingH":"fill","sizingV":"fixed"},"parent":{"$step":443},"height":56}}
+{"command":"variable.bind","params":{"ids":[{"$step":465}],"field":"fill","variable":"color/surface"}}
+{"command":"text.create","params":{"parent":{"$step":465},"text":"5"}}
+{"command":"style.apply","params":{"ids":[{"$step":467}],"style":"Title"}}
+{"command":"variable.bind","params":{"ids":[{"$step":467}],"field":"fill","variable":"color/onBackground"}}
+{"command":"frame.create","params":{"name":"Key 6","props":{"layout":"horizontal","mainAlign":"center","crossAlign":"center","cornerRadius":14,"sizingH":"fill","sizingV":"fixed"},"parent":{"$step":443},"height":56}}
+{"command":"variable.bind","params":{"ids":[{"$step":470}],"field":"fill","variable":"color/surface"}}
+{"command":"text.create","params":{"parent":{"$step":470},"text":"6"}}
+{"command":"style.apply","params":{"ids":[{"$step":472}],"style":"Title"}}
+{"command":"variable.bind","params":{"ids":[{"$step":472}],"field":"fill","variable":"color/onBackground"}}
+{"command":"frame.create","params":{"name":"Key 7","props":{"layout":"horizontal","mainAlign":"center","crossAlign":"center","cornerRadius":14,"sizingH":"fill","sizingV":"fixed"},"parent":{"$step":443},"height":56}}
+{"command":"variable.bind","params":{"ids":[{"$step":475}],"field":"fill","variable":"color/surface"}}
+{"command":"text.create","params":{"parent":{"$step":475},"text":"7"}}
+{"command":"style.apply","params":{"ids":[{"$step":477}],"style":"Title"}}
+{"command":"variable.bind","params":{"ids":[{"$step":477}],"field":"fill","variable":"color/onBackground"}}
+{"command":"frame.create","params":{"name":"Key 8","props":{"layout":"horizontal","mainAlign":"center","crossAlign":"center","cornerRadius":14,"sizingH":"fill","sizingV":"fixed"},"parent":{"$step":443},"height":56}}
+{"command":"variable.bind","params":{"ids":[{"$step":480}],"field":"fill","variable":"color/surface"}}
+{"command":"text.create","params":{"parent":{"$step":480},"text":"8"}}
+{"command":"style.apply","params":{"ids":[{"$step":482}],"style":"Title"}}
+{"command":"variable.bind","params":{"ids":[{"$step":482}],"field":"fill","variable":"color/onBackground"}}
+{"command":"frame.create","params":{"name":"Key 9","props":{"layout":"horizontal","mainAlign":"center","crossAlign":"center","cornerRadius":14,"sizingH":"fill","sizingV":"fixed"},"parent":{"$step":443},"height":56}}
+{"command":"variable.bind","params":{"ids":[{"$step":485}],"field":"fill","variable":"color/surface"}}
+{"command":"text.create","params":{"parent":{"$step":485},"text":"9"}}
+{"command":"style.apply","params":{"ids":[{"$step":487}],"style":"Title"}}
+{"command":"variable.bind","params":{"ids":[{"$step":487}],"field":"fill","variable":"color/onBackground"}}
+{"command":"frame.create","params":{"name":"Key ,","props":{"layout":"horizontal","mainAlign":"center","crossAlign":"center","cornerRadius":14,"sizingH":"fill","sizingV":"fixed"},"parent":{"$step":443},"height":56}}
+{"command":"variable.bind","params":{"ids":[{"$step":490}],"field":"fill","variable":"color/surface"}}
+{"command":"text.create","params":{"parent":{"$step":490},"text":","}}
+{"command":"style.apply","params":{"ids":[{"$step":492}],"style":"Title"}}
+{"command":"variable.bind","params":{"ids":[{"$step":492}],"field":"fill","variable":"color/onBackground"}}
+{"command":"frame.create","params":{"name":"Key 0","props":{"layout":"horizontal","mainAlign":"center","crossAlign":"center","cornerRadius":14,"sizingH":"fill","sizingV":"fixed"},"parent":{"$step":443},"height":56}}
+{"command":"variable.bind","params":{"ids":[{"$step":495}],"field":"fill","variable":"color/surface"}}
+{"command":"text.create","params":{"parent":{"$step":495},"text":"0"}}
+{"command":"style.apply","params":{"ids":[{"$step":497}],"style":"Title"}}
+{"command":"variable.bind","params":{"ids":[{"$step":497}],"field":"fill","variable":"color/onBackground"}}
+{"command":"frame.create","params":{"name":"Key DEL","props":{"layout":"horizontal","mainAlign":"center","crossAlign":"center","cornerRadius":14,"sizingH":"fill","sizingV":"fixed"},"parent":{"$step":443},"height":56}}
+{"command":"node.set","params":{"ids":[{"$step":500}],"fills":[]}}
+{"command":"file.import","params":{"path":".build/icons/ink/delete.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":502}],"parent":{"$step":500}}}
+{"command":"node.set","params":{"ids":[{"$step":502}],"name":"Icon"}}
+{"command":"component.create","params":{"ids":[{"$step":443}]}}
