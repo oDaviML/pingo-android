@@ -59,12 +59,12 @@ pingo-android/
 │     ├─ test/                       testes unitários
 │     └─ androidTest/                testes instrumentados
 ├─ core/
-│  ├─ model/        modelos de domínio: Lancamento, Conta, Instrumento, Fatura, Assinatura, Categoria, RegraParser
+│  ├─ model/        modelos de domínio: Usuario, Conta, Instrumento, Lancamento, Categoria, RegraCategoria, Fatura, Assinatura, RegraParser
 │  ├─ common/       dispatchers (AppDispatchers) e Result (AppResult), Kotlin puro
 │  ├─ designsystem/ casca do design system (tema, cores, tipografia e componentes virão depois)
 │  ├─ ui/           componentes de UI que renderizam os models
-│  ├─ data/         repositórios offline-first
-│  ├─ database/     Room + SQLCipher (pré-configurado no convention plugin)
+│  ├─ data/         repositórios offline-first com Flow do Room
+│  ├─ database/     Room + SQLCipher, entidades, DAOs e schema versionado
 │  ├─ datastore/    preferências e estado de sync
 │  ├─ network/      cliente da pingo-api
 │  ├─ notifications/ NotificationListenerService, foreground service e health check

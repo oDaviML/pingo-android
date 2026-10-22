@@ -1,5 +1,6 @@
 plugins {
     id("pingo.android.library")
+    id("pingo.android.hilt")
 }
 
 android {
@@ -8,5 +9,6 @@ android {
 
 dependencies {
     api(project(":core:model"))
+    implementation(project(":core:database"))
     implementation(libs.kotlinx.coroutines.android)
 }

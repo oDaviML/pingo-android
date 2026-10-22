@@ -1,0 +1,19 @@
+package com.pingo.core.data
+
+import com.pingo.core.model.Instrumento
+import kotlinx.coroutines.flow.Flow
+import java.time.Instant
+
+interface InstrumentoRepository {
+    fun observeInstrumentos(): Flow<List<Instrumento>>
+
+    fun observePorConta(contaPublicId: String): Flow<List<Instrumento>>
+
+    suspend fun buscar(publicId: String): Instrumento?
+
+    suspend fun salvar(instrumento: Instrumento)
+
+    suspend fun salvarTodos(instrumentos: List<Instrumento>)
+
+    suspend fun excluir(publicId: String, quando: Instant)
+}
