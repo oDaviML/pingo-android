@@ -18,6 +18,7 @@ dependencyResolutionManagement {
 rootProject.name = "pingo-android"
 
 include(":app")
+include(":spike:capture")
 include(":core:model")
 include(":core:common")
 include(":core:designsystem")

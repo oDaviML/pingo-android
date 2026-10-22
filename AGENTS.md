@@ -21,6 +21,7 @@ O papel deste repositório, `pingo-android`, é o aplicativo Android: o listener
   - `feature:*` depende apenas dos `core:*` que usa. O `AndroidFeatureConventionPlugin` já adiciona `core:model`, `core:ui` e `core:designsystem`; qualquer outro `core:*` precisa ser declarado explicitamente no módulo.
   - `feature:*:impl` depende do próprio `feature:*:api`.
   - Os convention plugins em `build-logic` adicionam as dependências padrão (`core:model`, `core:ui` e `core:designsystem`); as regras são garantidas por revisão (humana e Pullfrog) e por este documento.
+- `spike:capture` — app de spike isolado (`com.pingo.spike`) do épico STR-157, para coletar o corpus de notificações em aparelhos de teste. Não é produto e não é publicado; por isso abre mão de Hilt, ViewModel/UDF e dos `core:*`/`feature:*`, e pode escrever direto em disco. As exceções valem só para o spike e não servem de precedente para as features.
 - ADR-03: Kotlin + Jetpack Compose como stack única do app.
 - ADR-09: dois repositórios (`pingo-api` e `pingo-android`), app Android multimódulo, AGENTS.md como documentação viva e Pullfrog para revisão assistida de PRs.
 
@@ -47,6 +48,8 @@ pingo-android/
 │        ├─ AndroidRoomConventionPlugin.kt          pingo.android.room
 │        ├─ JvmLibraryConventionPlugin.kt           pingo.jvm.library
 │        └─ AndroidConfig.kt                        configuração compartilhada via version catalog
+├─ spike/
+│  └─ capture/                  app de spike (com.pingo.spike) para coletar o corpus de notificações
 ├─ app/                         applicationId com.pingo
 │  └─ src/
 │     ├─ main/kotlin/com/pingo/
