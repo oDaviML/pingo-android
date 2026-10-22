@@ -17,12 +17,6 @@ import java.time.LocalDate
             childColumns = ["instrumentoPublicId"],
             onDelete = ForeignKey.NO_ACTION,
         ),
-        ForeignKey(
-            entity = LancamentoEntity::class,
-            parentColumns = ["publicId"],
-            childColumns = ["pagamentoLancamentoPublicId"],
-            onDelete = ForeignKey.NO_ACTION,
-        ),
     ],
     indices = [
         Index("instrumentoPublicId"),

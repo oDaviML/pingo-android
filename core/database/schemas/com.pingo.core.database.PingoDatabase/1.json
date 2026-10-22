@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "c45a2fcb182abd078f73a25c381315b9",
+    "identityHash": "c129abe4e8b7d50fdcd712385ff52104",
     "entities": [
       {
         "tableName": "usuarios",
@@ -796,7 +796,7 @@
       },
       {
         "tableName": "faturas",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`publicId` TEXT NOT NULL, `instrumentoPublicId` TEXT NOT NULL, `competencia` INTEGER NOT NULL, `dataFechamento` INTEGER NOT NULL, `dataVencimento` INTEGER NOT NULL, `totalCentavos` INTEGER NOT NULL, `totalPagoCentavos` INTEGER NOT NULL, `status` TEXT NOT NULL, `dataPagamento` INTEGER, `pagamentoLancamentoPublicId` TEXT, `criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, `excluidoEm` INTEGER, PRIMARY KEY(`publicId`), FOREIGN KEY(`instrumentoPublicId`) REFERENCES `instrumentos`(`publicId`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`pagamentoLancamentoPublicId`) REFERENCES `lancamentos`(`publicId`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`publicId` TEXT NOT NULL, `instrumentoPublicId` TEXT NOT NULL, `competencia` INTEGER NOT NULL, `dataFechamento` INTEGER NOT NULL, `dataVencimento` INTEGER NOT NULL, `totalCentavos` INTEGER NOT NULL, `totalPagoCentavos` INTEGER NOT NULL, `status` TEXT NOT NULL, `dataPagamento` INTEGER, `pagamentoLancamentoPublicId` TEXT, `criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, `excluidoEm` INTEGER, PRIMARY KEY(`publicId`), FOREIGN KEY(`instrumentoPublicId`) REFERENCES `instrumentos`(`publicId`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
         "fields": [
           {
             "fieldPath": "publicId",
@@ -934,17 +934,6 @@
             "onUpdate": "NO ACTION",
             "columns": [
               "instrumentoPublicId"
-            ],
-            "referencedColumns": [
-              "publicId"
-            ]
-          },
-          {
-            "table": "lancamentos",
-            "onDelete": "NO ACTION",
-            "onUpdate": "NO ACTION",
-            "columns": [
-              "pagamentoLancamentoPublicId"
             ],
             "referencedColumns": [
               "publicId"
@@ -1125,7 +1114,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'c45a2fcb182abd078f73a25c381315b9')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'c129abe4e8b7d50fdcd712385ff52104')"
     ]
   }
 }

@@ -26,7 +26,15 @@ class LancamentoRepositoryImpl @Inject constructor(private val lancamentoDao: La
     }
 
     override suspend fun salvarTodos(lancamentos: List<Lancamento>) {
-        lancamentoDao.upsertAll(lancamentos.map { it.toEntity() })
+        val ordenados = lancamentos.sortedBy { lancamento -> if (lancamento.compraPaiPublicId == null) 0 else 1 }
+
+        lancamentoDao.upsertAll(ordenados.map { lancamento -> lancamento.copy(estornoDePublicId = null).toEntity() })
+
+        val comEstorno = ordenados.filter { lancamento -> lancamento.estornoDePublicId != null }
+
+        if (comEstorno.isNotEmpty()) {
+            lancamentoDao.upsertAll(comEstorno.map { lancamento -> lancamento.toEntity() })
+        }
     }
 
     override suspend fun excluir(publicId: String, quando: Instant) {
