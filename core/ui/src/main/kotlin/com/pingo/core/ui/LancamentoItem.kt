@@ -6,5 +6,5 @@ import com.pingo.core.model.Lancamento
 
 @Composable
 fun LancamentoItem(lancamento: Lancamento) {
-    Text(text = lancamento.descricao)
+    Text(text = lancamento.estabelecimento ?: "Lançamento")
 }
