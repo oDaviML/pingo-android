@@ -1,0 +1,20 @@
+{"command":"style.create","params":{"type":"text","name":"Amount Large","value":{"fontFamily":"Nunito","fontStyle":"ExtraBold","fontSize":40,"lineHeight":48,"features":{"tnum":true}}}}
+{"command":"style.create","params":{"type":"text","name":"Display","value":{"fontFamily":"Nunito","fontStyle":"ExtraBold","fontSize":32,"lineHeight":40}}}
+{"command":"style.create","params":{"type":"text","name":"Headline","value":{"fontFamily":"Nunito","fontStyle":"Bold","fontSize":24,"lineHeight":32}}}
+{"command":"style.create","params":{"type":"text","name":"Title","value":{"fontFamily":"Nunito","fontStyle":"Bold","fontSize":20,"lineHeight":28}}}
+{"command":"style.create","params":{"type":"text","name":"Subtitle","value":{"fontFamily":"Nunito","fontStyle":"SemiBold","fontSize":18,"lineHeight":24}}}
+{"command":"style.create","params":{"type":"text","name":"Body Strong","value":{"fontFamily":"Nunito","fontStyle":"SemiBold","fontSize":16,"lineHeight":24}}}
+{"command":"style.create","params":{"type":"text","name":"Body","value":{"fontFamily":"Nunito","fontStyle":"Regular","fontSize":16,"lineHeight":24}}}
+{"command":"style.create","params":{"type":"text","name":"Body Small","value":{"fontFamily":"Nunito","fontStyle":"Regular","fontSize":14,"lineHeight":20}}}
+{"command":"style.create","params":{"type":"text","name":"Label","value":{"fontFamily":"Nunito","fontStyle":"Bold","fontSize":14,"lineHeight":20}}}
+{"command":"style.create","params":{"type":"text","name":"Label Small","value":{"fontFamily":"Nunito","fontStyle":"SemiBold","fontSize":12,"lineHeight":16}}}
+{"command":"style.create","params":{"type":"text","name":"Caption","value":{"fontFamily":"Nunito","fontStyle":"Regular","fontSize":12,"lineHeight":16}}}
+{"command":"style.create","params":{"type":"text","name":"Overline","value":{"fontFamily":"Nunito","fontStyle":"ExtraBold","fontSize":11,"lineHeight":16,"letterSpacing":"8%","textCase":"upper"}}}
+{"command":"style.create","params":{"type":"text","name":"Amount","value":{"fontFamily":"Nunito","fontStyle":"Bold","fontSize":16,"lineHeight":24,"features":{"tnum":true}}}}
+{"command":"style.create","params":{"type":"paint","name":"Brand/Deep","value":[{"type":"solid","color":"#09637E"}]}}
+{"command":"style.create","params":{"type":"paint","name":"Brand/Primary","value":[{"type":"solid","color":"#088395"}]}}
+{"command":"style.create","params":{"type":"paint","name":"Brand/Soft","value":[{"type":"solid","color":"#7AB2B2"}]}}
+{"command":"style.create","params":{"type":"paint","name":"Brand/Surface","value":[{"type":"solid","color":"#EBF4F6"}]}}
+{"command":"style.create","params":{"type":"effect","name":"Elevation/1","value":[{"type":"dropShadow","color":"#0B2A3314","offset":[0,1],"radius":3,"spread":0}]}}
+{"command":"style.create","params":{"type":"effect","name":"Elevation/2","value":[{"type":"dropShadow","color":"#0B2A331A","offset":[0,4],"radius":12,"spread":0}]}}
+{"command":"style.create","params":{"type":"effect","name":"Elevation/3","value":[{"type":"dropShadow","color":"#0B2A3326","offset":[0,8],"radius":24,"spread":-4}]}}

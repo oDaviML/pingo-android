@@ -1,0 +1,8 @@
+{"command":"page.rename","params":{"id":1,"name":"Foundations"}}
+{"command":"page.add","params":{"name":"Components"}}
+{"command":"page.add","params":{"name":"Motion"}}
+{"command":"page.add","params":{"name":"Screens"}}
+{"command":"page.setBackground","params":{"id":1,"color":"#E3EDEF"}}
+{"command":"page.setBackground","params":{"id":{"$step":1},"color":"#E3EDEF"}}
+{"command":"page.setBackground","params":{"id":{"$step":2},"color":"#E3EDEF"}}
+{"command":"page.setBackground","params":{"id":{"$step":3},"color":"#E3EDEF"}}

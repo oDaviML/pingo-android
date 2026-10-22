@@ -1,0 +1,574 @@
+{"command":"page.select","params":{"index":1}}
+{"command":"frame.create","params":{"name":"Board/Buttons","props":{"layout":"vertical","gap":28,"padding":48,"cornerRadius":28,"fill":"#FFFFFF","sizingH":"hug","sizingV":"hug"}}}
+{"command":"node.set","params":{"ids":[{"$step":1}],"x":0,"y":0}}
+{"command":"text.create","params":{"parent":{"$step":1},"text":"Botões"}}
+{"command":"style.apply","params":{"ids":[{"$step":3}],"style":"Headline"}}
+{"command":"variable.bind","params":{"ids":[{"$step":3}],"field":"fill","variable":"color/onBackground"}}
+{"command":"text.create","params":{"parent":{"$step":1},"text":"Button: 5 tipos × 4 estados × 2 tamanhos, com propriedades Label (texto) e Icon (liga/desliga). IconButton e FAB para ações compactas e a ação principal (+)."}}
+{"command":"style.apply","params":{"ids":[{"$step":6}],"style":"Body Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":6}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"frame.create","params":{"name":"Group/Button","props":{"layout":"vertical","gap":16,"sizingH":"hug","sizingV":"hug","fills":[]},"parent":{"$step":1}}}
+{"command":"text.create","params":{"parent":{"$step":9},"text":"Button"}}
+{"command":"style.apply","params":{"ids":[{"$step":10}],"style":"Overline"}}
+{"command":"variable.bind","params":{"ids":[{"$step":10}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"node.set","params":{"ids":[{"$step":10}],"textCase":"upper","letterSpacing":"8%"}}
+{"command":"frame.create","params":{"name":"Type=Primary, State=Default, Size=Medium","props":{"layout":"horizontal","gap":8,"padding":[12,20,12,20],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":14}],"field":"fill","variable":"color/primary"}}
+{"command":"file.import","params":{"path":".build/icons/white/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":16}],"parent":{"$step":14}}}
+{"command":"node.set","params":{"ids":[{"$step":16}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":14},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":19}],"style":"Label"}}
+{"command":"variable.bind","params":{"ids":[{"$step":19}],"field":"fill","variable":"color/onPrimary"}}
+{"command":"component.create","params":{"ids":[{"$step":14}]}}
+{"command":"component.addProperty","params":{"id":{"$step":14},"name":"Label","type":"text","default":"Salvar","layer":{"$step":19}}}
+{"command":"component.addProperty","params":{"id":{"$step":14},"name":"Icon","type":"boolean","default":true,"layer":{"$step":16}}}
+{"command":"frame.create","params":{"name":"Type=Primary, State=Pressed, Size=Medium","props":{"layout":"horizontal","gap":8,"padding":[12,20,12,20],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":25}],"field":"fill","variable":"color/primaryPressed"}}
+{"command":"file.import","params":{"path":".build/icons/white/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":27}],"parent":{"$step":25}}}
+{"command":"node.set","params":{"ids":[{"$step":27}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":25},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":30}],"style":"Label"}}
+{"command":"variable.bind","params":{"ids":[{"$step":30}],"field":"fill","variable":"color/onPrimary"}}
+{"command":"component.create","params":{"ids":[{"$step":25}]}}
+{"command":"component.addProperty","params":{"id":{"$step":25},"name":"Label","type":"text","default":"Salvar","layer":{"$step":30}}}
+{"command":"component.addProperty","params":{"id":{"$step":25},"name":"Icon","type":"boolean","default":true,"layer":{"$step":27}}}
+{"command":"frame.create","params":{"name":"Type=Primary, State=Disabled, Size=Medium","props":{"layout":"horizontal","gap":8,"padding":[12,20,12,20],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":36}],"field":"fill","variable":"color/disabledContainer"}}
+{"command":"file.import","params":{"path":".build/icons/disabled/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":38}],"parent":{"$step":36}}}
+{"command":"node.set","params":{"ids":[{"$step":38}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":36},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":41}],"style":"Label"}}
+{"command":"variable.bind","params":{"ids":[{"$step":41}],"field":"fill","variable":"color/onDisabled"}}
+{"command":"component.create","params":{"ids":[{"$step":36}]}}
+{"command":"component.addProperty","params":{"id":{"$step":36},"name":"Label","type":"text","default":"Salvar","layer":{"$step":41}}}
+{"command":"component.addProperty","params":{"id":{"$step":36},"name":"Icon","type":"boolean","default":true,"layer":{"$step":38}}}
+{"command":"frame.create","params":{"name":"Type=Primary, State=Loading, Size=Medium","props":{"layout":"horizontal","gap":8,"padding":[12,20,12,20],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":47}],"field":"fill","variable":"color/primary"}}
+{"command":"file.import","params":{"path":".build/icons/white/loader-circle.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":49}],"parent":{"$step":47}}}
+{"command":"node.set","params":{"ids":[{"$step":49}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":47},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":52}],"style":"Label"}}
+{"command":"variable.bind","params":{"ids":[{"$step":52}],"field":"fill","variable":"color/onPrimary"}}
+{"command":"component.create","params":{"ids":[{"$step":47}]}}
+{"command":"component.addProperty","params":{"id":{"$step":47},"name":"Label","type":"text","default":"Salvar","layer":{"$step":52}}}
+{"command":"component.addProperty","params":{"id":{"$step":47},"name":"Icon","type":"boolean","default":true,"layer":{"$step":49}}}
+{"command":"frame.create","params":{"name":"Type=Tonal, State=Default, Size=Medium","props":{"layout":"horizontal","gap":8,"padding":[12,20,12,20],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":58}],"field":"fill","variable":"color/primaryContainer"}}
+{"command":"file.import","params":{"path":".build/icons/deep/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":60}],"parent":{"$step":58}}}
+{"command":"node.set","params":{"ids":[{"$step":60}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":58},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":63}],"style":"Label"}}
+{"command":"variable.bind","params":{"ids":[{"$step":63}],"field":"fill","variable":"color/onPrimaryContainer"}}
+{"command":"component.create","params":{"ids":[{"$step":58}]}}
+{"command":"component.addProperty","params":{"id":{"$step":58},"name":"Label","type":"text","default":"Salvar","layer":{"$step":63}}}
+{"command":"component.addProperty","params":{"id":{"$step":58},"name":"Icon","type":"boolean","default":true,"layer":{"$step":60}}}
+{"command":"frame.create","params":{"name":"Type=Tonal, State=Pressed, Size=Medium","props":{"layout":"horizontal","gap":8,"padding":[12,20,12,20],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":69}],"field":"fill","variable":"color/secondary"}}
+{"command":"file.import","params":{"path":".build/icons/deep/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":71}],"parent":{"$step":69}}}
+{"command":"node.set","params":{"ids":[{"$step":71}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":69},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":74}],"style":"Label"}}
+{"command":"variable.bind","params":{"ids":[{"$step":74}],"field":"fill","variable":"color/onPrimaryContainer"}}
+{"command":"component.create","params":{"ids":[{"$step":69}]}}
+{"command":"component.addProperty","params":{"id":{"$step":69},"name":"Label","type":"text","default":"Salvar","layer":{"$step":74}}}
+{"command":"component.addProperty","params":{"id":{"$step":69},"name":"Icon","type":"boolean","default":true,"layer":{"$step":71}}}
+{"command":"frame.create","params":{"name":"Type=Tonal, State=Disabled, Size=Medium","props":{"layout":"horizontal","gap":8,"padding":[12,20,12,20],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":80}],"field":"fill","variable":"color/disabledContainer"}}
+{"command":"file.import","params":{"path":".build/icons/disabled/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":82}],"parent":{"$step":80}}}
+{"command":"node.set","params":{"ids":[{"$step":82}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":80},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":85}],"style":"Label"}}
+{"command":"variable.bind","params":{"ids":[{"$step":85}],"field":"fill","variable":"color/onDisabled"}}
+{"command":"component.create","params":{"ids":[{"$step":80}]}}
+{"command":"component.addProperty","params":{"id":{"$step":80},"name":"Label","type":"text","default":"Salvar","layer":{"$step":85}}}
+{"command":"component.addProperty","params":{"id":{"$step":80},"name":"Icon","type":"boolean","default":true,"layer":{"$step":82}}}
+{"command":"frame.create","params":{"name":"Type=Tonal, State=Loading, Size=Medium","props":{"layout":"horizontal","gap":8,"padding":[12,20,12,20],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":91}],"field":"fill","variable":"color/primaryContainer"}}
+{"command":"file.import","params":{"path":".build/icons/deep/loader-circle.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":93}],"parent":{"$step":91}}}
+{"command":"node.set","params":{"ids":[{"$step":93}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":91},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":96}],"style":"Label"}}
+{"command":"variable.bind","params":{"ids":[{"$step":96}],"field":"fill","variable":"color/onPrimaryContainer"}}
+{"command":"component.create","params":{"ids":[{"$step":91}]}}
+{"command":"component.addProperty","params":{"id":{"$step":91},"name":"Label","type":"text","default":"Salvar","layer":{"$step":96}}}
+{"command":"component.addProperty","params":{"id":{"$step":91},"name":"Icon","type":"boolean","default":true,"layer":{"$step":93}}}
+{"command":"frame.create","params":{"name":"Type=Outline, State=Default, Size=Medium","props":{"layout":"horizontal","gap":8,"padding":[12,20,12,20],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"node.set","params":{"ids":[{"$step":102}],"fills":[]}}
+{"command":"variable.bind","params":{"ids":[{"$step":102}],"field":"stroke","variable":"color/primary"}}
+{"command":"node.set","params":{"ids":[{"$step":102}],"strokeWeight":1.5,"strokeAlign":"inside"}}
+{"command":"file.import","params":{"path":".build/icons/primary/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":106}],"parent":{"$step":102}}}
+{"command":"node.set","params":{"ids":[{"$step":106}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":102},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":109}],"style":"Label"}}
+{"command":"variable.bind","params":{"ids":[{"$step":109}],"field":"fill","variable":"color/primary"}}
+{"command":"component.create","params":{"ids":[{"$step":102}]}}
+{"command":"component.addProperty","params":{"id":{"$step":102},"name":"Label","type":"text","default":"Salvar","layer":{"$step":109}}}
+{"command":"component.addProperty","params":{"id":{"$step":102},"name":"Icon","type":"boolean","default":true,"layer":{"$step":106}}}
+{"command":"frame.create","params":{"name":"Type=Outline, State=Pressed, Size=Medium","props":{"layout":"horizontal","gap":8,"padding":[12,20,12,20],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":115}],"field":"fill","variable":"color/primaryContainer"}}
+{"command":"variable.bind","params":{"ids":[{"$step":115}],"field":"stroke","variable":"color/primary"}}
+{"command":"node.set","params":{"ids":[{"$step":115}],"strokeWeight":1.5,"strokeAlign":"inside"}}
+{"command":"file.import","params":{"path":".build/icons/primary/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":119}],"parent":{"$step":115}}}
+{"command":"node.set","params":{"ids":[{"$step":119}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":115},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":122}],"style":"Label"}}
+{"command":"variable.bind","params":{"ids":[{"$step":122}],"field":"fill","variable":"color/primary"}}
+{"command":"component.create","params":{"ids":[{"$step":115}]}}
+{"command":"component.addProperty","params":{"id":{"$step":115},"name":"Label","type":"text","default":"Salvar","layer":{"$step":122}}}
+{"command":"component.addProperty","params":{"id":{"$step":115},"name":"Icon","type":"boolean","default":true,"layer":{"$step":119}}}
+{"command":"frame.create","params":{"name":"Type=Outline, State=Disabled, Size=Medium","props":{"layout":"horizontal","gap":8,"padding":[12,20,12,20],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"node.set","params":{"ids":[{"$step":128}],"fills":[]}}
+{"command":"variable.bind","params":{"ids":[{"$step":128}],"field":"stroke","variable":"color/outlineVariant"}}
+{"command":"node.set","params":{"ids":[{"$step":128}],"strokeWeight":1.5,"strokeAlign":"inside"}}
+{"command":"file.import","params":{"path":".build/icons/disabled/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":132}],"parent":{"$step":128}}}
+{"command":"node.set","params":{"ids":[{"$step":132}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":128},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":135}],"style":"Label"}}
+{"command":"variable.bind","params":{"ids":[{"$step":135}],"field":"fill","variable":"color/onDisabled"}}
+{"command":"component.create","params":{"ids":[{"$step":128}]}}
+{"command":"component.addProperty","params":{"id":{"$step":128},"name":"Label","type":"text","default":"Salvar","layer":{"$step":135}}}
+{"command":"component.addProperty","params":{"id":{"$step":128},"name":"Icon","type":"boolean","default":true,"layer":{"$step":132}}}
+{"command":"frame.create","params":{"name":"Type=Outline, State=Loading, Size=Medium","props":{"layout":"horizontal","gap":8,"padding":[12,20,12,20],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"node.set","params":{"ids":[{"$step":141}],"fills":[]}}
+{"command":"variable.bind","params":{"ids":[{"$step":141}],"field":"stroke","variable":"color/primary"}}
+{"command":"node.set","params":{"ids":[{"$step":141}],"strokeWeight":1.5,"strokeAlign":"inside"}}
+{"command":"file.import","params":{"path":".build/icons/primary/loader-circle.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":145}],"parent":{"$step":141}}}
+{"command":"node.set","params":{"ids":[{"$step":145}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":141},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":148}],"style":"Label"}}
+{"command":"variable.bind","params":{"ids":[{"$step":148}],"field":"fill","variable":"color/primary"}}
+{"command":"component.create","params":{"ids":[{"$step":141}]}}
+{"command":"component.addProperty","params":{"id":{"$step":141},"name":"Label","type":"text","default":"Salvar","layer":{"$step":148}}}
+{"command":"component.addProperty","params":{"id":{"$step":141},"name":"Icon","type":"boolean","default":true,"layer":{"$step":145}}}
+{"command":"frame.create","params":{"name":"Type=Text, State=Default, Size=Medium","props":{"layout":"horizontal","gap":8,"padding":[12,20,12,20],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"node.set","params":{"ids":[{"$step":154}],"fills":[]}}
+{"command":"file.import","params":{"path":".build/icons/primary/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":156}],"parent":{"$step":154}}}
+{"command":"node.set","params":{"ids":[{"$step":156}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":154},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":159}],"style":"Label"}}
+{"command":"variable.bind","params":{"ids":[{"$step":159}],"field":"fill","variable":"color/primary"}}
+{"command":"component.create","params":{"ids":[{"$step":154}]}}
+{"command":"component.addProperty","params":{"id":{"$step":154},"name":"Label","type":"text","default":"Salvar","layer":{"$step":159}}}
+{"command":"component.addProperty","params":{"id":{"$step":154},"name":"Icon","type":"boolean","default":true,"layer":{"$step":156}}}
+{"command":"frame.create","params":{"name":"Type=Text, State=Pressed, Size=Medium","props":{"layout":"horizontal","gap":8,"padding":[12,20,12,20],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":165}],"field":"fill","variable":"color/primaryContainer"}}
+{"command":"file.import","params":{"path":".build/icons/primary/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":167}],"parent":{"$step":165}}}
+{"command":"node.set","params":{"ids":[{"$step":167}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":165},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":170}],"style":"Label"}}
+{"command":"variable.bind","params":{"ids":[{"$step":170}],"field":"fill","variable":"color/primary"}}
+{"command":"component.create","params":{"ids":[{"$step":165}]}}
+{"command":"component.addProperty","params":{"id":{"$step":165},"name":"Label","type":"text","default":"Salvar","layer":{"$step":170}}}
+{"command":"component.addProperty","params":{"id":{"$step":165},"name":"Icon","type":"boolean","default":true,"layer":{"$step":167}}}
+{"command":"frame.create","params":{"name":"Type=Text, State=Disabled, Size=Medium","props":{"layout":"horizontal","gap":8,"padding":[12,20,12,20],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"node.set","params":{"ids":[{"$step":176}],"fills":[]}}
+{"command":"file.import","params":{"path":".build/icons/disabled/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":178}],"parent":{"$step":176}}}
+{"command":"node.set","params":{"ids":[{"$step":178}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":176},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":181}],"style":"Label"}}
+{"command":"variable.bind","params":{"ids":[{"$step":181}],"field":"fill","variable":"color/onDisabled"}}
+{"command":"component.create","params":{"ids":[{"$step":176}]}}
+{"command":"component.addProperty","params":{"id":{"$step":176},"name":"Label","type":"text","default":"Salvar","layer":{"$step":181}}}
+{"command":"component.addProperty","params":{"id":{"$step":176},"name":"Icon","type":"boolean","default":true,"layer":{"$step":178}}}
+{"command":"frame.create","params":{"name":"Type=Text, State=Loading, Size=Medium","props":{"layout":"horizontal","gap":8,"padding":[12,20,12,20],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"node.set","params":{"ids":[{"$step":187}],"fills":[]}}
+{"command":"file.import","params":{"path":".build/icons/primary/loader-circle.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":189}],"parent":{"$step":187}}}
+{"command":"node.set","params":{"ids":[{"$step":189}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":187},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":192}],"style":"Label"}}
+{"command":"variable.bind","params":{"ids":[{"$step":192}],"field":"fill","variable":"color/primary"}}
+{"command":"component.create","params":{"ids":[{"$step":187}]}}
+{"command":"component.addProperty","params":{"id":{"$step":187},"name":"Label","type":"text","default":"Salvar","layer":{"$step":192}}}
+{"command":"component.addProperty","params":{"id":{"$step":187},"name":"Icon","type":"boolean","default":true,"layer":{"$step":189}}}
+{"command":"frame.create","params":{"name":"Type=Danger, State=Default, Size=Medium","props":{"layout":"horizontal","gap":8,"padding":[12,20,12,20],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":198}],"field":"fill","variable":"color/expense"}}
+{"command":"file.import","params":{"path":".build/icons/white/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":200}],"parent":{"$step":198}}}
+{"command":"node.set","params":{"ids":[{"$step":200}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":198},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":203}],"style":"Label"}}
+{"command":"variable.bind","params":{"ids":[{"$step":203}],"field":"fill","variable":"color/onPrimary"}}
+{"command":"component.create","params":{"ids":[{"$step":198}]}}
+{"command":"component.addProperty","params":{"id":{"$step":198},"name":"Label","type":"text","default":"Salvar","layer":{"$step":203}}}
+{"command":"component.addProperty","params":{"id":{"$step":198},"name":"Icon","type":"boolean","default":true,"layer":{"$step":200}}}
+{"command":"frame.create","params":{"name":"Type=Danger, State=Pressed, Size=Medium","props":{"layout":"horizontal","gap":8,"padding":[12,20,12,20],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":209}],"field":"fill","variable":"color/expensePressed"}}
+{"command":"file.import","params":{"path":".build/icons/white/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":211}],"parent":{"$step":209}}}
+{"command":"node.set","params":{"ids":[{"$step":211}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":209},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":214}],"style":"Label"}}
+{"command":"variable.bind","params":{"ids":[{"$step":214}],"field":"fill","variable":"color/onPrimary"}}
+{"command":"component.create","params":{"ids":[{"$step":209}]}}
+{"command":"component.addProperty","params":{"id":{"$step":209},"name":"Label","type":"text","default":"Salvar","layer":{"$step":214}}}
+{"command":"component.addProperty","params":{"id":{"$step":209},"name":"Icon","type":"boolean","default":true,"layer":{"$step":211}}}
+{"command":"frame.create","params":{"name":"Type=Danger, State=Disabled, Size=Medium","props":{"layout":"horizontal","gap":8,"padding":[12,20,12,20],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":220}],"field":"fill","variable":"color/disabledContainer"}}
+{"command":"file.import","params":{"path":".build/icons/disabled/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":222}],"parent":{"$step":220}}}
+{"command":"node.set","params":{"ids":[{"$step":222}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":220},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":225}],"style":"Label"}}
+{"command":"variable.bind","params":{"ids":[{"$step":225}],"field":"fill","variable":"color/onDisabled"}}
+{"command":"component.create","params":{"ids":[{"$step":220}]}}
+{"command":"component.addProperty","params":{"id":{"$step":220},"name":"Label","type":"text","default":"Salvar","layer":{"$step":225}}}
+{"command":"component.addProperty","params":{"id":{"$step":220},"name":"Icon","type":"boolean","default":true,"layer":{"$step":222}}}
+{"command":"frame.create","params":{"name":"Type=Danger, State=Loading, Size=Medium","props":{"layout":"horizontal","gap":8,"padding":[12,20,12,20],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":231}],"field":"fill","variable":"color/expense"}}
+{"command":"file.import","params":{"path":".build/icons/white/loader-circle.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":233}],"parent":{"$step":231}}}
+{"command":"node.set","params":{"ids":[{"$step":233}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":231},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":236}],"style":"Label"}}
+{"command":"variable.bind","params":{"ids":[{"$step":236}],"field":"fill","variable":"color/onPrimary"}}
+{"command":"component.create","params":{"ids":[{"$step":231}]}}
+{"command":"component.addProperty","params":{"id":{"$step":231},"name":"Label","type":"text","default":"Salvar","layer":{"$step":236}}}
+{"command":"component.addProperty","params":{"id":{"$step":231},"name":"Icon","type":"boolean","default":true,"layer":{"$step":233}}}
+{"command":"frame.create","params":{"name":"Type=Primary, State=Default, Size=Small","props":{"layout":"horizontal","gap":8,"padding":[6,14,6,14],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":242}],"field":"fill","variable":"color/primary"}}
+{"command":"file.import","params":{"path":".build/icons/white/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":244}],"parent":{"$step":242}}}
+{"command":"node.set","params":{"ids":[{"$step":244}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":242},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":247}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":247}],"field":"fill","variable":"color/onPrimary"}}
+{"command":"component.create","params":{"ids":[{"$step":242}]}}
+{"command":"component.addProperty","params":{"id":{"$step":242},"name":"Label","type":"text","default":"Salvar","layer":{"$step":247}}}
+{"command":"component.addProperty","params":{"id":{"$step":242},"name":"Icon","type":"boolean","default":true,"layer":{"$step":244}}}
+{"command":"frame.create","params":{"name":"Type=Primary, State=Pressed, Size=Small","props":{"layout":"horizontal","gap":8,"padding":[6,14,6,14],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":253}],"field":"fill","variable":"color/primaryPressed"}}
+{"command":"file.import","params":{"path":".build/icons/white/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":255}],"parent":{"$step":253}}}
+{"command":"node.set","params":{"ids":[{"$step":255}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":253},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":258}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":258}],"field":"fill","variable":"color/onPrimary"}}
+{"command":"component.create","params":{"ids":[{"$step":253}]}}
+{"command":"component.addProperty","params":{"id":{"$step":253},"name":"Label","type":"text","default":"Salvar","layer":{"$step":258}}}
+{"command":"component.addProperty","params":{"id":{"$step":253},"name":"Icon","type":"boolean","default":true,"layer":{"$step":255}}}
+{"command":"frame.create","params":{"name":"Type=Primary, State=Disabled, Size=Small","props":{"layout":"horizontal","gap":8,"padding":[6,14,6,14],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":264}],"field":"fill","variable":"color/disabledContainer"}}
+{"command":"file.import","params":{"path":".build/icons/disabled/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":266}],"parent":{"$step":264}}}
+{"command":"node.set","params":{"ids":[{"$step":266}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":264},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":269}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":269}],"field":"fill","variable":"color/onDisabled"}}
+{"command":"component.create","params":{"ids":[{"$step":264}]}}
+{"command":"component.addProperty","params":{"id":{"$step":264},"name":"Label","type":"text","default":"Salvar","layer":{"$step":269}}}
+{"command":"component.addProperty","params":{"id":{"$step":264},"name":"Icon","type":"boolean","default":true,"layer":{"$step":266}}}
+{"command":"frame.create","params":{"name":"Type=Primary, State=Loading, Size=Small","props":{"layout":"horizontal","gap":8,"padding":[6,14,6,14],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":275}],"field":"fill","variable":"color/primary"}}
+{"command":"file.import","params":{"path":".build/icons/white/loader-circle.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":277}],"parent":{"$step":275}}}
+{"command":"node.set","params":{"ids":[{"$step":277}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":275},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":280}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":280}],"field":"fill","variable":"color/onPrimary"}}
+{"command":"component.create","params":{"ids":[{"$step":275}]}}
+{"command":"component.addProperty","params":{"id":{"$step":275},"name":"Label","type":"text","default":"Salvar","layer":{"$step":280}}}
+{"command":"component.addProperty","params":{"id":{"$step":275},"name":"Icon","type":"boolean","default":true,"layer":{"$step":277}}}
+{"command":"frame.create","params":{"name":"Type=Tonal, State=Default, Size=Small","props":{"layout":"horizontal","gap":8,"padding":[6,14,6,14],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":286}],"field":"fill","variable":"color/primaryContainer"}}
+{"command":"file.import","params":{"path":".build/icons/deep/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":288}],"parent":{"$step":286}}}
+{"command":"node.set","params":{"ids":[{"$step":288}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":286},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":291}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":291}],"field":"fill","variable":"color/onPrimaryContainer"}}
+{"command":"component.create","params":{"ids":[{"$step":286}]}}
+{"command":"component.addProperty","params":{"id":{"$step":286},"name":"Label","type":"text","default":"Salvar","layer":{"$step":291}}}
+{"command":"component.addProperty","params":{"id":{"$step":286},"name":"Icon","type":"boolean","default":true,"layer":{"$step":288}}}
+{"command":"frame.create","params":{"name":"Type=Tonal, State=Pressed, Size=Small","props":{"layout":"horizontal","gap":8,"padding":[6,14,6,14],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":297}],"field":"fill","variable":"color/secondary"}}
+{"command":"file.import","params":{"path":".build/icons/deep/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":299}],"parent":{"$step":297}}}
+{"command":"node.set","params":{"ids":[{"$step":299}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":297},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":302}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":302}],"field":"fill","variable":"color/onPrimaryContainer"}}
+{"command":"component.create","params":{"ids":[{"$step":297}]}}
+{"command":"component.addProperty","params":{"id":{"$step":297},"name":"Label","type":"text","default":"Salvar","layer":{"$step":302}}}
+{"command":"component.addProperty","params":{"id":{"$step":297},"name":"Icon","type":"boolean","default":true,"layer":{"$step":299}}}
+{"command":"frame.create","params":{"name":"Type=Tonal, State=Disabled, Size=Small","props":{"layout":"horizontal","gap":8,"padding":[6,14,6,14],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":308}],"field":"fill","variable":"color/disabledContainer"}}
+{"command":"file.import","params":{"path":".build/icons/disabled/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":310}],"parent":{"$step":308}}}
+{"command":"node.set","params":{"ids":[{"$step":310}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":308},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":313}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":313}],"field":"fill","variable":"color/onDisabled"}}
+{"command":"component.create","params":{"ids":[{"$step":308}]}}
+{"command":"component.addProperty","params":{"id":{"$step":308},"name":"Label","type":"text","default":"Salvar","layer":{"$step":313}}}
+{"command":"component.addProperty","params":{"id":{"$step":308},"name":"Icon","type":"boolean","default":true,"layer":{"$step":310}}}
+{"command":"frame.create","params":{"name":"Type=Tonal, State=Loading, Size=Small","props":{"layout":"horizontal","gap":8,"padding":[6,14,6,14],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":319}],"field":"fill","variable":"color/primaryContainer"}}
+{"command":"file.import","params":{"path":".build/icons/deep/loader-circle.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":321}],"parent":{"$step":319}}}
+{"command":"node.set","params":{"ids":[{"$step":321}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":319},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":324}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":324}],"field":"fill","variable":"color/onPrimaryContainer"}}
+{"command":"component.create","params":{"ids":[{"$step":319}]}}
+{"command":"component.addProperty","params":{"id":{"$step":319},"name":"Label","type":"text","default":"Salvar","layer":{"$step":324}}}
+{"command":"component.addProperty","params":{"id":{"$step":319},"name":"Icon","type":"boolean","default":true,"layer":{"$step":321}}}
+{"command":"frame.create","params":{"name":"Type=Outline, State=Default, Size=Small","props":{"layout":"horizontal","gap":8,"padding":[6,14,6,14],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"node.set","params":{"ids":[{"$step":330}],"fills":[]}}
+{"command":"variable.bind","params":{"ids":[{"$step":330}],"field":"stroke","variable":"color/primary"}}
+{"command":"node.set","params":{"ids":[{"$step":330}],"strokeWeight":1.5,"strokeAlign":"inside"}}
+{"command":"file.import","params":{"path":".build/icons/primary/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":334}],"parent":{"$step":330}}}
+{"command":"node.set","params":{"ids":[{"$step":334}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":330},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":337}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":337}],"field":"fill","variable":"color/primary"}}
+{"command":"component.create","params":{"ids":[{"$step":330}]}}
+{"command":"component.addProperty","params":{"id":{"$step":330},"name":"Label","type":"text","default":"Salvar","layer":{"$step":337}}}
+{"command":"component.addProperty","params":{"id":{"$step":330},"name":"Icon","type":"boolean","default":true,"layer":{"$step":334}}}
+{"command":"frame.create","params":{"name":"Type=Outline, State=Pressed, Size=Small","props":{"layout":"horizontal","gap":8,"padding":[6,14,6,14],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":343}],"field":"fill","variable":"color/primaryContainer"}}
+{"command":"variable.bind","params":{"ids":[{"$step":343}],"field":"stroke","variable":"color/primary"}}
+{"command":"node.set","params":{"ids":[{"$step":343}],"strokeWeight":1.5,"strokeAlign":"inside"}}
+{"command":"file.import","params":{"path":".build/icons/primary/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":347}],"parent":{"$step":343}}}
+{"command":"node.set","params":{"ids":[{"$step":347}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":343},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":350}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":350}],"field":"fill","variable":"color/primary"}}
+{"command":"component.create","params":{"ids":[{"$step":343}]}}
+{"command":"component.addProperty","params":{"id":{"$step":343},"name":"Label","type":"text","default":"Salvar","layer":{"$step":350}}}
+{"command":"component.addProperty","params":{"id":{"$step":343},"name":"Icon","type":"boolean","default":true,"layer":{"$step":347}}}
+{"command":"frame.create","params":{"name":"Type=Outline, State=Disabled, Size=Small","props":{"layout":"horizontal","gap":8,"padding":[6,14,6,14],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"node.set","params":{"ids":[{"$step":356}],"fills":[]}}
+{"command":"variable.bind","params":{"ids":[{"$step":356}],"field":"stroke","variable":"color/outlineVariant"}}
+{"command":"node.set","params":{"ids":[{"$step":356}],"strokeWeight":1.5,"strokeAlign":"inside"}}
+{"command":"file.import","params":{"path":".build/icons/disabled/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":360}],"parent":{"$step":356}}}
+{"command":"node.set","params":{"ids":[{"$step":360}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":356},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":363}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":363}],"field":"fill","variable":"color/onDisabled"}}
+{"command":"component.create","params":{"ids":[{"$step":356}]}}
+{"command":"component.addProperty","params":{"id":{"$step":356},"name":"Label","type":"text","default":"Salvar","layer":{"$step":363}}}
+{"command":"component.addProperty","params":{"id":{"$step":356},"name":"Icon","type":"boolean","default":true,"layer":{"$step":360}}}
+{"command":"frame.create","params":{"name":"Type=Outline, State=Loading, Size=Small","props":{"layout":"horizontal","gap":8,"padding":[6,14,6,14],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"node.set","params":{"ids":[{"$step":369}],"fills":[]}}
+{"command":"variable.bind","params":{"ids":[{"$step":369}],"field":"stroke","variable":"color/primary"}}
+{"command":"node.set","params":{"ids":[{"$step":369}],"strokeWeight":1.5,"strokeAlign":"inside"}}
+{"command":"file.import","params":{"path":".build/icons/primary/loader-circle.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":373}],"parent":{"$step":369}}}
+{"command":"node.set","params":{"ids":[{"$step":373}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":369},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":376}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":376}],"field":"fill","variable":"color/primary"}}
+{"command":"component.create","params":{"ids":[{"$step":369}]}}
+{"command":"component.addProperty","params":{"id":{"$step":369},"name":"Label","type":"text","default":"Salvar","layer":{"$step":376}}}
+{"command":"component.addProperty","params":{"id":{"$step":369},"name":"Icon","type":"boolean","default":true,"layer":{"$step":373}}}
+{"command":"frame.create","params":{"name":"Type=Text, State=Default, Size=Small","props":{"layout":"horizontal","gap":8,"padding":[6,14,6,14],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"node.set","params":{"ids":[{"$step":382}],"fills":[]}}
+{"command":"file.import","params":{"path":".build/icons/primary/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":384}],"parent":{"$step":382}}}
+{"command":"node.set","params":{"ids":[{"$step":384}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":382},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":387}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":387}],"field":"fill","variable":"color/primary"}}
+{"command":"component.create","params":{"ids":[{"$step":382}]}}
+{"command":"component.addProperty","params":{"id":{"$step":382},"name":"Label","type":"text","default":"Salvar","layer":{"$step":387}}}
+{"command":"component.addProperty","params":{"id":{"$step":382},"name":"Icon","type":"boolean","default":true,"layer":{"$step":384}}}
+{"command":"frame.create","params":{"name":"Type=Text, State=Pressed, Size=Small","props":{"layout":"horizontal","gap":8,"padding":[6,14,6,14],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":393}],"field":"fill","variable":"color/primaryContainer"}}
+{"command":"file.import","params":{"path":".build/icons/primary/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":395}],"parent":{"$step":393}}}
+{"command":"node.set","params":{"ids":[{"$step":395}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":393},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":398}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":398}],"field":"fill","variable":"color/primary"}}
+{"command":"component.create","params":{"ids":[{"$step":393}]}}
+{"command":"component.addProperty","params":{"id":{"$step":393},"name":"Label","type":"text","default":"Salvar","layer":{"$step":398}}}
+{"command":"component.addProperty","params":{"id":{"$step":393},"name":"Icon","type":"boolean","default":true,"layer":{"$step":395}}}
+{"command":"frame.create","params":{"name":"Type=Text, State=Disabled, Size=Small","props":{"layout":"horizontal","gap":8,"padding":[6,14,6,14],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"node.set","params":{"ids":[{"$step":404}],"fills":[]}}
+{"command":"file.import","params":{"path":".build/icons/disabled/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":406}],"parent":{"$step":404}}}
+{"command":"node.set","params":{"ids":[{"$step":406}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":404},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":409}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":409}],"field":"fill","variable":"color/onDisabled"}}
+{"command":"component.create","params":{"ids":[{"$step":404}]}}
+{"command":"component.addProperty","params":{"id":{"$step":404},"name":"Label","type":"text","default":"Salvar","layer":{"$step":409}}}
+{"command":"component.addProperty","params":{"id":{"$step":404},"name":"Icon","type":"boolean","default":true,"layer":{"$step":406}}}
+{"command":"frame.create","params":{"name":"Type=Text, State=Loading, Size=Small","props":{"layout":"horizontal","gap":8,"padding":[6,14,6,14],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"node.set","params":{"ids":[{"$step":415}],"fills":[]}}
+{"command":"file.import","params":{"path":".build/icons/primary/loader-circle.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":417}],"parent":{"$step":415}}}
+{"command":"node.set","params":{"ids":[{"$step":417}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":415},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":420}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":420}],"field":"fill","variable":"color/primary"}}
+{"command":"component.create","params":{"ids":[{"$step":415}]}}
+{"command":"component.addProperty","params":{"id":{"$step":415},"name":"Label","type":"text","default":"Salvar","layer":{"$step":420}}}
+{"command":"component.addProperty","params":{"id":{"$step":415},"name":"Icon","type":"boolean","default":true,"layer":{"$step":417}}}
+{"command":"frame.create","params":{"name":"Type=Danger, State=Default, Size=Small","props":{"layout":"horizontal","gap":8,"padding":[6,14,6,14],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":426}],"field":"fill","variable":"color/expense"}}
+{"command":"file.import","params":{"path":".build/icons/white/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":428}],"parent":{"$step":426}}}
+{"command":"node.set","params":{"ids":[{"$step":428}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":426},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":431}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":431}],"field":"fill","variable":"color/onPrimary"}}
+{"command":"component.create","params":{"ids":[{"$step":426}]}}
+{"command":"component.addProperty","params":{"id":{"$step":426},"name":"Label","type":"text","default":"Salvar","layer":{"$step":431}}}
+{"command":"component.addProperty","params":{"id":{"$step":426},"name":"Icon","type":"boolean","default":true,"layer":{"$step":428}}}
+{"command":"frame.create","params":{"name":"Type=Danger, State=Pressed, Size=Small","props":{"layout":"horizontal","gap":8,"padding":[6,14,6,14],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":437}],"field":"fill","variable":"color/expensePressed"}}
+{"command":"file.import","params":{"path":".build/icons/white/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":439}],"parent":{"$step":437}}}
+{"command":"node.set","params":{"ids":[{"$step":439}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":437},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":442}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":442}],"field":"fill","variable":"color/onPrimary"}}
+{"command":"component.create","params":{"ids":[{"$step":437}]}}
+{"command":"component.addProperty","params":{"id":{"$step":437},"name":"Label","type":"text","default":"Salvar","layer":{"$step":442}}}
+{"command":"component.addProperty","params":{"id":{"$step":437},"name":"Icon","type":"boolean","default":true,"layer":{"$step":439}}}
+{"command":"frame.create","params":{"name":"Type=Danger, State=Disabled, Size=Small","props":{"layout":"horizontal","gap":8,"padding":[6,14,6,14],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":448}],"field":"fill","variable":"color/disabledContainer"}}
+{"command":"file.import","params":{"path":".build/icons/disabled/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":450}],"parent":{"$step":448}}}
+{"command":"node.set","params":{"ids":[{"$step":450}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":448},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":453}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":453}],"field":"fill","variable":"color/onDisabled"}}
+{"command":"component.create","params":{"ids":[{"$step":448}]}}
+{"command":"component.addProperty","params":{"id":{"$step":448},"name":"Label","type":"text","default":"Salvar","layer":{"$step":453}}}
+{"command":"component.addProperty","params":{"id":{"$step":448},"name":"Icon","type":"boolean","default":true,"layer":{"$step":450}}}
+{"command":"frame.create","params":{"name":"Type=Danger, State=Loading, Size=Small","props":{"layout":"horizontal","gap":8,"padding":[6,14,6,14],"cornerRadius":12,"crossAlign":"center","mainAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":9}}}
+{"command":"variable.bind","params":{"ids":[{"$step":459}],"field":"fill","variable":"color/expense"}}
+{"command":"file.import","params":{"path":".build/icons/white/loader-circle.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":461}],"parent":{"$step":459}}}
+{"command":"node.set","params":{"ids":[{"$step":461}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":459},"text":"Salvar"}}
+{"command":"style.apply","params":{"ids":[{"$step":464}],"style":"Label Small"}}
+{"command":"variable.bind","params":{"ids":[{"$step":464}],"field":"fill","variable":"color/onPrimary"}}
+{"command":"component.create","params":{"ids":[{"$step":459}]}}
+{"command":"component.addProperty","params":{"id":{"$step":459},"name":"Label","type":"text","default":"Salvar","layer":{"$step":464}}}
+{"command":"component.addProperty","params":{"id":{"$step":459},"name":"Icon","type":"boolean","default":true,"layer":{"$step":461}}}
+{"command":"component.combineVariants","params":{"ids":[{"$step":14},{"$step":25},{"$step":36},{"$step":47},{"$step":58},{"$step":69},{"$step":80},{"$step":91},{"$step":102},{"$step":115},{"$step":128},{"$step":141},{"$step":154},{"$step":165},{"$step":176},{"$step":187},{"$step":198},{"$step":209},{"$step":220},{"$step":231},{"$step":242},{"$step":253},{"$step":264},{"$step":275},{"$step":286},{"$step":297},{"$step":308},{"$step":319},{"$step":330},{"$step":343},{"$step":356},{"$step":369},{"$step":382},{"$step":393},{"$step":404},{"$step":415},{"$step":426},{"$step":437},{"$step":448},{"$step":459}]}}
+{"command":"node.set","params":{"ids":[{"$step":470}],"name":"Button","layout":"grid","gridColumns":4,"gap":16,"crossGap":16,"padding":24,"sizingH":"hug","sizingV":"hug","cornerRadius":16,"stroke":"#B794F6","strokeWeight":1,"dashes":[6,4]}}
+{"command":"frame.create","params":{"name":"Group/IconButton","props":{"layout":"vertical","gap":16,"sizingH":"hug","sizingV":"hug","fills":[]},"parent":{"$step":1}}}
+{"command":"text.create","params":{"parent":{"$step":472},"text":"IconButton"}}
+{"command":"style.apply","params":{"ids":[{"$step":473}],"style":"Overline"}}
+{"command":"variable.bind","params":{"ids":[{"$step":473}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"node.set","params":{"ids":[{"$step":473}],"textCase":"upper","letterSpacing":"8%"}}
+{"command":"frame.create","params":{"name":"Style=Filled, State=Default","props":{"layout":"horizontal","padding":12,"cornerRadius":12,"mainAlign":"center","crossAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":472}}}
+{"command":"variable.bind","params":{"ids":[{"$step":477}],"field":"fill","variable":"color/primary"}}
+{"command":"file.import","params":{"path":".build/icons/white/sliders-horizontal.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":479}],"parent":{"$step":477}}}
+{"command":"node.set","params":{"ids":[{"$step":479}],"name":"Icon"}}
+{"command":"component.create","params":{"ids":[{"$step":477}]}}
+{"command":"frame.create","params":{"name":"Style=Filled, State=Disabled","props":{"layout":"horizontal","padding":12,"cornerRadius":12,"mainAlign":"center","crossAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":472}}}
+{"command":"variable.bind","params":{"ids":[{"$step":483}],"field":"fill","variable":"color/disabledContainer"}}
+{"command":"file.import","params":{"path":".build/icons/disabled/sliders-horizontal.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":485}],"parent":{"$step":483}}}
+{"command":"node.set","params":{"ids":[{"$step":485}],"name":"Icon"}}
+{"command":"component.create","params":{"ids":[{"$step":483}]}}
+{"command":"frame.create","params":{"name":"Style=Tonal, State=Default","props":{"layout":"horizontal","padding":12,"cornerRadius":12,"mainAlign":"center","crossAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":472}}}
+{"command":"variable.bind","params":{"ids":[{"$step":489}],"field":"fill","variable":"color/primaryContainer"}}
+{"command":"file.import","params":{"path":".build/icons/deep/sliders-horizontal.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":491}],"parent":{"$step":489}}}
+{"command":"node.set","params":{"ids":[{"$step":491}],"name":"Icon"}}
+{"command":"component.create","params":{"ids":[{"$step":489}]}}
+{"command":"frame.create","params":{"name":"Style=Tonal, State=Disabled","props":{"layout":"horizontal","padding":12,"cornerRadius":12,"mainAlign":"center","crossAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":472}}}
+{"command":"variable.bind","params":{"ids":[{"$step":495}],"field":"fill","variable":"color/disabledContainer"}}
+{"command":"file.import","params":{"path":".build/icons/disabled/sliders-horizontal.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":497}],"parent":{"$step":495}}}
+{"command":"node.set","params":{"ids":[{"$step":497}],"name":"Icon"}}
+{"command":"component.create","params":{"ids":[{"$step":495}]}}
+{"command":"frame.create","params":{"name":"Style=Outline, State=Default","props":{"layout":"horizontal","padding":12,"cornerRadius":12,"mainAlign":"center","crossAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":472}}}
+{"command":"node.set","params":{"ids":[{"$step":501}],"fills":[]}}
+{"command":"variable.bind","params":{"ids":[{"$step":501}],"field":"stroke","variable":"color/outline"}}
+{"command":"node.set","params":{"ids":[{"$step":501}],"strokeWeight":1.5,"strokeAlign":"inside"}}
+{"command":"file.import","params":{"path":".build/icons/ink/sliders-horizontal.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":505}],"parent":{"$step":501}}}
+{"command":"node.set","params":{"ids":[{"$step":505}],"name":"Icon"}}
+{"command":"component.create","params":{"ids":[{"$step":501}]}}
+{"command":"frame.create","params":{"name":"Style=Outline, State=Disabled","props":{"layout":"horizontal","padding":12,"cornerRadius":12,"mainAlign":"center","crossAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":472}}}
+{"command":"node.set","params":{"ids":[{"$step":509}],"fills":[]}}
+{"command":"variable.bind","params":{"ids":[{"$step":509}],"field":"stroke","variable":"color/outlineVariant"}}
+{"command":"node.set","params":{"ids":[{"$step":509}],"strokeWeight":1.5,"strokeAlign":"inside"}}
+{"command":"file.import","params":{"path":".build/icons/disabled/sliders-horizontal.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":513}],"parent":{"$step":509}}}
+{"command":"node.set","params":{"ids":[{"$step":513}],"name":"Icon"}}
+{"command":"component.create","params":{"ids":[{"$step":509}]}}
+{"command":"frame.create","params":{"name":"Style=Standard, State=Default","props":{"layout":"horizontal","padding":12,"cornerRadius":12,"mainAlign":"center","crossAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":472}}}
+{"command":"node.set","params":{"ids":[{"$step":517}],"fills":[]}}
+{"command":"file.import","params":{"path":".build/icons/ink/sliders-horizontal.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":519}],"parent":{"$step":517}}}
+{"command":"node.set","params":{"ids":[{"$step":519}],"name":"Icon"}}
+{"command":"component.create","params":{"ids":[{"$step":517}]}}
+{"command":"frame.create","params":{"name":"Style=Standard, State=Disabled","props":{"layout":"horizontal","padding":12,"cornerRadius":12,"mainAlign":"center","crossAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":472}}}
+{"command":"node.set","params":{"ids":[{"$step":523}],"fills":[]}}
+{"command":"file.import","params":{"path":".build/icons/disabled/sliders-horizontal.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":525}],"parent":{"$step":523}}}
+{"command":"node.set","params":{"ids":[{"$step":525}],"name":"Icon"}}
+{"command":"component.create","params":{"ids":[{"$step":523}]}}
+{"command":"component.combineVariants","params":{"ids":[{"$step":477},{"$step":483},{"$step":489},{"$step":495},{"$step":501},{"$step":509},{"$step":517},{"$step":523}]}}
+{"command":"node.set","params":{"ids":[{"$step":529}],"name":"IconButton","layout":"grid","gridColumns":4,"gap":16,"crossGap":16,"padding":24,"sizingH":"hug","sizingV":"hug","cornerRadius":16,"stroke":"#B794F6","strokeWeight":1,"dashes":[6,4]}}
+{"command":"frame.create","params":{"name":"Group/FAB","props":{"layout":"vertical","gap":16,"sizingH":"hug","sizingV":"hug","fills":[]},"parent":{"$step":1}}}
+{"command":"text.create","params":{"parent":{"$step":531},"text":"FAB"}}
+{"command":"style.apply","params":{"ids":[{"$step":532}],"style":"Overline"}}
+{"command":"variable.bind","params":{"ids":[{"$step":532}],"field":"fill","variable":"color/onSurfaceVariant"}}
+{"command":"node.set","params":{"ids":[{"$step":532}],"textCase":"upper","letterSpacing":"8%"}}
+{"command":"frame.create","params":{"name":"Type=Regular, State=Default","props":{"layout":"horizontal","padding":16,"cornerRadius":18,"mainAlign":"center","crossAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":531}}}
+{"command":"variable.bind","params":{"ids":[{"$step":536}],"field":"fill","variable":"color/primary"}}
+{"command":"style.apply","params":{"ids":[{"$step":536}],"style":"Elevation/2"}}
+{"command":"file.import","params":{"path":".build/icons/white/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":539}],"parent":{"$step":536}}}
+{"command":"node.set","params":{"ids":[{"$step":539}],"name":"Icon"}}
+{"command":"component.create","params":{"ids":[{"$step":536}]}}
+{"command":"frame.create","params":{"name":"Type=Regular, State=Pressed","props":{"layout":"horizontal","padding":16,"cornerRadius":18,"mainAlign":"center","crossAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":531}}}
+{"command":"variable.bind","params":{"ids":[{"$step":543}],"field":"fill","variable":"color/primaryPressed"}}
+{"command":"style.apply","params":{"ids":[{"$step":543}],"style":"Elevation/1"}}
+{"command":"file.import","params":{"path":".build/icons/white/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":546}],"parent":{"$step":543}}}
+{"command":"node.set","params":{"ids":[{"$step":546}],"name":"Icon"}}
+{"command":"component.create","params":{"ids":[{"$step":543}]}}
+{"command":"frame.create","params":{"name":"Type=Extended, State=Default","props":{"layout":"horizontal","gap":10,"padding":[16,22,16,18],"cornerRadius":18,"mainAlign":"center","crossAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":531}}}
+{"command":"variable.bind","params":{"ids":[{"$step":550}],"field":"fill","variable":"color/primary"}}
+{"command":"style.apply","params":{"ids":[{"$step":550}],"style":"Elevation/2"}}
+{"command":"file.import","params":{"path":".build/icons/white/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":553}],"parent":{"$step":550}}}
+{"command":"node.set","params":{"ids":[{"$step":553}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":550},"text":"Novo lançamento"}}
+{"command":"style.apply","params":{"ids":[{"$step":556}],"style":"Label"}}
+{"command":"variable.bind","params":{"ids":[{"$step":556}],"field":"fill","variable":"color/onPrimary"}}
+{"command":"component.create","params":{"ids":[{"$step":550}]}}
+{"command":"component.addProperty","params":{"id":{"$step":550},"name":"Label","type":"text","default":"Novo lançamento","layer":{"$step":556}}}
+{"command":"frame.create","params":{"name":"Type=Extended, State=Pressed","props":{"layout":"horizontal","gap":10,"padding":[16,22,16,18],"cornerRadius":18,"mainAlign":"center","crossAlign":"center","sizingH":"hug","sizingV":"hug"},"parent":{"$step":531}}}
+{"command":"variable.bind","params":{"ids":[{"$step":561}],"field":"fill","variable":"color/primaryPressed"}}
+{"command":"style.apply","params":{"ids":[{"$step":561}],"style":"Elevation/1"}}
+{"command":"file.import","params":{"path":".build/icons/white/plus.svg","x":0,"y":0}}
+{"command":"node.reparent","params":{"ids":[{"$step":564}],"parent":{"$step":561}}}
+{"command":"node.set","params":{"ids":[{"$step":564}],"name":"Icon"}}
+{"command":"text.create","params":{"parent":{"$step":561},"text":"Novo lançamento"}}
+{"command":"style.apply","params":{"ids":[{"$step":567}],"style":"Label"}}
+{"command":"variable.bind","params":{"ids":[{"$step":567}],"field":"fill","variable":"color/onPrimary"}}
+{"command":"component.create","params":{"ids":[{"$step":561}]}}
+{"command":"component.addProperty","params":{"id":{"$step":561},"name":"Label","type":"text","default":"Novo lançamento","layer":{"$step":567}}}
+{"command":"component.combineVariants","params":{"ids":[{"$step":536},{"$step":543},{"$step":550},{"$step":561}]}}
+{"command":"node.set","params":{"ids":[{"$step":572}],"name":"FAB","layout":"horizontal","gap":24,"padding":24,"crossAlign":"center","sizingH":"hug","sizingV":"hug","cornerRadius":16,"stroke":"#B794F6","strokeWeight":1,"dashes":[6,4]}}
