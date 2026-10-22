@@ -9,24 +9,26 @@ class CorpusStore(directory: File) {
         directory.mkdirs()
     }
 
-    @Synchronized
     fun append(entry: CorpusEntry) {
-        file.appendText(CorpusCodec.encode(entry) + "\n")
+        synchronized(FILE_LOCK) {
+            file.appendText(CorpusCodec.encode(entry) + "\n")
+        }
     }
 
-    @Synchronized
-    fun readAll(): List<CorpusEntry> = if (file.exists()) {
-        file.readLines().mapNotNull(CorpusCodec::decode).sortedByDescending { it.capturedAt }
-    } else {
-        emptyList()
+    fun readAll(): List<CorpusEntry> = synchronized(FILE_LOCK) {
+        if (file.exists()) {
+            file.readLines().mapNotNull(CorpusCodec::decode).sortedByDescending { it.capturedAt }
+        } else {
+            emptyList()
+        }
     }
 
-    @Synchronized
     fun clear() {
-        file.delete()
+        synchronized(FILE_LOCK) {
+            file.delete()
+        }
     }
 
-    @Synchronized
     fun exportReadable(target: File): File {
         target.parentFile?.mkdirs()
         target.writeText(readAll().joinToString(separator = "\n\n", transform = CorpusFormatter::describe))
@@ -36,5 +38,6 @@ class CorpusStore(directory: File) {
     companion object {
         const val DIRECTORY = "corpus"
         private const val CORPUS_FILE = "corpus.tsv"
+        private val FILE_LOCK = Any()
     }
 }

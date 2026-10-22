@@ -5,6 +5,7 @@ object KnownApps {
         mapOf(
             "com.nu.production" to "Nubank",
             "br.com.intermedium" to "Inter",
+            "com.itau" to "Itaú",
             "br.com.itau.internet" to "Itaú",
             "com.mercadopago.wallet" to "Mercado Pago",
             "com.caju.employeeApp" to "Caju",

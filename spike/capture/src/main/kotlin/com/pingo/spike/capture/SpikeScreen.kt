@@ -83,7 +83,10 @@ private fun SpikeBody() {
             onExport = { scope.launch { shareCorpus(context, store) } },
             onClear = {
                 scope.launch {
-                    withContext(Dispatchers.IO) { store.clear() }
+                    withContext(Dispatchers.IO) {
+                        store.clear()
+                        File(context.cacheDir, EXPORTS_DIRECTORY).deleteRecursively()
+                    }
                     entries = emptyList()
                 }
             },

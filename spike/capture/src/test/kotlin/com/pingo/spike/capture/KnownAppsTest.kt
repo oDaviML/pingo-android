@@ -8,9 +8,10 @@ import org.junit.Test
 class KnownAppsTest {
     @Test
     fun recognizesTheFiveInstitutions() {
-        assertEquals(5, KnownApps.packages.size)
+        assertEquals(6, KnownApps.packages.size)
         assertTrue(KnownApps.isKnown("com.nu.production"))
         assertTrue(KnownApps.isKnown("br.com.intermedium"))
+        assertTrue(KnownApps.isKnown("com.itau"))
         assertTrue(KnownApps.isKnown("br.com.itau.internet"))
         assertTrue(KnownApps.isKnown("com.mercadopago.wallet"))
         assertTrue(KnownApps.isKnown("com.caju.employeeApp"))
