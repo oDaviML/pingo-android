@@ -24,6 +24,7 @@ object AppModule {
         clientId = BuildConfig.AUTH0_CLIENT_ID,
         scheme = BuildConfig.AUTH0_SCHEME,
         audience = BuildConfig.AUTH0_AUDIENCE,
+        googleWebClientId = BuildConfig.AUTH0_GOOGLE_WEB_CLIENT_ID,
     )
 
     @Provides

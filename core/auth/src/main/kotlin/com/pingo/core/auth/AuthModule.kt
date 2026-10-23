@@ -15,5 +15,9 @@ abstract class AuthModule {
 
     @Binds
     @Singleton
+    abstract fun bindGoogleSignIn(implementation: CredentialManagerGoogleSignIn): GoogleSignIn
+
+    @Binds
+    @Singleton
     abstract fun bindAuthRepository(implementation: Auth0Repository): AuthRepository
 }

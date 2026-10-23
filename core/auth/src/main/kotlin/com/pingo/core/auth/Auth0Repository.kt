@@ -1,10 +1,10 @@
 package com.pingo.core.auth
 
 import android.app.Activity
+import android.util.Log
 import com.auth0.android.Auth0
 import com.auth0.android.authentication.AuthenticationAPIClient
 import com.auth0.android.authentication.AuthenticationException
-import com.auth0.android.provider.WebAuthProvider
 import com.auth0.android.result.Credentials
 import com.pingo.core.common.AppDispatchers
 import kotlinx.coroutines.CancellationException
@@ -24,6 +24,7 @@ import javax.inject.Singleton
 class Auth0Repository @Inject constructor(
     private val config: Auth0Config,
     private val tokenStore: TokenStore,
+    private val googleSignIn: GoogleSignIn,
     private val dispatchers: AppDispatchers,
 ) : AuthRepository {
     private val account: Auth0? = if (config.domain.isNotBlank() && config.clientId.isNotBlank()) {
@@ -49,27 +50,37 @@ class Auth0Repository @Inject constructor(
     }
 
     override suspend fun loginWithGoogle(activity: Activity): LoginResult = withContext(dispatchers.io) {
-        val account = account ?: return@withContext LoginResult.Failure
+        val client = authentication ?: return@withContext LoginResult.Failure
 
-        try {
-            val credentials = WebAuthProvider.login(account)
-                .withScheme(config.scheme)
-                .withConnection(GOOGLE_CONNECTION)
-                .withScope(SCOPE)
-                .withAudience(config.audience)
-                .await(activity)
+        when (val google = googleSignIn.signIn(activity)) {
+            is GoogleSignInResult.Success -> loginWithGoogleIdToken(client, google.idToken)
 
-            tokenStore.write(credentials.toStoredTokens())
-            mutableSession.value = SessionState.LoggedIn
+            GoogleSignInResult.Cancelled -> LoginResult.Cancelled
 
-            LoginResult.Success
-        } catch (exception: CancellationException) {
-            throw exception
-        } catch (exception: AuthenticationException) {
-            if (exception.isCanceled) LoginResult.Cancelled else LoginResult.Failure
-        } catch (exception: Exception) {
-            LoginResult.Failure
+            GoogleSignInResult.Failure -> LoginResult.Failure
         }
+    }
+
+    private suspend fun loginWithGoogleIdToken(client: AuthenticationAPIClient, idToken: String): LoginResult = try {
+        val credentials = client.loginWithNativeSocialToken(idToken, GOOGLE_ID_TOKEN_TYPE)
+            .validateClaims()
+            .setScope(SCOPE)
+            .setAudience(config.audience)
+            .await()
+
+        tokenStore.write(credentials.toStoredTokens())
+        mutableSession.value = SessionState.LoggedIn
+
+        LoginResult.Success
+    } catch (exception: CancellationException) {
+        throw exception
+    } catch (exception: AuthenticationException) {
+        Log.w(TAG, "Falha no login Auth0 (${exception.getCode()}): ${exception.getDescription()}")
+
+        if (exception.isCanceled) LoginResult.Cancelled else LoginResult.Failure
+    } catch (exception: Exception) {
+        Log.w(TAG, "Falha no login: ${exception.javaClass.simpleName}: ${exception.message}")
+        LoginResult.Failure
     }
 
     override suspend fun logout() {
@@ -115,7 +126,8 @@ class Auth0Repository @Inject constructor(
     )
 
     private companion object {
-        const val GOOGLE_CONNECTION = "google-oauth2"
+        const val TAG = "PingoAuth"
+        const val GOOGLE_ID_TOKEN_TYPE = "http://auth0.com/oauth/token-type/google-id-token"
         const val SCOPE = "openid profile email offline_access"
         const val CLOCK_SKEW_MILLIS = 60_000L
     }

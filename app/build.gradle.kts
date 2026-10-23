@@ -24,7 +24,12 @@ android {
         buildConfigField("String", "AUTH0_DOMAIN", "\"${localProperty("pingo.auth0.domain", "")}\"")
         buildConfigField("String", "AUTH0_CLIENT_ID", "\"${localProperty("pingo.auth0.clientId", "")}\"")
         buildConfigField("String", "AUTH0_SCHEME", "\"${localProperty("pingo.auth0.scheme", "pingo")}\"")
-        buildConfigField("String", "AUTH0_AUDIENCE", "\"${localProperty("pingo.auth0.audience", "https://api.pingo.app")}\"")
+        buildConfigField("String", "AUTH0_AUDIENCE", "\"${localProperty("pingo.auth0.audience", "https://api.pingo.app/")}\"")
+        buildConfigField(
+            "String",
+            "AUTH0_GOOGLE_WEB_CLIENT_ID",
+            "\"${localProperty("pingo.auth0.googleWebClientId", "")}\"",
+        )
         buildConfigField("String", "API_BASE_URL", "\"${localProperty("pingo.api.baseUrl", "http://10.0.2.2:8080/")}\"")
         manifestPlaceholders["auth0Domain"] = localProperty("pingo.auth0.domain", "")
         manifestPlaceholders["auth0Scheme"] = localProperty("pingo.auth0.scheme", "pingo")
