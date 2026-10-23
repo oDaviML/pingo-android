@@ -27,4 +27,8 @@ interface UserPreferencesDataSource {
     suspend fun setLastSyncAt(instant: Instant)
 
     suspend fun deviceId(): String
+
+    suspend fun activatedDeviceId(): String?
+
+    suspend fun setActivatedDeviceId(deviceId: String)
 }

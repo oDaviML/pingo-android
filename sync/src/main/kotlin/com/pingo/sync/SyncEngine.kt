@@ -39,7 +39,11 @@ class SyncEngine @Inject constructor(
         preferences.setSyncStatus(SyncStatus.RUNNING)
 
         try {
-            runCatching { deviceActivator.activate() }
+            runCatching { deviceActivator.activate() }.onFailure { exception ->
+                if (exception is CancellationException) {
+                    throw exception
+                }
+            }
 
             val inicio = Instant.now()
             val payload = coletar(preferences.pushCursor() ?: Instant.EPOCH)

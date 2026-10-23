@@ -78,6 +78,14 @@ class UserPreferencesDataSourceImpl @Inject constructor(@param:ApplicationContex
         generated
     }
 
+    override suspend fun activatedDeviceId(): String? = context.userPreferencesDataStore.data.first()[Keys.ACTIVATED_DEVICE_ID]
+
+    override suspend fun setActivatedDeviceId(deviceId: String) {
+        context.userPreferencesDataStore.edit { preferences ->
+            preferences[Keys.ACTIVATED_DEVICE_ID] = deviceId
+        }
+    }
+
     private companion object {
         object Keys {
             val SYNC_STATUS = stringPreferencesKey("sync_status")
@@ -85,6 +93,7 @@ class UserPreferencesDataSourceImpl @Inject constructor(@param:ApplicationContex
             val PUSH_CURSOR = stringPreferencesKey("push_cursor")
             val LAST_SYNC_AT = stringPreferencesKey("last_sync_at")
             val DEVICE_ID = stringPreferencesKey("device_id")
+            val ACTIVATED_DEVICE_ID = stringPreferencesKey("activated_device_id")
         }
     }
 }

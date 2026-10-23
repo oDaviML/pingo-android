@@ -24,6 +24,13 @@ class UserPreferencesDataSourceTest {
     }
 
     @Test
+    fun persisteOAparelhoAtivado() = runBlocking {
+        dataSource.setActivatedDeviceId("device-1")
+
+        assertEquals("device-1", dataSource.activatedDeviceId())
+    }
+
+    @Test
     fun persisteCursoresEEstadoDeSincronizacao() = runBlocking {
         val instante = Instant.parse("2026-10-23T10:00:00Z")
 
