@@ -50,6 +50,8 @@ class HttpPingoApiClient @Inject constructor(
         val response = execute(request(token))
 
         if (response.code == UNAUTHORIZED) {
+            response.close()
+
             val refreshed = authRepository.accessToken(forceRefresh = true)
                 ?: throw PingoApiException(UNAUTHORIZED, "not_authenticated")
 

@@ -26,8 +26,12 @@ class Auth0Repository @Inject constructor(
     private val tokenStore: TokenStore,
     private val dispatchers: AppDispatchers,
 ) : AuthRepository {
-    private val account = Auth0.getInstance(config.clientId, config.domain)
-    private val authentication = AuthenticationAPIClient(account)
+    private val account: Auth0? = if (config.domain.isNotBlank() && config.clientId.isNotBlank()) {
+        Auth0.getInstance(config.clientId, config.domain)
+    } else {
+        null
+    }
+    private val authentication: AuthenticationAPIClient? = account?.let(::AuthenticationAPIClient)
     private val refreshMutex = Mutex()
     private val sessionScope = CoroutineScope(SupervisorJob() + dispatchers.io)
     private val mutableSession = MutableStateFlow(SessionState.Loading)
@@ -45,6 +49,8 @@ class Auth0Repository @Inject constructor(
     }
 
     override suspend fun loginWithGoogle(activity: Activity): LoginResult = withContext(dispatchers.io) {
+        val account = account ?: return@withContext LoginResult.Failure
+
         try {
             val credentials = WebAuthProvider.login(account)
                 .withScheme(config.scheme)
@@ -72,6 +78,7 @@ class Auth0Repository @Inject constructor(
     }
 
     override suspend fun accessToken(forceRefresh: Boolean): String? = refreshMutex.withLock {
+        val client = authentication ?: return@withLock null
         val tokens = tokenStore.read() ?: return@withLock null
         val valid = tokens.expiresAtEpochMillis - CLOCK_SKEW_MILLIS > System.currentTimeMillis()
 
@@ -82,14 +89,14 @@ class Auth0Repository @Inject constructor(
         val refreshToken = tokens.refreshToken ?: return@withLock tokens.accessToken.takeIf { valid }
 
         runCatching {
-            authentication.renewAuth(refreshToken = refreshToken, audience = config.audience).await()
+            client.renewAuth(refreshToken = refreshToken, audience = config.audience).await()
         }.fold(
             onSuccess = { credentials ->
                 tokenStore.write(credentials.toStoredTokens(fallbackRefreshToken = refreshToken))
                 credentials.accessToken
             },
             onFailure = { exception ->
-                if (exception is AuthenticationException && exception.isRefreshTokenDeleted) {
+                if (exception is AuthenticationException && exception.invalidatesSession()) {
                     tokenStore.clear()
                     mutableSession.value = SessionState.LoggedOut
                 }
@@ -98,6 +105,8 @@ class Auth0Repository @Inject constructor(
             },
         )
     }
+
+    private fun AuthenticationException.invalidatesSession(): Boolean = isRefreshTokenDeleted || isInvalidRefreshToken
 
     private fun Credentials.toStoredTokens(fallbackRefreshToken: String? = null): StoredTokens = StoredTokens(
         accessToken = accessToken,
