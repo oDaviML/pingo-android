@@ -459,6 +459,14 @@ class SyncEngineTest {
         }
 
         override suspend fun deviceId(): String = "device-test"
+
+        override suspend fun consentVersion(): String? = null
+
+        override suspend fun consentAt(): Instant? = null
+
+        override suspend fun setConsent(version: String, instant: Instant) = Unit
+
+        override suspend fun clear() = Unit
     }
 
     private class FakeAuth(private val state: SessionState = SessionState.LoggedIn) : AuthRepository {
