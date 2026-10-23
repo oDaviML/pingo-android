@@ -9,6 +9,9 @@ import com.pingo.core.datastore.UserPreferencesDataSource
 import com.pingo.core.network.PingoApiClient
 import com.pingo.core.network.sync.PublicIdAliasDto
 import com.pingo.core.network.sync.PushChangesPayload
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,19 +28,26 @@ class SyncEngine @Inject constructor(
     private val authRepository: AuthRepository,
 ) : SyncRunner {
     private val applier = SyncApplier(database)
+    private val syncMutex = Mutex()
 
-    override suspend fun run() {
+    override suspend fun run() = syncMutex.withLock {
         if (authRepository.session.value != SessionState.LoggedIn) {
-            return
+            return@withLock
         }
 
         preferences.setSyncStatus(SyncStatus.RUNNING)
 
         try {
+            val inicio = Instant.now()
+            val payload = coletar(preferences.pushCursor() ?: Instant.EPOCH)
+
             pull()
-            push()
+            push(payload = payload, inicio = inicio)
+
             preferences.setLastSyncAt(Instant.now())
             preferences.setSyncStatus(SyncStatus.IDLE)
+        } catch (exception: CancellationException) {
+            throw exception
         } catch (exception: Exception) {
             preferences.setSyncStatus(SyncStatus.FAILED)
             throw exception
@@ -49,22 +59,19 @@ class SyncEngine @Inject constructor(
 
         applier.apply(result)
 
-        preferences.setPullCursor(result.proximoCursor)
+        result.proximoCursor?.let { cursor -> preferences.setPullCursor(cursor) }
     }
 
-    private suspend fun push() {
-        val inicio = Instant.now()
-        val payload = coletar(preferences.pushCursor() ?: Instant.EPOCH)
-
-        preferences.setPushCursor(inicio)
-
+    private suspend fun push(payload: PushChangesPayload, inicio: Instant) {
         if (payload.isEmpty) {
+            preferences.setPushCursor(inicio)
             return
         }
 
         val result = api.pushChanges(payload)
 
         aplicarAliases(result.aliases)
+        preferences.setPushCursor(inicio)
     }
 
     private suspend fun coletar(desde: Instant): PushChangesPayload = PushChangesPayload(
