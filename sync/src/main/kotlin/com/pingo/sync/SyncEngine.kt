@@ -26,6 +26,7 @@ class SyncEngine @Inject constructor(
     private val database: PingoDatabase,
     private val preferences: UserPreferencesDataSource,
     private val authRepository: AuthRepository,
+    private val deviceActivator: DeviceActivator,
 ) : SyncRunner {
     private val applier = SyncApplier(database)
     private val syncMutex = Mutex()
@@ -38,6 +39,8 @@ class SyncEngine @Inject constructor(
         preferences.setSyncStatus(SyncStatus.RUNNING)
 
         try {
+            runCatching { deviceActivator.activate() }
+
             val inicio = Instant.now()
             val payload = coletar(preferences.pushCursor() ?: Instant.EPOCH)
 
