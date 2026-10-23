@@ -12,6 +12,7 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.pingo.core.common.AppDispatchers
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import java.security.SecureRandom
 import javax.inject.Inject
 
@@ -35,11 +36,12 @@ class CredentialManagerGoogleSignIn @Inject constructor(private val config: Auth
         }
 
         try {
+            val nonce = nonce()
             val option = GetGoogleIdOption.Builder()
                 .setServerClientId(config.googleWebClientId)
                 .setFilterByAuthorizedAccounts(false)
                 .setAutoSelectEnabled(false)
-                .setNonce(nonce())
+                .setNonce(nonce)
                 .build()
             val request = GetCredentialRequest.Builder()
                 .addCredentialOption(option)
@@ -49,7 +51,13 @@ class CredentialManagerGoogleSignIn @Inject constructor(private val config: Auth
                 .credential
 
             if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-                GoogleSignInResult.Success(GoogleIdTokenCredential.createFrom(credential.data).idToken)
+                val idToken = GoogleIdTokenCredential.createFrom(credential.data).idToken
+
+                if (nonceMatches(idToken, nonce)) {
+                    GoogleSignInResult.Success(idToken)
+                } else {
+                    GoogleSignInResult.Failure
+                }
             } else {
                 GoogleSignInResult.Failure
             }
@@ -62,6 +70,16 @@ class CredentialManagerGoogleSignIn @Inject constructor(private val config: Auth
             GoogleSignInResult.Failure
         }
     }
+
+    private fun nonceMatches(idToken: String, expected: String): Boolean = runCatching {
+        val payload = idToken.split('.').getOrNull(1) ?: return@runCatching false
+        val json = String(
+            Base64.decode(payload, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING),
+            Charsets.UTF_8,
+        )
+
+        JSONObject(json).optString("nonce") == expected
+    }.getOrDefault(false)
 
     private fun nonce(): String {
         val bytes = ByteArray(NONCE_BYTES)

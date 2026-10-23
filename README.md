@@ -36,7 +36,7 @@ O login usa o **Credential Manager** do Android (seletor nativo de contas Google
 
 Pré-requisitos:
 - **Google Cloud**: OAuth client **Android** (package `com.pingo` + SHA-1 do keystore) e OAuth client **Web**.
-- **Auth0**: conexão Google configurada com o **Web client ID/secret**; na Native App, *Advanced Settings → Device Settings*, habilitar **Enable Sign in with Google (Android 4.4+) using Credentials Manager** e definir o **App Package Name** `com.pingo`.
+- **Auth0**: conexão Google configurada com o **Web client ID/secret**; na Native App, *Advanced Settings → Device Settings*, habilitar **Enable Sign in with Google (Android 4.4+) using Credentials Manager** e definir o **App Package Name** `com.pingo`. Na API (`https://api.pingo.app/`), habilitar **Allow Offline Access** para receber refresh token.
 
 Configure os valores fora do repositório, em `local.properties` (ou variáveis de ambiente do CI):
 

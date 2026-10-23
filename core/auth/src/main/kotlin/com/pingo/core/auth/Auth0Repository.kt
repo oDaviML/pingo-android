@@ -41,11 +41,17 @@ class Auth0Repository @Inject constructor(
 
     init {
         sessionScope.launch {
-            mutableSession.value = if (tokenStore.read() == null) {
-                SessionState.LoggedOut
-            } else {
-                SessionState.LoggedIn
+            val tokens = tokenStore.read()
+            val usable = tokens != null && (
+                tokens.refreshToken != null ||
+                    tokens.expiresAtEpochMillis - CLOCK_SKEW_MILLIS > System.currentTimeMillis()
+                )
+
+            if (!usable) {
+                tokenStore.clear()
             }
+
+            mutableSession.value = if (usable) SessionState.LoggedIn else SessionState.LoggedOut
         }
     }
 
@@ -97,7 +103,18 @@ class Auth0Repository @Inject constructor(
             return@withLock tokens.accessToken
         }
 
-        val refreshToken = tokens.refreshToken ?: return@withLock tokens.accessToken.takeIf { valid }
+        val refreshToken = tokens.refreshToken
+
+        if (refreshToken == null) {
+            if (valid) {
+                return@withLock tokens.accessToken
+            }
+
+            tokenStore.clear()
+            mutableSession.value = SessionState.LoggedOut
+
+            return@withLock null
+        }
 
         runCatching {
             client.renewAuth(refreshToken = refreshToken, audience = config.audience).await()
