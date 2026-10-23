@@ -13,6 +13,8 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                 defaultConfig {
                     minSdk = minSdkVersion()
                     testInstrumentationRunner = AndroidConfig.TEST_INSTRUMENTATION_RUNNER
+                    manifestPlaceholders.putIfAbsent("auth0Domain", "")
+                    manifestPlaceholders.putIfAbsent("auth0Scheme", "pingo")
                 }
                 compileOptions {
                     sourceCompatibility = javaVersion()

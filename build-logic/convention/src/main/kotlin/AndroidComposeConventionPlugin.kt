@@ -16,7 +16,7 @@ class AndroidComposeConventionPlugin : Plugin<Project> {
             dependencies.add("implementation", dependencies.platform(libs.findLibrary("compose-bom").get()))
             dependencies.add("implementation", libs.findLibrary("compose-ui").get())
             dependencies.add("implementation", libs.findLibrary("compose-ui-tooling-preview").get())
-            dependencies.add("implementation", libs.findLibrary("compose-material3").get())
+            dependencies.add("implementation", libs.findLibrary("compose-foundation").get())
             dependencies.add("debugImplementation", libs.findLibrary("compose-ui-tooling").get())
             dependencies.add("androidTestImplementation", dependencies.platform(libs.findLibrary("compose-bom").get()))
             dependencies.add("androidTestImplementation", libs.findLibrary("compose-ui-test-junit4").get())

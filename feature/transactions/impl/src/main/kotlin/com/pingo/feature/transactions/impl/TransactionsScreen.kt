@@ -1,9 +1,9 @@
 package com.pingo.feature.transactions.impl
 
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.pingo.core.designsystem.component.PingoText
 
 @Composable
 fun TransactionsScreen() {
-    Text(text = "Transações")
+    PingoText(text = "Transações")
 }
