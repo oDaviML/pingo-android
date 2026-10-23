@@ -161,6 +161,24 @@ class SyncEngineTest {
     }
 
     @Test
+    fun `falha no push mantem o cursor e reenvia no retry`() = runTest {
+        database.contaDao().upsert(contaEntity("conta-1"))
+        api.pushFailure = IOException("sem rede")
+
+        runCatching { engine.run() }
+
+        assertNull(preferences.pushCursorValue)
+        assertEquals(0, api.pushCalls)
+
+        api.pushFailure = null
+        engine.run()
+
+        assertEquals(1, api.pushCalls)
+        assertEquals(1, api.pushed?.contas?.size)
+        assertNotNull(preferences.pushCursorValue)
+    }
+
+    @Test
     fun `sem sessao nao sincroniza`() = runTest {
         val semSessao = SyncEngine(api, database, preferences, FakeAuth(SessionState.LoggedOut))
 
@@ -241,6 +259,7 @@ class SyncEngineTest {
         var pullResult = PullChangesResult(servidorEm = Instant.EPOCH.toString())
         var pushResult = PushChangesResult()
         var failure: Exception? = null
+        var pushFailure: Exception? = null
         var pushed: PushChangesPayload? = null
         var pullCalls = 0
         var pushCalls = 0
@@ -250,7 +269,7 @@ class SyncEngineTest {
         override suspend fun getProfile(): ApiProfile = error("nao usado")
 
         override suspend fun pushChanges(payload: PushChangesPayload): PushChangesResult {
-            failure?.let { throw it }
+            (pushFailure ?: failure)?.let { throw it }
             pushCalls++
             pushed = payload
             return pushResult
@@ -287,6 +306,9 @@ class SyncEngineTest {
         }
 
         override suspend fun pushCursor(): Instant? = push
+
+        val pushCursorValue: Instant?
+            get() = push
 
         override suspend fun setPushCursor(instant: Instant) {
             push = instant
