@@ -1,8 +1,19 @@
+import java.util.Properties
+
 plugins {
     id("pingo.android.application")
     id("pingo.android.compose")
     id("pingo.android.hilt")
 }
+
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) {
+        file.inputStream().use { load(it) }
+    }
+}
+
+fun localProperty(key: String, fallback: String): String = localProperties.getProperty(key) ?: System.getenv(key) ?: fallback
 
 android {
     namespace = "com.pingo"
@@ -10,12 +21,24 @@ android {
         applicationId = "com.pingo"
         versionCode = 1
         versionName = "0.1.0"
+        buildConfigField("String", "AUTH0_DOMAIN", "\"${localProperty("pingo.auth0.domain", "")}\"")
+        buildConfigField("String", "AUTH0_CLIENT_ID", "\"${localProperty("pingo.auth0.clientId", "")}\"")
+        buildConfigField("String", "AUTH0_SCHEME", "\"${localProperty("pingo.auth0.scheme", "pingo")}\"")
+        buildConfigField("String", "AUTH0_AUDIENCE", "\"${localProperty("pingo.auth0.audience", "https://api.pingo.app")}\"")
+        buildConfigField("String", "API_BASE_URL", "\"${localProperty("pingo.api.baseUrl", "http://10.0.2.2:8080/")}\"")
+        manifestPlaceholders["auth0Domain"] = localProperty("pingo.auth0.domain", "")
+        manifestPlaceholders["auth0Scheme"] = localProperty("pingo.auth0.scheme", "pingo")
+    }
+    buildFeatures {
+        buildConfig = true
     }
 }
 
 dependencies {
+    implementation(project(":core:auth"))
     implementation(project(":core:common"))
     implementation(project(":core:designsystem"))
+    implementation(project(":core:network"))
     implementation(project(":core:ui"))
     implementation(project(":sync"))
     implementation(project(":feature:onboarding:api"))
