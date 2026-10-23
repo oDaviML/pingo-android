@@ -14,6 +14,8 @@ interface PingoApiClient {
     suspend fun pushChanges(payload: PushChangesPayload): PushChangesResult
 
     suspend fun pullChanges(cursor: String?): PullChangesResult
+
+    suspend fun activateDevice(deviceId: String, deviceName: String?): ApiDevice
 }
 
 data class ApiProfile(

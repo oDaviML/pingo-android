@@ -75,6 +75,21 @@ class HttpPingoApiClient @Inject constructor(
         json.decodeFromString(PullChangesResult.serializer(), body)
     }
 
+    override suspend fun activateDevice(deviceId: String, deviceName: String?): ApiDevice = withContext(dispatchers.io) {
+        val body = executeAuthenticated { token ->
+            postJson(
+                url = "$baseUrl/account/devices/activate",
+                token = token,
+                body = json.encodeToString(
+                    ActivateDeviceRequestDto.serializer(),
+                    ActivateDeviceRequestDto(deviceId = deviceId, deviceName = deviceName),
+                ),
+            )
+        }
+
+        json.decodeFromString<ActivateDeviceResponseDto>(body).toModel()
+    }
+
     private fun postJson(url: String, token: String, body: String): Request = Request.Builder()
         .url(url)
         .header(AUTHORIZATION_HEADER, "Bearer $token")
@@ -117,6 +132,12 @@ class HttpPingoApiClient @Inject constructor(
         aparelhoAtivoId = aparelhoAtivoId,
         aparelhoAtivoNome = aparelhoAtivoNome,
         aparelhoAtivoEm = aparelhoAtivoEm,
+    )
+
+    private fun ActivateDeviceResponseDto.toModel() = ApiDevice(
+        deviceId = deviceId,
+        deviceName = deviceName,
+        activatedAt = activatedAt,
     )
 
     private companion object {
