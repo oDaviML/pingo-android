@@ -18,10 +18,31 @@ class OnboardingScreenTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
+    fun mostraBoasVindasComoPrimeiroPasso() {
+        composeRule.setContent {
+            PingoTheme {
+                OnboardingContent(
+                    state = OnboardingUiState(),
+                    onStart = {},
+                    onLogin = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Passo 1 de 8").assertIsDisplayed()
+        composeRule.onNodeWithText("Seu dinheiro,\ngota a gota").assertIsDisplayed()
+        composeRule.onNodeWithText("Começar").assertIsDisplayed()
+    }
+
+    @Test
     fun mostraPassoDeLoginComIdentidadeEGuiaDePrivacidade() {
         composeRule.setContent {
             PingoTheme {
-                OnboardingContent(state = OnboardingUiState(), onLogin = {}, onSkip = {})
+                OnboardingContent(
+                    state = OnboardingUiState(currentStep = 2),
+                    onStart = {},
+                    onLogin = {},
+                )
             }
         }
 
@@ -38,9 +59,9 @@ class OnboardingScreenTest {
         composeRule.setContent {
             PingoTheme {
                 OnboardingContent(
-                    state = OnboardingUiState(login = LoginUiState.Error),
+                    state = OnboardingUiState(currentStep = 2, login = LoginUiState.Error),
+                    onStart = {},
                     onLogin = { attempts++ },
-                    onSkip = {},
                 )
             }
         }
@@ -59,9 +80,9 @@ class OnboardingScreenTest {
         composeRule.setContent {
             PingoTheme {
                 OnboardingContent(
-                    state = OnboardingUiState(login = LoginUiState.Loading),
+                    state = OnboardingUiState(currentStep = 2, login = LoginUiState.Loading),
+                    onStart = {},
                     onLogin = { attempts++ },
-                    onSkip = {},
                 )
             }
         }

@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pingo.core.designsystem.component.OnboardingStepper
+import com.pingo.core.designsystem.component.PingoButton
 import com.pingo.core.designsystem.component.PingoIcon
 import com.pingo.core.designsystem.component.PingoMascot
 import com.pingo.core.designsystem.component.PingoSpinner
@@ -57,13 +58,13 @@ fun OnboardingScreen(onContinue: () -> Unit, viewModel: OnboardingViewModel = hi
 
     OnboardingContent(
         state = state,
+        onStart = viewModel::goToLogin,
         onLogin = { activity?.let(viewModel::loginWithGoogle) },
-        onSkip = onContinue,
     )
 }
 
 @Composable
-fun OnboardingContent(state: OnboardingUiState, onLogin: () -> Unit, onSkip: () -> Unit, modifier: Modifier = Modifier) {
+fun OnboardingContent(state: OnboardingUiState, onStart: () -> Unit, onLogin: () -> Unit, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -72,33 +73,80 @@ fun OnboardingContent(state: OnboardingUiState, onLogin: () -> Unit, onSkip: () 
         OnboardingStepper(
             currentStep = state.currentStep,
             totalSteps = state.totalSteps,
-            onSkip = onSkip,
         )
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = PingoSpacing.xxl, vertical = PingoSpacing.xxl),
-            verticalArrangement = Arrangement.spacedBy(PingoSpacing.lg),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Spacer(modifier = Modifier.weight(1f))
-
-            LoginHero()
-
-            GoogleSignInButton(
-                loading = state.login == LoginUiState.Loading,
-                onClick = onLogin,
-            )
-
-            if (state.login == LoginUiState.Error) {
-                LoginErrorMessage()
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            PrivacyHint()
+        if (state.currentStep == WELCOME_STEP) {
+            WelcomeStep(onStart = onStart)
+        } else {
+            LoginStep(state = state, onLogin = onLogin)
         }
+    }
+}
+
+@Composable
+private fun WelcomeStep(onStart: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = PingoSpacing.xxl, vertical = PingoSpacing.xxl),
+        verticalArrangement = Arrangement.spacedBy(PingoSpacing.lg),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Spacer(modifier = Modifier.weight(1f))
+
+        PingoMascot(width = 182.dp)
+
+        PingoText(
+            text = "Seu dinheiro,\ngota a gota",
+            style = PingoTheme.typography.display,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        PingoText(
+            text = "O Pingo lê as notificações dos seus bancos e registra cada compra, Pix e recebimento sozinho. Sem digitar nada.",
+            style = PingoTheme.typography.body,
+            color = PingoTheme.colors.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        PingoButton(
+            text = "Começar",
+            onClick = onStart,
+            modifier = Modifier.fillMaxWidth(),
+            fillWidth = true,
+        )
+    }
+}
+
+@Composable
+private fun LoginStep(state: OnboardingUiState, onLogin: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = PingoSpacing.xxl, vertical = PingoSpacing.xxl),
+        verticalArrangement = Arrangement.spacedBy(PingoSpacing.lg),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Spacer(modifier = Modifier.weight(1f))
+
+        LoginHero()
+
+        GoogleSignInButton(
+            loading = state.login == LoginUiState.Loading,
+            onClick = onLogin,
+        )
+
+        if (state.login == LoginUiState.Error) {
+            LoginErrorMessage()
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        PrivacyHint()
     }
 }
 
@@ -219,5 +267,7 @@ private fun Context.findActivity(): Activity? {
 
     return null
 }
+
+private const val WELCOME_STEP = 1
 
 private val GoogleBlue = androidx.compose.ui.graphics.Color(0xFF4285F4)

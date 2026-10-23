@@ -19,6 +19,10 @@ class OnboardingViewModel @Inject constructor(private val authRepository: AuthRe
 
     val uiState: StateFlow<OnboardingUiState> = mutableUiState.asStateFlow()
 
+    fun goToLogin() {
+        mutableUiState.update { it.copy(currentStep = LOGIN_STEP) }
+    }
+
     fun loginWithGoogle(activity: Activity) {
         if (mutableUiState.value.login == LoginUiState.Loading) {
             return
@@ -37,5 +41,9 @@ class OnboardingViewModel @Inject constructor(private val authRepository: AuthRe
                 LoginResult.Failure -> mutableUiState.update { it.copy(login = LoginUiState.Error) }
             }
         }
+    }
+
+    private companion object {
+        const val LOGIN_STEP = 2
     }
 }

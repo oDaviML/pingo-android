@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -42,6 +43,7 @@ enum class PingoButtonSize {
     Small,
 }
 
+@Suppress("LongParameterList")
 @Composable
 fun PingoButton(
     text: String,
@@ -51,6 +53,7 @@ fun PingoButton(
     size: PingoButtonSize = PingoButtonSize.Medium,
     enabled: Boolean = true,
     loading: Boolean = false,
+    fillWidth: Boolean = false,
 ) {
     val active = enabled && !loading
     val interactionSource = remember { MutableInteractionSource() }
@@ -69,12 +72,18 @@ fun PingoButton(
             ),
         contentAlignment = Alignment.Center,
     ) {
-        ButtonSurface(appearance = appearance, size = size, loading = loading, text = text)
+        ButtonSurface(
+            appearance = appearance,
+            size = size,
+            loading = loading,
+            text = text,
+            fillWidth = fillWidth,
+        )
     }
 }
 
 @Composable
-private fun ButtonSurface(appearance: ButtonAppearance, size: PingoButtonSize, loading: Boolean, text: String) {
+private fun ButtonSurface(appearance: ButtonAppearance, size: PingoButtonSize, loading: Boolean, text: String, fillWidth: Boolean) {
     val visualHeight = if (size == PingoButtonSize.Medium) 48.dp else 36.dp
     val textStyle = if (size == PingoButtonSize.Medium) {
         PingoTheme.typography.label
@@ -85,6 +94,7 @@ private fun ButtonSurface(appearance: ButtonAppearance, size: PingoButtonSize, l
 
     Row(
         modifier = Modifier
+            .then(if (fillWidth) Modifier.fillMaxWidth() else Modifier)
             .height(visualHeight)
             .background(color = appearance.container, shape = shape)
             .borderWhen(appearance.border, shape)
