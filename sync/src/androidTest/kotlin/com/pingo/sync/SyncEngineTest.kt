@@ -203,9 +203,13 @@ class SyncEngineTest {
     }
 
     @Test
-    fun `ativa o aparelho apenas uma vez por processo`() = runTest {
+    fun `ativa o aparelho apenas uma vez por dispositivo`() = runTest {
         engine.run()
         engine.run()
+
+        assertEquals(1, api.activateCalls)
+
+        DeviceActivator(api, preferences).activate()
 
         assertEquals(1, api.activateCalls)
     }
@@ -247,6 +251,7 @@ class SyncEngineTest {
         assertNotNull(database.contaDao().buscar("conta-1"))
         assertNotNull(database.instrumentoDao().buscar("instrumento-1"))
         assertEquals(4290L, database.lancamentoDao().buscar("lancamento-1")?.valorCentavos)
+        assertEquals(0, api.pushCalls)
     }
 
     @Test
@@ -375,6 +380,7 @@ class SyncEngineTest {
         private var pull: String? = null
         private var push: Instant? = null
         private var last: Instant? = null
+        private var activated: String? = null
 
         override val syncStatus: Flow<SyncStatus> = statusFlow
 
@@ -401,6 +407,12 @@ class SyncEngineTest {
 
         override suspend fun setLastSyncAt(instant: Instant) {
             last = instant
+        }
+
+        override suspend fun activatedDeviceId(): String? = activated
+
+        override suspend fun setActivatedDeviceId(deviceId: String) {
+            activated = deviceId
         }
 
         override suspend fun deviceId(): String = "device-test"

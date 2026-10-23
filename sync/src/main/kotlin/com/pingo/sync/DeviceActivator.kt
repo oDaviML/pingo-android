@@ -11,24 +11,21 @@ import javax.inject.Singleton
 @Singleton
 class DeviceActivator @Inject constructor(private val api: PingoApiClient, private val preferences: UserPreferencesDataSource) {
     private val mutex = Mutex()
-    private var activated = false
 
     suspend fun activate() {
-        if (activated) {
-            return
-        }
-
         mutex.withLock {
-            if (activated) {
+            val deviceId = preferences.deviceId()
+
+            if (preferences.activatedDeviceId() == deviceId) {
                 return
             }
 
             api.activateDevice(
-                deviceId = preferences.deviceId(),
+                deviceId = deviceId,
                 deviceName = Build.MODEL,
             )
 
-            activated = true
+            preferences.setActivatedDeviceId(deviceId)
         }
     }
 }
