@@ -44,6 +44,8 @@ pingo.api.baseUrl=http://10.0.2.2:8080/
 
 O `app` injeta esses valores via `BuildConfig` e `manifestPlaceholders`; o `core:auth` lê o token do Keystore e o `core:network` o envia como `Authorization: Bearer` nas chamadas à API.
 
+Em builds **debug**, o `network_security_config` permite cleartext apenas para `10.0.2.2` e `localhost` (emulador); os demais builds exigem HTTPS.
+
 ## Documentação
 
 - [AGENTS.md](AGENTS.md) — contexto, arquitetura, comandos, boas práticas e fluxo de PRs
