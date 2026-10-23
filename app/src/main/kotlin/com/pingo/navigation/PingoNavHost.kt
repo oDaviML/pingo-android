@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -33,11 +34,7 @@ import com.pingo.feature.transactions.impl.TransactionsScreen
 @Composable
 fun PingoNavHost(session: SessionState) {
     if (session == SessionState.Loading) {
-        androidx.compose.foundation.layout.Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(PingoTheme.colors.background),
-        )
+        LoadingScreen()
         return
     }
 
@@ -64,6 +61,26 @@ fun PingoNavHost(session: SessionState) {
         composable(ReportsRoute.ROUTE) { ReportsScreen() }
         composable(ReviewRoute.ROUTE) { ReviewScreen() }
         composable(CaptureStatusRoute.ROUTE) { CaptureStatusScreen() }
-        composable(SettingsRoute.ROUTE) { SettingsScreen() }
+        composable(SettingsRoute.ROUTE) {
+            SettingsScreen(
+                onBack = { navController.popBackStack() },
+                onAccountDeleted = { navController.toOnboarding() },
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoadingScreen() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(PingoTheme.colors.background),
+    )
+}
+
+private fun NavHostController.toOnboarding() {
+    navigate(OnboardingRoute.ROUTE) {
+        popUpTo(0)
     }
 }

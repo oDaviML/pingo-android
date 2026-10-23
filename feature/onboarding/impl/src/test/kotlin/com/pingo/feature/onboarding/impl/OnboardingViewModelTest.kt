@@ -4,13 +4,16 @@ import android.app.Activity
 import com.pingo.core.auth.AuthRepository
 import com.pingo.core.auth.LoginResult
 import com.pingo.core.auth.SessionState
+import com.pingo.core.data.AccountRepository
 import com.pingo.core.testing.TestDispatcherRule
+import com.pingo.core.ui.PRIVACY_TERM_VERSION
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -20,8 +23,9 @@ class OnboardingViewModelTest {
     val dispatcherRule = TestDispatcherRule(UnconfinedTestDispatcher())
 
     private val authRepository = FakeAuthRepository()
+    private val accountRepository = FakeAccountRepository()
 
-    private val viewModel = OnboardingViewModel(authRepository)
+    private val viewModel = OnboardingViewModel(authRepository, accountRepository)
 
     @Test
     fun `inicia nas boas-vindas e avanca para o login`() = runTest {
@@ -33,14 +37,14 @@ class OnboardingViewModelTest {
     }
 
     @Test
-    fun `login com sucesso autentica e volta ao estado ocioso`() = runTest {
+    fun `login com sucesso avanca para o termo lgpd`() = runTest {
         authRepository.result = LoginResult.Success
         viewModel.goToLogin()
 
         viewModel.loginWithGoogle(Activity())
 
         assertEquals(LoginUiState.Idle, viewModel.uiState.value.login)
-        assertTrue(viewModel.uiState.value.authenticated)
+        assertEquals(3, viewModel.uiState.value.currentStep)
     }
 
     @Test
@@ -52,7 +56,6 @@ class OnboardingViewModelTest {
 
         assertEquals(LoginUiState.Idle, viewModel.uiState.value.login)
         assertEquals(2, viewModel.uiState.value.currentStep)
-        assertFalse(viewModel.uiState.value.authenticated)
     }
 
     @Test
@@ -63,14 +66,47 @@ class OnboardingViewModelTest {
         viewModel.loginWithGoogle(Activity())
 
         assertEquals(LoginUiState.Error, viewModel.uiState.value.login)
-        assertFalse(viewModel.uiState.value.authenticated)
 
         authRepository.result = LoginResult.Success
 
         viewModel.loginWithGoogle(Activity())
 
         assertEquals(LoginUiState.Idle, viewModel.uiState.value.login)
-        assertTrue(viewModel.uiState.value.authenticated)
+        assertEquals(3, viewModel.uiState.value.currentStep)
+    }
+
+    @Test
+    fun `aceitar o termo registra o consentimento e conclui`() = runTest {
+        viewModel.toggleConsent(true)
+        viewModel.acceptConsent()
+
+        assertEquals(PRIVACY_TERM_VERSION, accountRepository.recordedVersion)
+        assertEquals(ConsentUiState.Idle, viewModel.uiState.value.consent)
+        assertTrue(viewModel.uiState.value.completed)
+    }
+
+    @Test
+    fun `nao registra consentimento sem aceitar o termo`() = runTest {
+        viewModel.acceptConsent()
+
+        assertNull(accountRepository.recordedVersion)
+        assertFalse(viewModel.uiState.value.completed)
+    }
+
+    @Test
+    fun `falha ao registrar consentimento mostra erro e permite tentar de novo`() = runTest {
+        accountRepository.failure = IllegalStateException("sem rede")
+        viewModel.toggleConsent(true)
+        viewModel.acceptConsent()
+
+        assertEquals(ConsentUiState.Error, viewModel.uiState.value.consent)
+        assertFalse(viewModel.uiState.value.completed)
+
+        accountRepository.failure = null
+        viewModel.acceptConsent()
+
+        assertEquals(ConsentUiState.Idle, viewModel.uiState.value.consent)
+        assertTrue(viewModel.uiState.value.completed)
     }
 
     private class FakeAuthRepository : AuthRepository {
@@ -83,5 +119,17 @@ class OnboardingViewModelTest {
         override suspend fun logout() = Unit
 
         override suspend fun accessToken(forceRefresh: Boolean): String? = null
+    }
+
+    private class FakeAccountRepository : AccountRepository {
+        var failure: Throwable? = null
+        var recordedVersion: String? = null
+
+        override suspend fun recordConsent(version: String) {
+            failure?.let { throw it }
+            recordedVersion = version
+        }
+
+        override suspend fun deleteAccount() = Unit
     }
 }

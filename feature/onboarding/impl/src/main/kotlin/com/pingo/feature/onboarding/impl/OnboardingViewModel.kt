@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pingo.core.auth.AuthRepository
 import com.pingo.core.auth.LoginResult
+import com.pingo.core.data.AccountRepository
+import com.pingo.core.ui.PRIVACY_TERM_VERSION
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +16,10 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class OnboardingViewModel @Inject constructor(private val authRepository: AuthRepository) : ViewModel() {
+class OnboardingViewModel @Inject constructor(
+    private val authRepository: AuthRepository,
+    private val accountRepository: AccountRepository,
+) : ViewModel() {
     private val mutableUiState = MutableStateFlow(OnboardingUiState())
 
     val uiState: StateFlow<OnboardingUiState> = mutableUiState.asStateFlow()
@@ -33,7 +38,7 @@ class OnboardingViewModel @Inject constructor(private val authRepository: AuthRe
 
             when (authRepository.loginWithGoogle(activity)) {
                 LoginResult.Success -> mutableUiState.update {
-                    it.copy(login = LoginUiState.Idle, authenticated = true)
+                    it.copy(login = LoginUiState.Idle, currentStep = CONSENT_STEP)
                 }
 
                 LoginResult.Cancelled -> mutableUiState.update { it.copy(login = LoginUiState.Idle) }
@@ -43,7 +48,38 @@ class OnboardingViewModel @Inject constructor(private val authRepository: AuthRe
         }
     }
 
+    fun toggleConsent(checked: Boolean) {
+        mutableUiState.update { it.copy(consentChecked = checked, consent = ConsentUiState.Idle) }
+    }
+
+    fun showTerm() {
+        mutableUiState.update { it.copy(showTerm = true) }
+    }
+
+    fun dismissTerm() {
+        mutableUiState.update { it.copy(showTerm = false) }
+    }
+
+    fun acceptConsent() {
+        val state = mutableUiState.value
+
+        if (!state.consentChecked || state.consent == ConsentUiState.Loading) {
+            return
+        }
+
+        viewModelScope.launch {
+            mutableUiState.update { it.copy(consent = ConsentUiState.Loading) }
+
+            runCatching { accountRepository.recordConsent(PRIVACY_TERM_VERSION) }
+                .fold(
+                    onSuccess = { mutableUiState.update { it.copy(consent = ConsentUiState.Idle, completed = true) } },
+                    onFailure = { mutableUiState.update { it.copy(consent = ConsentUiState.Error) } },
+                )
+        }
+    }
+
     private companion object {
         const val LOGIN_STEP = 2
+        const val CONSENT_STEP = 3
     }
 }

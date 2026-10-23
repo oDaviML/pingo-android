@@ -86,6 +86,21 @@ class UserPreferencesDataSourceImpl @Inject constructor(@param:ApplicationContex
         }
     }
 
+    override suspend fun consentVersion(): String? = context.userPreferencesDataStore.data.first()[Keys.CONSENT_VERSION]
+
+    override suspend fun consentAt(): Instant? = context.userPreferencesDataStore.data.first()[Keys.CONSENT_AT]?.let(Instant::parse)
+
+    override suspend fun setConsent(version: String, instant: Instant) {
+        context.userPreferencesDataStore.edit { preferences ->
+            preferences[Keys.CONSENT_VERSION] = version
+            preferences[Keys.CONSENT_AT] = instant.toString()
+        }
+    }
+
+    override suspend fun clear() {
+        context.userPreferencesDataStore.edit { preferences -> preferences.clear() }
+    }
+
     private companion object {
         object Keys {
             val SYNC_STATUS = stringPreferencesKey("sync_status")
@@ -94,6 +109,8 @@ class UserPreferencesDataSourceImpl @Inject constructor(@param:ApplicationContex
             val LAST_SYNC_AT = stringPreferencesKey("last_sync_at")
             val DEVICE_ID = stringPreferencesKey("device_id")
             val ACTIVATED_DEVICE_ID = stringPreferencesKey("activated_device_id")
+            val CONSENT_VERSION = stringPreferencesKey("consent_version")
+            val CONSENT_AT = stringPreferencesKey("consent_at")
         }
     }
 }

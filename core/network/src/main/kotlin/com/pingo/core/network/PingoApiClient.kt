@@ -16,6 +16,10 @@ interface PingoApiClient {
     suspend fun pullChanges(cursor: String?): PullChangesResult
 
     suspend fun activateDevice(deviceId: String, deviceName: String?): ApiDevice
+
+    suspend fun recordConsent(version: String)
+
+    suspend fun deleteAccount()
 }
 
 data class ApiProfile(
