@@ -2,11 +2,17 @@ package com.pingo.core.network
 
 import com.pingo.core.auth.AuthRepository
 import com.pingo.core.common.AppDispatchers
+import com.pingo.core.network.sync.PullChangesRequest
+import com.pingo.core.network.sync.PullChangesResult
+import com.pingo.core.network.sync.PushChangesPayload
+import com.pingo.core.network.sync.PushChangesResult
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -44,6 +50,36 @@ class HttpPingoApiClient @Inject constructor(
 
         json.decodeFromString<ProfileResponse>(body).toModel()
     }
+
+    override suspend fun pushChanges(payload: PushChangesPayload): PushChangesResult = withContext(dispatchers.io) {
+        val body = executeAuthenticated { token ->
+            postJson(
+                url = "$baseUrl/sync/push",
+                token = token,
+                body = json.encodeToString(PushChangesPayload.serializer(), payload),
+            )
+        }
+
+        json.decodeFromString(PushChangesResult.serializer(), body)
+    }
+
+    override suspend fun pullChanges(cursor: String?): PullChangesResult = withContext(dispatchers.io) {
+        val body = executeAuthenticated { token ->
+            postJson(
+                url = "$baseUrl/sync/pull",
+                token = token,
+                body = json.encodeToString(PullChangesRequest.serializer(), PullChangesRequest(cursor)),
+            )
+        }
+
+        json.decodeFromString(PullChangesResult.serializer(), body)
+    }
+
+    private fun postJson(url: String, token: String, body: String): Request = Request.Builder()
+        .url(url)
+        .header(AUTHORIZATION_HEADER, "Bearer $token")
+        .post(body.toRequestBody(JSON_MEDIA_TYPE))
+        .build()
 
     private suspend fun executeAuthenticated(request: (String) -> Request): String {
         val token = authRepository.accessToken() ?: throw PingoApiException(UNAUTHORIZED, "not_authenticated")
@@ -86,6 +122,7 @@ class HttpPingoApiClient @Inject constructor(
     private companion object {
         const val AUTHORIZATION_HEADER = "Authorization"
         const val UNAUTHORIZED = 401
+        val JSON_MEDIA_TYPE = "application/json".toMediaType()
     }
 }
 
