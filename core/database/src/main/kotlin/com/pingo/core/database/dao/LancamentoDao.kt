@@ -34,6 +34,15 @@ abstract class LancamentoDao {
     @Query("UPDATE lancamentos SET excluidoEm = :quando, atualizadoEm = :quando WHERE publicId = :publicId")
     abstract suspend fun marcarExcluido(publicId: String, quando: Instant)
 
+    @Query("UPDATE lancamentos SET compraPaiPublicId = :para WHERE compraPaiPublicId = :de")
+    abstract suspend fun repointarCompraPai(de: String, para: String)
+
+    @Query("UPDATE lancamentos SET estornoDePublicId = :para WHERE estornoDePublicId = :de")
+    abstract suspend fun repointarEstorno(de: String, para: String)
+
+    @Query("DELETE FROM lancamentos WHERE publicId = :publicId")
+    abstract suspend fun apagar(publicId: String)
+
     @Transaction
     open suspend fun upsertEmDuasPassadas(semEstorno: List<LancamentoEntity>, comEstorno: List<LancamentoEntity>) {
         upsertAll(semEstorno)

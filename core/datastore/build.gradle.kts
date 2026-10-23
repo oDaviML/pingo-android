@@ -1,5 +1,6 @@
 plugins {
     id("pingo.android.library")
+    id("pingo.android.hilt")
 }
 
 android {
