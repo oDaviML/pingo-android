@@ -411,6 +411,11 @@ class SyncEngineTest {
             pullCalls++
             return pullResult
         }
+
+        override suspend fun recordConsent(version: String): com.pingo.core.network.ApiConsent =
+            com.pingo.core.network.ApiConsent(consentedAt = Instant.EPOCH.toString(), version = version)
+
+        override suspend fun deleteAccount() = Unit
     }
 
     private class FakePreferences : UserPreferencesDataSource {

@@ -97,6 +97,7 @@ fun PingoInfoDialog(
                 color = PingoTheme.colors.onSurfaceVariant,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .weight(1f, fill = false)
                     .verticalScroll(rememberScrollState()),
             )
 

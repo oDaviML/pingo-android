@@ -90,8 +90,8 @@ class HttpPingoApiClient @Inject constructor(
         json.decodeFromString<ActivateDeviceResponseDto>(body).toModel()
     }
 
-    override suspend fun recordConsent(version: String): Unit = withContext(dispatchers.io) {
-        executeAuthenticated { token ->
+    override suspend fun recordConsent(version: String): ApiConsent = withContext(dispatchers.io) {
+        val body = executeAuthenticated { token ->
             postJson(
                 url = "$baseUrl/account/consent",
                 token = token,
@@ -102,7 +102,9 @@ class HttpPingoApiClient @Inject constructor(
             )
         }
 
-        Unit
+        val consent = json.decodeFromString<RecordConsentResponseDto>(body)
+
+        ApiConsent(consentedAt = consent.consentidoEm, version = consent.versao)
     }
 
     override suspend fun deleteAccount(): Unit = withContext(dispatchers.io) {

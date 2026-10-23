@@ -2,6 +2,7 @@ package com.pingo.core.designsystem.component
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -24,14 +25,19 @@ fun PingoTopBar(title: String, onBack: () -> Unit, modifier: Modifier = Modifier
         horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        PingoIcon(
-            imageVector = PingoIcons.ArrowLeft,
-            contentDescription = "Voltar",
+        Box(
             modifier = Modifier
-                .size(24.dp)
+                .size(48.dp)
                 .clickable(role = Role.Button, onClick = onBack),
-            tint = PingoTheme.colors.onBackground,
-        )
+            contentAlignment = Alignment.Center,
+        ) {
+            PingoIcon(
+                imageVector = PingoIcons.ArrowLeft,
+                contentDescription = "Voltar",
+                modifier = Modifier.size(24.dp),
+                tint = PingoTheme.colors.onBackground,
+            )
+        }
         PingoText(
             text = title,
             style = PingoTheme.typography.subtitle,

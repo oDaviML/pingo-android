@@ -6,8 +6,10 @@ import com.pingo.core.data.AccountRepository
 import com.pingo.core.database.PingoDatabase
 import com.pingo.core.datastore.UserPreferencesDataSource
 import com.pingo.core.network.PingoApiClient
+import com.pingo.core.network.PingoApiException
 import kotlinx.coroutines.withContext
 import java.time.Instant
+import java.time.OffsetDateTime
 import javax.inject.Inject
 
 class AccountRepositoryImpl @Inject constructor(
@@ -18,15 +20,29 @@ class AccountRepositoryImpl @Inject constructor(
     private val dispatchers: AppDispatchers,
 ) : AccountRepository {
     override suspend fun recordConsent(version: String) = withContext(dispatchers.io) {
-        api.recordConsent(version)
-        preferences.setConsent(version = version, instant = Instant.now())
+        val consent = api.recordConsent(version)
+
+        preferences.setConsent(
+            version = consent.version ?: version,
+            instant = consent.consentedAt?.let { OffsetDateTime.parse(it).toInstant() } ?: Instant.now(),
+        )
     }
 
     override suspend fun deleteAccount() = withContext(dispatchers.io) {
-        api.deleteAccount()
+        try {
+            api.deleteAccount()
+        } catch (exception: PingoApiException) {
+            if (exception.statusCode != HTTP_NOT_FOUND) {
+                throw exception
+            }
+        }
 
-        database.clearAllTables()
-        preferences.clear()
+        runCatching { database.clearAllTables() }
+        runCatching { preferences.clear() }
         authRepository.logout()
+    }
+
+    private companion object {
+        const val HTTP_NOT_FOUND = 404
     }
 }
