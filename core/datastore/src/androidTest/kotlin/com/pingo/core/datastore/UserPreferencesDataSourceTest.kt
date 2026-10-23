@@ -6,6 +6,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -16,11 +18,17 @@ class UserPreferencesDataSourceTest {
     private val dataSource = UserPreferencesDataSourceImpl(ApplicationProvider.getApplicationContext<Context>())
 
     @Test
-    fun geraUmDeviceIdEstavel() = runBlocking {
+    fun geraUmDeviceIdEstavelAteLimpar() = runBlocking {
+        dataSource.clear()
+
         val primeiro = dataSource.deviceId()
 
         assertTrue(primeiro.isNotBlank())
         assertEquals(primeiro, dataSource.deviceId())
+
+        dataSource.clear()
+
+        assertNotEquals(primeiro, dataSource.deviceId())
     }
 
     @Test
@@ -32,6 +40,8 @@ class UserPreferencesDataSourceTest {
 
     @Test
     fun persisteCursoresEEstadoDeSincronizacao() = runBlocking {
+        dataSource.clear()
+
         val instante = Instant.parse("2026-10-23T10:00:00Z")
 
         dataSource.setPullCursor("cursor-1")
@@ -41,5 +51,27 @@ class UserPreferencesDataSourceTest {
         assertEquals("cursor-1", dataSource.pullCursor())
         assertEquals(instante, dataSource.pushCursor())
         assertEquals(SyncStatus.FAILED, dataSource.syncStatus.first())
+
+        dataSource.clear()
+
+        assertNull(dataSource.pullCursor())
+        assertEquals(SyncStatus.IDLE, dataSource.syncStatus.first())
+    }
+
+    @Test
+    fun persisteEConsentimentoELimpaAoExcluirConta() = runBlocking {
+        dataSource.clear()
+
+        val instante = Instant.parse("2026-10-23T10:00:00Z")
+
+        dataSource.setConsent(version = "2026-10", instant = instante)
+
+        assertEquals("2026-10", dataSource.consentVersion())
+        assertEquals(instante, dataSource.consentAt())
+
+        dataSource.clear()
+
+        assertNull(dataSource.consentVersion())
+        assertNull(dataSource.consentAt())
     }
 }
