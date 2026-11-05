@@ -16,4 +16,5 @@ dependencies {
     implementation(project(":core:network"))
     implementation(libs.room.runtime)
     implementation(libs.kotlinx.coroutines.android)
+    androidTestImplementation(libs.androidx.test.runner)
 }
