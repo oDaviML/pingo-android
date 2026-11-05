@@ -1,9 +1,9 @@
 package com.pingo.feature.review.impl
 
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.pingo.core.designsystem.component.PingoText
 
 @Composable
 fun ReviewScreen() {
-    Text(text = "Revisão")
+    PingoText(text = "Revisão")
 }

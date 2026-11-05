@@ -1,9 +1,9 @@
 package com.pingo.feature.reports.impl
 
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.pingo.core.designsystem.component.PingoText
 
 @Composable
 fun ReportsScreen() {
-    Text(text = "Relatórios")
+    PingoText(text = "Relatórios")
 }

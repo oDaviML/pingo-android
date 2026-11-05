@@ -1,9 +1,9 @@
 package com.pingo.feature.settings.impl
 
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.pingo.core.designsystem.component.PingoText
 
 @Composable
 fun SettingsScreen() {
-    Text(text = "Configurações")
+    PingoText(text = "Configurações")
 }

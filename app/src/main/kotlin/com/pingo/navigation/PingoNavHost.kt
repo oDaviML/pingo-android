@@ -1,9 +1,18 @@
 package com.pingo.navigation
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.pingo.core.auth.SessionState
+import com.pingo.core.designsystem.theme.PingoTheme
 import com.pingo.feature.accounts.api.AccountsRoute
 import com.pingo.feature.accounts.impl.AccountsScreen
 import com.pingo.feature.capturestatus.api.CaptureStatusRoute
@@ -22,13 +31,33 @@ import com.pingo.feature.transactions.api.TransactionsRoute
 import com.pingo.feature.transactions.impl.TransactionsScreen
 
 @Composable
-fun PingoNavHost() {
+fun PingoNavHost(session: SessionState) {
+    if (session == SessionState.Loading) {
+        androidx.compose.foundation.layout.Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(PingoTheme.colors.background),
+        )
+        return
+    }
+
     val navController = rememberNavController()
+    val startDestination = if (session == SessionState.LoggedIn) HomeRoute.ROUTE else OnboardingRoute.ROUTE
+
     NavHost(
         navController = navController,
-        startDestination = HomeRoute.ROUTE,
+        startDestination = startDestination,
+        modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars),
     ) {
-        composable(OnboardingRoute.ROUTE) { OnboardingScreen() }
+        composable(OnboardingRoute.ROUTE) {
+            OnboardingScreen(
+                onContinue = {
+                    navController.navigate(HomeRoute.ROUTE) {
+                        popUpTo(OnboardingRoute.ROUTE) { inclusive = true }
+                    }
+                },
+            )
+        }
         composable(HomeRoute.ROUTE) { HomeScreen() }
         composable(TransactionsRoute.ROUTE) { TransactionsScreen() }
         composable(AccountsRoute.ROUTE) { AccountsScreen() }
