@@ -18,7 +18,7 @@ class SyncWorkerTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
 
     @Test
-    fun `sincronizacao bem sucedida conclui o worker`() {
+    fun sincronizacaoBemSucedidaConcluiOWorker() {
         val result = runBlocking {
             buildWorker(SyncRunner { }).doWork()
         }
@@ -27,7 +27,7 @@ class SyncWorkerTest {
     }
 
     @Test
-    fun `falha de sincronizacao pede retry com backoff`() {
+    fun falhaDeSincronizacaoPedeRetryComBackoff() {
         val result = runBlocking {
             buildWorker(SyncRunner { throw IOException("sem rede") }).doWork()
         }

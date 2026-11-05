@@ -74,7 +74,7 @@ class SyncEngineTest {
     }
 
     @Test
-    fun `pull aplica mudancas do servidor no banco local`() = runTest {
+    fun pullAplicaMudancasDoServidorNoBancoLocal() = runTest {
         api.pullResult = PullChangesResult(
             proximoCursor = "cursor-1",
             servidorEm = init.toString(),
@@ -90,7 +90,7 @@ class SyncEngineTest {
     }
 
     @Test
-    fun `pull preserva alteracao local mais nova`() = runTest {
+    fun pullPreservaAlteracaoLocalMaisNova() = runTest {
         val nova = Instant.parse("2026-10-23T12:00:00Z")
         database.contaDao().upsert(
             ContaEntity(
@@ -115,7 +115,7 @@ class SyncEngineTest {
     }
 
     @Test
-    fun `push envia mudancas locais e avanca o cursor`() = runTest {
+    fun pushEnviaMudancasLocaisEAvancaOCursor() = runTest {
         database.contaDao().upsert(
             ContaEntity(
                 publicId = "conta-1",
@@ -139,7 +139,7 @@ class SyncEngineTest {
     }
 
     @Test
-    fun `aliases apontam o duplicado para o dono e removem a duplicata`() = runTest {
+    fun aliasesApontamODuplicadoParaODonoERemovemADuplicata() = runTest {
         val conta = contaEntity("conta-1")
         database.contaDao().upsert(conta)
         database.instrumentoDao().upsert(instrumentoEntity("instrumento-1", "conta-1"))
@@ -154,7 +154,7 @@ class SyncEngineTest {
     }
 
     @Test
-    fun `falha da api marca status failed e preserva os dados locais`() = runTest {
+    fun falhaDaApiMarcaStatusFailedEPreservaOsDadosLocais() = runTest {
         database.contaDao().upsert(contaEntity("conta-1"))
         api.failure = IOException("sem rede")
 
@@ -165,7 +165,7 @@ class SyncEngineTest {
     }
 
     @Test
-    fun `falha no push mantem o cursor e reenvia no retry`() = runTest {
+    fun falhaNoPushMantemOCursorEReenviaNoRetry() = runTest {
         database.contaDao().upsert(contaEntity("conta-1"))
         api.pushFailure = IOException("sem rede")
 
@@ -183,7 +183,7 @@ class SyncEngineTest {
     }
 
     @Test
-    fun `sem sessao nao sincroniza`() = runTest {
+    fun semSessaoNaoSincroniza() = runTest {
         val semSessao = SyncEngine(api, database, preferences, FakeAuth(SessionState.LoggedOut), DeviceActivator(api, preferences))
 
         semSessao.run()
@@ -193,7 +193,7 @@ class SyncEngineTest {
     }
 
     @Test
-    fun `sem consentimento nao sincroniza nem ativa o aparelho`() = runTest {
+    fun semConsentimentoNaoSincronizaNemAtivaOAparelho() = runTest {
         val semConsentimento = FakePreferences(consent = null)
         val engineSemConsentimento = SyncEngine(api, database, semConsentimento, FakeAuth(), DeviceActivator(api, semConsentimento))
 
@@ -205,7 +205,7 @@ class SyncEngineTest {
     }
 
     @Test
-    fun `ativa o aparelho antes de restaurar e sincronizar`() = runTest {
+    fun ativaOAparelhoAntesDeRestaurarESincronizar() = runTest {
         api.pullResult = PullChangesResult(
             proximoCursor = "cursor-1",
             servidorEm = init.toString(),
@@ -219,7 +219,7 @@ class SyncEngineTest {
     }
 
     @Test
-    fun `ativa o aparelho apenas uma vez por dispositivo`() = runTest {
+    fun ativaOAparelhoApenasUmaVezPorDispositivo() = runTest {
         engine.run()
         engine.run()
 
@@ -231,7 +231,7 @@ class SyncEngineTest {
     }
 
     @Test
-    fun `restauracao completa aplica contas instrumentos e lancamentos na ordem certa`() = runTest {
+    fun restauracaoCompletaAplicaContasInstrumentosELancamentosNaOrdemCerta() = runTest {
         api.pullResult = PullChangesResult(
             servidorEm = init.toString(),
             contas = listOf(contaSnapshot("conta-1", atualizadoEm = init)),
@@ -271,7 +271,7 @@ class SyncEngineTest {
     }
 
     @Test
-    fun `restauracao interrompida pela rede retoma sem duplicar dados`() = runTest {
+    fun restauracaoInterrompidaPelaRedeRetomaSemDuplicarDados() = runTest {
         api.pullResult = PullChangesResult(
             proximoCursor = "cursor-1",
             servidorEm = init.toString(),
@@ -293,7 +293,7 @@ class SyncEngineTest {
     }
 
     @Test
-    fun `falha na ativacao nao impede a sincronizacao`() = runTest {
+    fun falhaNaAtivacaoNaoImpedeASincronizacao() = runTest {
         api.activateFailure = IOException("sem rede")
         api.pullResult = PullChangesResult(
             proximoCursor = "cursor-1",
@@ -310,7 +310,7 @@ class SyncEngineTest {
     }
 
     @Test
-    fun `pull aplica tombstone do servidor`() = runTest {
+    fun pullAplicaTombstoneDoServidor() = runTest {
         api.pullResult = PullChangesResult(
             servidorEm = init.toString(),
             contas = listOf(contaSnapshot("conta-1", atualizadoEm = init).copy(excluidoEm = init.toString())),
