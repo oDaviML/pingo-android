@@ -193,6 +193,18 @@ class SyncEngineTest {
     }
 
     @Test
+    fun `sem consentimento nao sincroniza nem ativa o aparelho`() = runTest {
+        val semConsentimento = FakePreferences(consent = null)
+        val engineSemConsentimento = SyncEngine(api, database, semConsentimento, FakeAuth(), DeviceActivator(api, semConsentimento))
+
+        engineSemConsentimento.run()
+
+        assertEquals(0, api.activateCalls)
+        assertEquals(0, api.pullCalls)
+        assertEquals(0, api.pushCalls)
+    }
+
+    @Test
     fun `ativa o aparelho antes de restaurar e sincronizar`() = runTest {
         api.pullResult = PullChangesResult(
             proximoCursor = "cursor-1",
@@ -418,7 +430,7 @@ class SyncEngineTest {
         override suspend fun deleteAccount() = Unit
     }
 
-    private class FakePreferences : UserPreferencesDataSource {
+    private class FakePreferences(private val consent: String? = "2026-10") : UserPreferencesDataSource {
         private val statusFlow = MutableStateFlow(SyncStatus.IDLE)
         var status: SyncStatus
             get() = statusFlow.value
@@ -465,7 +477,7 @@ class SyncEngineTest {
 
         override suspend fun deviceId(): String = "device-test"
 
-        override suspend fun consentVersion(): String? = null
+        override suspend fun consentVersion(): String? = consent
 
         override suspend fun consentAt(): Instant? = null
 

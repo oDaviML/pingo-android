@@ -14,6 +14,10 @@ class DeviceActivator @Inject constructor(private val api: PingoApiClient, priva
 
     suspend fun activate() {
         mutex.withLock {
+            if (preferences.consentVersion() == null) {
+                return
+            }
+
             val deviceId = preferences.deviceId()
 
             if (preferences.activatedDeviceId() == deviceId) {

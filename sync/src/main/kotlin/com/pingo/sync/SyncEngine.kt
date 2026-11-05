@@ -32,7 +32,7 @@ class SyncEngine @Inject constructor(
     private val syncMutex = Mutex()
 
     override suspend fun run() = syncMutex.withLock {
-        if (authRepository.session.value != SessionState.LoggedIn) {
+        if (authRepository.session.value != SessionState.LoggedIn || preferences.consentVersion() == null) {
             return@withLock
         }
 
