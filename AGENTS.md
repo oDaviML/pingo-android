@@ -20,10 +20,10 @@ O papel deste repositório, `pingo-android`, é o aplicativo Android: o listener
   - `core:*` nunca depende de `feature` nem de `app`.
   - `feature:*` depende apenas dos `core:*` que usa. O `AndroidFeatureConventionPlugin` já adiciona `core:model`, `core:ui` e `core:designsystem`; qualquer outro `core:*` precisa ser declarado explicitamente no módulo.
   - `feature:*:impl` depende do próprio `feature:*:api`.
-  - Os convention plugins em `build-logic` adicionam as dependências padrão (`core:model`, `core:ui` e `core:designsystem`); as regras são garantidas por revisão (humana e Pullfrog) e por este documento.
+  - Os convention plugins em `build-logic` adicionam as dependências padrão (`core:model`, `core:ui` e `core:designsystem`); as regras são garantidas por revisão (humana e por agente de revisão) e por este documento.
 - `spike:capture` — app de spike isolado (`com.pingo.spike`) do épico STR-157, para coletar o corpus de notificações em aparelhos de teste. Não é produto e não é publicado; por isso abre mão de Hilt, ViewModel/UDF e dos `core:*`/`feature:*`, e pode escrever direto em disco. As exceções valem só para o spike e não servem de precedente para as features.
 - ADR-03: Kotlin + Jetpack Compose como stack única do app.
-- ADR-09: dois repositórios (`pingo-api` e `pingo-android`), app Android multimódulo, AGENTS.md como documentação viva e Pullfrog para revisão assistida de PRs.
+- ADR-09: dois repositórios (`pingo-api` e `pingo-android`), app Android multimódulo, AGENTS.md como documentação viva e agente de revisão assistida de PRs.
 
 ## 3. Estrutura de pastas
 
@@ -83,7 +83,7 @@ pingo-android/
 │  ├─ capturestatus/  {api, impl}
 │  └─ settings/       {api, impl}
 ├─ config/detekt/detekt.yml     configuração do detekt
-├─ .github/workflows/           build.yml, release.yml, pullfrog.yml
+├─ .github/workflows/           build.yml, release.yml
 ├─ .gitignore
 ├─ AGENTS.md
 └─ README.md
@@ -132,6 +132,6 @@ Regra estrita: código sem comentários. Nenhum comentário em fontes Kotlin, Gr
 ## 8. PRs
 
 - Título no padrão `STR-xxx — descrição curta` (ex.: `STR-172 — design system e protótipos`), corpo explicando o porquê e o impacto.
-- Checks obrigatórios: CI verde (`./gradlew build`, que roda compilação, testes, detekt e ktlint) e revisão do Pullfrog (o GitHub App dispara o workflow `pullfrog.yml` por `workflow_dispatch`; a revisão aparece como review no PR).
+- Checks obrigatórios: CI verde (`./gradlew build`, que roda compilação, testes, detekt e ktlint) e revisão por agente de revisão no PR.
 - PRs pequenos, por feature ou correção; PRs de fundação podem agrupar os cards do mesmo épico, com justificativa no corpo.
 - Atualizar o AGENTS.md quando a arquitetura ou os comandos mudarem.
