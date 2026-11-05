@@ -259,6 +259,45 @@ class SyncEngineTest {
     }
 
     @Test
+    fun `restauracao interrompida pela rede retoma sem duplicar dados`() = runTest {
+        api.pullResult = PullChangesResult(
+            proximoCursor = "cursor-1",
+            servidorEm = init.toString(),
+            contas = listOf(contaSnapshot("conta-1", atualizadoEm = init)),
+        )
+        api.failure = IOException("sem rede")
+
+        runCatching { engine.run() }
+
+        assertNull(preferences.pullCursor())
+        assertNull(database.contaDao().buscar("conta-1"))
+
+        api.failure = null
+        engine.run()
+
+        assertEquals("cursor-1", preferences.pullCursor())
+        assertEquals(1, api.pullCalls)
+        assertNotNull(database.contaDao().buscar("conta-1"))
+    }
+
+    @Test
+    fun `falha na ativacao nao impede a sincronizacao`() = runTest {
+        api.activateFailure = IOException("sem rede")
+        api.pullResult = PullChangesResult(
+            proximoCursor = "cursor-1",
+            servidorEm = init.toString(),
+            contas = listOf(contaSnapshot("conta-1", atualizadoEm = init)),
+        )
+
+        engine.run()
+
+        assertEquals(1, api.activateCalls)
+        assertNull(preferences.activatedDeviceId())
+        assertEquals("cursor-1", preferences.pullCursor())
+        assertEquals(SyncStatus.IDLE, preferences.status)
+    }
+
+    @Test
     fun `pull aplica tombstone do servidor`() = runTest {
         api.pullResult = PullChangesResult(
             servidorEm = init.toString(),
@@ -354,8 +393,8 @@ class SyncEngineTest {
         override suspend fun getProfile(): ApiProfile = error("nao usado")
 
         override suspend fun activateDevice(deviceId: String, deviceName: String?): com.pingo.core.network.ApiDevice {
-            (activateFailure ?: failure)?.let { throw it }
             activateCalls++
+            (activateFailure ?: failure)?.let { throw it }
             activatedDeviceId = deviceId
             return com.pingo.core.network.ApiDevice(deviceId, deviceName, Instant.EPOCH.toString())
         }
