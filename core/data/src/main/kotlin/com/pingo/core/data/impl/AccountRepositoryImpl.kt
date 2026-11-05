@@ -24,7 +24,7 @@ class AccountRepositoryImpl @Inject constructor(
 
         preferences.setConsent(
             version = consent.version ?: version,
-            instant = consent.consentedAt?.let { OffsetDateTime.parse(it).toInstant() } ?: Instant.now(),
+            instant = parseConsentInstant(consent.consentedAt),
         )
     }
 
@@ -37,8 +37,8 @@ class AccountRepositoryImpl @Inject constructor(
             }
         }
 
-        runCatching { database.clearAllTables() }
-        runCatching { preferences.clear() }
+        database.clearAllTables()
+        preferences.clear()
         authRepository.logout()
     }
 
@@ -46,3 +46,6 @@ class AccountRepositoryImpl @Inject constructor(
         const val HTTP_NOT_FOUND = 404
     }
 }
+
+internal fun parseConsentInstant(consentedAt: String?): Instant =
+    consentedAt?.let { runCatching { OffsetDateTime.parse(it).toInstant() }.getOrNull() } ?: Instant.now()
