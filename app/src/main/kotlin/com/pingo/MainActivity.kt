@@ -26,13 +26,18 @@ class MainActivity : ComponentActivity() {
         setContent {
             PingoTheme {
                 val session by viewModel.session.collectAsStateWithLifecycle()
+                val canEnterHome by viewModel.canEnterHome.collectAsStateWithLifecycle()
 
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(PingoTheme.colors.background),
                 ) {
-                    PingoNavHost(session = session)
+                    PingoNavHost(
+                        session = session,
+                        canEnterHome = canEnterHome,
+                        onConsentAccepted = viewModel::onConsentAccepted,
+                    )
                 }
             }
         }

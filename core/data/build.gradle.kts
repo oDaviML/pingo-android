@@ -9,6 +9,11 @@ android {
 
 dependencies {
     api(project(":core:model"))
+    implementation(project(":core:auth"))
+    implementation(project(":core:common"))
     implementation(project(":core:database"))
+    implementation(project(":core:datastore"))
+    implementation(project(":core:network"))
+    implementation(libs.room.runtime)
     implementation(libs.kotlinx.coroutines.android)
 }

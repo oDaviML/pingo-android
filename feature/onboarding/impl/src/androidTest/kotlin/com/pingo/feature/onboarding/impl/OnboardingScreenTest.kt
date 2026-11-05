@@ -25,6 +25,9 @@ class OnboardingScreenTest {
                     state = OnboardingUiState(),
                     onStart = {},
                     onLogin = {},
+                    onToggleConsent = {},
+                    onAcceptConsent = {},
+                    onShowTerm = {},
                 )
             }
         }
@@ -42,6 +45,9 @@ class OnboardingScreenTest {
                     state = OnboardingUiState(currentStep = 2),
                     onStart = {},
                     onLogin = {},
+                    onToggleConsent = {},
+                    onAcceptConsent = {},
+                    onShowTerm = {},
                 )
             }
         }
@@ -62,6 +68,9 @@ class OnboardingScreenTest {
                     state = OnboardingUiState(currentStep = 2, login = LoginUiState.Error),
                     onStart = {},
                     onLogin = { attempts++ },
+                    onToggleConsent = {},
+                    onAcceptConsent = {},
+                    onShowTerm = {},
                 )
             }
         }
@@ -83,6 +92,9 @@ class OnboardingScreenTest {
                     state = OnboardingUiState(currentStep = 2, login = LoginUiState.Loading),
                     onStart = {},
                     onLogin = { attempts++ },
+                    onToggleConsent = {},
+                    onAcceptConsent = {},
+                    onShowTerm = {},
                 )
             }
         }
@@ -90,5 +102,48 @@ class OnboardingScreenTest {
         composeRule.onNodeWithText("Continuar com Google").performClick()
 
         assertEquals(0, attempts)
+    }
+
+    @Test
+    fun mostraTermoLgpdNoPassoTres() {
+        composeRule.setContent {
+            PingoTheme {
+                OnboardingContent(
+                    state = OnboardingUiState(currentStep = 3),
+                    onStart = {},
+                    onLogin = {},
+                    onToggleConsent = {},
+                    onAcceptConsent = {},
+                    onShowTerm = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Passo 3 de 8").assertIsDisplayed()
+        composeRule.onNodeWithText("Antes de começar").assertIsDisplayed()
+        composeRule.onNodeWithText("O que o Pingo lê").assertIsDisplayed()
+        composeRule.onNodeWithText("Li e aceito o termo de privacidade (LGPD)").assertIsDisplayed()
+    }
+
+    @Test
+    fun aceitarSoFicaDisponivelComOConsentimentoMarcado() {
+        var accepted = 0
+
+        composeRule.setContent {
+            PingoTheme {
+                OnboardingContent(
+                    state = OnboardingUiState(currentStep = 3),
+                    onStart = {},
+                    onLogin = {},
+                    onToggleConsent = {},
+                    onAcceptConsent = { accepted++ },
+                    onShowTerm = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Aceitar e continuar").performClick()
+
+        assertEquals(0, accepted)
     }
 }

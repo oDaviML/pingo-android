@@ -1,5 +1,6 @@
 package com.pingo.core.data.di
 
+import com.pingo.core.data.AccountRepository
 import com.pingo.core.data.AssinaturaRepository
 import com.pingo.core.data.CategoriaRepository
 import com.pingo.core.data.ContaRepository
@@ -9,6 +10,7 @@ import com.pingo.core.data.LancamentoRepository
 import com.pingo.core.data.RegraCategoriaRepository
 import com.pingo.core.data.RegraParserRepository
 import com.pingo.core.data.UsuarioRepository
+import com.pingo.core.data.impl.AccountRepositoryImpl
 import com.pingo.core.data.impl.AssinaturaRepositoryImpl
 import com.pingo.core.data.impl.CategoriaRepositoryImpl
 import com.pingo.core.data.impl.ContaRepositoryImpl
@@ -27,6 +29,10 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class DataModule {
+    @Binds
+    @Singleton
+    abstract fun bindAccountRepository(implementation: AccountRepositoryImpl): AccountRepository
+
     @Binds
     @Singleton
     abstract fun bindContaRepository(implementation: ContaRepositoryImpl): ContaRepository

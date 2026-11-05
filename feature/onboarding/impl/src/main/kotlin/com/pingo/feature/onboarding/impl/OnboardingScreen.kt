@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,13 +17,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -35,6 +39,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pingo.core.designsystem.component.OnboardingStepper
 import com.pingo.core.designsystem.component.PingoButton
+import com.pingo.core.designsystem.component.PingoButtonSize
+import com.pingo.core.designsystem.component.PingoButtonType
+import com.pingo.core.designsystem.component.PingoCard
+import com.pingo.core.designsystem.component.PingoCheckbox
 import com.pingo.core.designsystem.component.PingoIcon
 import com.pingo.core.designsystem.component.PingoMascot
 import com.pingo.core.designsystem.component.PingoSpinner
@@ -43,14 +51,15 @@ import com.pingo.core.designsystem.icon.PingoIcons
 import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.ui.PrivacyTermDialog
 
 @Composable
 fun OnboardingScreen(onContinue: () -> Unit, viewModel: OnboardingViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val activity = LocalContext.current.findActivity()
 
-    LaunchedEffect(state.authenticated) {
-        if (state.authenticated) {
+    LaunchedEffect(state.completed) {
+        if (state.completed) {
             onContinue()
         }
     }
@@ -59,11 +68,26 @@ fun OnboardingScreen(onContinue: () -> Unit, viewModel: OnboardingViewModel = hi
         state = state,
         onStart = viewModel::goToLogin,
         onLogin = { activity?.let(viewModel::loginWithGoogle) },
+        onToggleConsent = viewModel::toggleConsent,
+        onAcceptConsent = viewModel::acceptConsent,
+        onShowTerm = viewModel::showTerm,
     )
+
+    if (state.showTerm) {
+        PrivacyTermDialog(onDismiss = viewModel::dismissTerm)
+    }
 }
 
 @Composable
-fun OnboardingContent(state: OnboardingUiState, onStart: () -> Unit, onLogin: () -> Unit, modifier: Modifier = Modifier) {
+fun OnboardingContent(
+    state: OnboardingUiState,
+    onStart: () -> Unit,
+    onLogin: () -> Unit,
+    onToggleConsent: (Boolean) -> Unit,
+    onAcceptConsent: () -> Unit,
+    onShowTerm: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -74,10 +98,15 @@ fun OnboardingContent(state: OnboardingUiState, onStart: () -> Unit, onLogin: ()
             totalSteps = state.totalSteps,
         )
 
-        if (state.currentStep == WELCOME_STEP) {
-            WelcomeStep(onStart = onStart)
-        } else {
-            LoginStep(state = state, onLogin = onLogin)
+        when (state.currentStep) {
+            WELCOME_STEP -> WelcomeStep(onStart = onStart)
+            LOGIN_STEP -> LoginStep(state = state, onLogin = onLogin)
+            else -> ConsentStep(
+                state = state,
+                onToggleConsent = onToggleConsent,
+                onAcceptConsent = onAcceptConsent,
+                onShowTerm = onShowTerm,
+            )
         }
     }
 }
@@ -253,6 +282,139 @@ private fun PrivacyHint() {
     }
 }
 
+@Composable
+private fun ConsentStep(
+    state: OnboardingUiState,
+    onToggleConsent: (Boolean) -> Unit,
+    onAcceptConsent: () -> Unit,
+    onShowTerm: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = PingoSpacing.xxl, vertical = PingoSpacing.xxl),
+        verticalArrangement = Arrangement.spacedBy(PingoSpacing.lg),
+    ) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(PingoSpacing.lg),
+        ) {
+            PingoText(
+                text = "Antes de começar",
+                style = PingoTheme.typography.headline,
+            )
+            PingoText(
+                text = "O Pingo lê dados sensíveis. Veja com clareza o que acontece com eles.",
+                style = PingoTheme.typography.body,
+                color = PingoTheme.colors.onSurfaceVariant,
+            )
+
+            ConsentInfoCard()
+
+            PingoCheckbox(
+                checked = state.consentChecked,
+                onCheckedChange = onToggleConsent,
+                label = "Li e aceito o termo de privacidade (LGPD)",
+            )
+
+            PingoButton(
+                text = "Ler termo completo",
+                onClick = onShowTerm,
+                type = PingoButtonType.Text,
+                size = PingoButtonSize.Small,
+            )
+        }
+
+        ConsentActions(state = state, onAcceptConsent = onAcceptConsent)
+    }
+}
+
+@Composable
+private fun ConsentActions(state: OnboardingUiState, onAcceptConsent: () -> Unit) {
+    if (state.consent == ConsentUiState.Error) {
+        PingoText(
+            text = "Não foi possível registrar seu consentimento. Verifique a conexão e tente de novo.",
+            style = PingoTheme.typography.bodySmall,
+            color = PingoTheme.colors.expense,
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { liveRegion = LiveRegionMode.Polite },
+        )
+    }
+
+    PingoButton(
+        text = "Aceitar e continuar",
+        onClick = onAcceptConsent,
+        modifier = Modifier.fillMaxWidth(),
+        enabled = state.consentChecked,
+        loading = state.consent == ConsentUiState.Loading,
+    )
+}
+
+@Composable
+private fun ConsentInfoCard() {
+    PingoCard {
+        PrivacyInfoRow(
+            icon = PingoIcons.ShieldCheck,
+            title = "O que o Pingo lê",
+            description = "Só notificações de Nubank, Inter, Itaú, Mercado Pago e Caju. Nada de mensagens, fotos ou contatos.",
+        )
+        PrivacyInfoRow(
+            icon = PingoIcons.Smartphone,
+            title = "O texto fica no seu celular",
+            description = "A leitura acontece no aparelho. Só dados estruturados são sincronizados, e só com seu consentimento.",
+        )
+        PrivacyInfoRow(
+            icon = PingoIcons.Trash2,
+            title = "Você manda nos seus dados",
+            description = "Exclua tudo, no aparelho e na nuvem, quando quiser.",
+        )
+    }
+}
+
+@Composable
+private fun PrivacyInfoRow(icon: ImageVector, title: String, description: String) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .background(
+                    color = PingoTheme.colors.primaryContainer,
+                    shape = RoundedCornerShape(PingoRadius.md),
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            PingoIcon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = PingoTheme.colors.onPrimaryContainer,
+            )
+        }
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            PingoText(
+                text = title,
+                style = PingoTheme.typography.bodyStrong,
+                color = PingoTheme.colors.onBackground,
+            )
+            PingoText(
+                text = description,
+                style = PingoTheme.typography.bodySmall,
+                color = PingoTheme.colors.onSurfaceVariant,
+            )
+        }
+    }
+}
+
 private fun Context.findActivity(): Activity? {
     var current: Context? = this
 
@@ -268,5 +430,6 @@ private fun Context.findActivity(): Activity? {
 }
 
 private const val WELCOME_STEP = 1
+private const val LOGIN_STEP = 2
 
 private val GoogleBlue = androidx.compose.ui.graphics.Color(0xFF4285F4)

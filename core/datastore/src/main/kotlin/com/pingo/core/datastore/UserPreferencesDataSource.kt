@@ -31,4 +31,12 @@ interface UserPreferencesDataSource {
     suspend fun activatedDeviceId(): String?
 
     suspend fun setActivatedDeviceId(deviceId: String)
+
+    suspend fun consentVersion(): String?
+
+    suspend fun consentAt(): Instant?
+
+    suspend fun setConsent(version: String, instant: Instant)
+
+    suspend fun clear()
 }
