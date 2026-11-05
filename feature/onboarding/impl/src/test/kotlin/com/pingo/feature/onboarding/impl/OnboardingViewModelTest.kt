@@ -7,6 +7,7 @@ import com.pingo.core.auth.SessionState
 import com.pingo.core.data.AccountRepository
 import com.pingo.core.testing.TestDispatcherRule
 import com.pingo.core.ui.PRIVACY_TERM_VERSION
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -34,6 +35,13 @@ class OnboardingViewModelTest {
         viewModel.goToLogin()
 
         assertEquals(2, viewModel.uiState.value.currentStep)
+    }
+
+    @Test
+    fun `inicia no termo lgpd quando a sessao ja esta ativa`() = runTest {
+        val sessaoAtiva = OnboardingViewModel(FakeAuthRepository(SessionState.LoggedIn), accountRepository)
+
+        assertEquals(3, sessaoAtiva.uiState.value.currentStep)
     }
 
     @Test
@@ -109,10 +117,22 @@ class OnboardingViewModelTest {
         assertTrue(viewModel.uiState.value.completed)
     }
 
-    private class FakeAuthRepository : AuthRepository {
+    @Test
+    fun `alterar o consentimento durante o envio mantem o carregamento`() = runTest {
+        accountRepository.gate = CompletableDeferred()
+        viewModel.toggleConsent(true)
+        viewModel.acceptConsent()
+
+        viewModel.toggleConsent(false)
+
+        assertEquals(ConsentUiState.Loading, viewModel.uiState.value.consent)
+        accountRepository.gate?.complete(Unit)
+    }
+
+    private class FakeAuthRepository(initialSession: SessionState = SessionState.LoggedOut) : AuthRepository {
         var result: LoginResult = LoginResult.Success
 
-        override val session: StateFlow<SessionState> = MutableStateFlow(SessionState.LoggedOut)
+        override val session: StateFlow<SessionState> = MutableStateFlow(initialSession)
 
         override suspend fun loginWithGoogle(activity: Activity): LoginResult = result
 
@@ -124,8 +144,10 @@ class OnboardingViewModelTest {
     private class FakeAccountRepository : AccountRepository {
         var failure: Throwable? = null
         var recordedVersion: String? = null
+        var gate: CompletableDeferred<Unit>? = null
 
         override suspend fun recordConsent(version: String) {
+            gate?.await()
             failure?.let { throw it }
             recordedVersion = version
         }

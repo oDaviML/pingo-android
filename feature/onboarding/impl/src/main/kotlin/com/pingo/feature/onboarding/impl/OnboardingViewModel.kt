@@ -5,9 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pingo.core.auth.AuthRepository
 import com.pingo.core.auth.LoginResult
+import com.pingo.core.auth.SessionState
 import com.pingo.core.data.AccountRepository
 import com.pingo.core.ui.PRIVACY_TERM_VERSION
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +22,7 @@ class OnboardingViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val accountRepository: AccountRepository,
 ) : ViewModel() {
-    private val mutableUiState = MutableStateFlow(OnboardingUiState())
+    private val mutableUiState = MutableStateFlow(initialState())
 
     val uiState: StateFlow<OnboardingUiState> = mutableUiState.asStateFlow()
 
@@ -49,7 +51,10 @@ class OnboardingViewModel @Inject constructor(
     }
 
     fun toggleConsent(checked: Boolean) {
-        mutableUiState.update { it.copy(consentChecked = checked, consent = ConsentUiState.Idle) }
+        mutableUiState.update { state ->
+            val consent = if (state.consent == ConsentUiState.Loading) ConsentUiState.Loading else ConsentUiState.Idle
+            state.copy(consentChecked = checked, consent = consent)
+        }
     }
 
     fun showTerm() {
@@ -73,9 +78,21 @@ class OnboardingViewModel @Inject constructor(
             runCatching { accountRepository.recordConsent(PRIVACY_TERM_VERSION) }
                 .fold(
                     onSuccess = { mutableUiState.update { it.copy(consent = ConsentUiState.Idle, completed = true) } },
-                    onFailure = { mutableUiState.update { it.copy(consent = ConsentUiState.Error) } },
+                    onFailure = { exception ->
+                        if (exception is CancellationException) {
+                            throw exception
+                        }
+
+                        mutableUiState.update { it.copy(consent = ConsentUiState.Error) }
+                    },
                 )
         }
+    }
+
+    private fun initialState(): OnboardingUiState = if (authRepository.session.value == SessionState.LoggedIn) {
+        OnboardingUiState(currentStep = CONSENT_STEP)
+    } else {
+        OnboardingUiState()
     }
 
     private companion object {

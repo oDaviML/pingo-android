@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -32,14 +33,16 @@ import com.pingo.feature.transactions.api.TransactionsRoute
 import com.pingo.feature.transactions.impl.TransactionsScreen
 
 @Composable
-fun PingoNavHost(session: SessionState) {
-    if (session == SessionState.Loading) {
+fun PingoNavHost(session: SessionState, canEnterHome: Boolean?, onConsentAccepted: () -> Unit) {
+    if (session == SessionState.Loading || canEnterHome == null) {
         LoadingScreen()
         return
     }
 
     val navController = rememberNavController()
-    val startDestination = if (session == SessionState.LoggedIn) HomeRoute.ROUTE else OnboardingRoute.ROUTE
+    val startDestination = if (canEnterHome) HomeRoute.ROUTE else OnboardingRoute.ROUTE
+
+    RedirectToOnboardingOnLogout(session = session, navController = navController)
 
     NavHost(
         navController = navController,
@@ -49,13 +52,16 @@ fun PingoNavHost(session: SessionState) {
         composable(OnboardingRoute.ROUTE) {
             OnboardingScreen(
                 onContinue = {
+                    onConsentAccepted()
                     navController.navigate(HomeRoute.ROUTE) {
                         popUpTo(OnboardingRoute.ROUTE) { inclusive = true }
                     }
                 },
             )
         }
-        composable(HomeRoute.ROUTE) { HomeScreen() }
+        composable(HomeRoute.ROUTE) {
+            HomeScreen(onOpenSettings = { navController.navigate(SettingsRoute.ROUTE) })
+        }
         composable(TransactionsRoute.ROUTE) { TransactionsScreen() }
         composable(AccountsRoute.ROUTE) { AccountsScreen() }
         composable(ReportsRoute.ROUTE) { ReportsScreen() }
@@ -79,8 +85,23 @@ private fun LoadingScreen() {
     )
 }
 
+@Composable
+private fun RedirectToOnboardingOnLogout(session: SessionState, navController: NavHostController) {
+    LaunchedEffect(session) {
+        if (session == SessionState.LoggedOut && navController.isPastOnboarding()) {
+            navController.toOnboarding()
+        }
+    }
+}
+
+private fun NavHostController.isPastOnboarding(): Boolean {
+    val route = currentDestination?.route
+
+    return route != null && route != OnboardingRoute.ROUTE
+}
+
 private fun NavHostController.toOnboarding() {
     navigate(OnboardingRoute.ROUTE) {
-        popUpTo(0)
+        popUpTo(graph.id) { inclusive = true }
     }
 }
