@@ -29,4 +29,7 @@ interface FaturaDao {
 
     @Query("UPDATE faturas SET excluidoEm = :quando, atualizadoEm = :quando WHERE publicId = :publicId")
     suspend fun marcarExcluida(publicId: String, quando: Instant)
+
+    @Query("UPDATE faturas SET pagamentoLancamentoPublicId = :para WHERE pagamentoLancamentoPublicId = :de")
+    suspend fun repointarPagamento(de: String, para: String)
 }
