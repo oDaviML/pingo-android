@@ -65,7 +65,7 @@ class SyncEngineTest {
             .build()
         api = FakeApi()
         preferences = FakePreferences()
-        engine = SyncEngine(api, database, preferences, FakeAuth())
+        engine = SyncEngine(api, database, preferences, FakeAuth(), DeviceActivator(api, preferences))
     }
 
     @After
@@ -184,12 +184,129 @@ class SyncEngineTest {
 
     @Test
     fun `sem sessao nao sincroniza`() = runTest {
-        val semSessao = SyncEngine(api, database, preferences, FakeAuth(SessionState.LoggedOut))
+        val semSessao = SyncEngine(api, database, preferences, FakeAuth(SessionState.LoggedOut), DeviceActivator(api, preferences))
 
         semSessao.run()
 
         assertEquals(0, api.pullCalls)
         assertEquals(0, api.pushCalls)
+    }
+
+    @Test
+    fun `ativa o aparelho antes de restaurar e sincronizar`() = runTest {
+        api.pullResult = PullChangesResult(
+            proximoCursor = "cursor-1",
+            servidorEm = init.toString(),
+            contas = listOf(contaSnapshot("conta-1", atualizadoEm = init)),
+        )
+
+        engine.run()
+
+        assertEquals(1, api.activateCalls)
+        assertEquals(preferences.deviceId(), api.activatedDeviceId)
+    }
+
+    @Test
+    fun `ativa o aparelho apenas uma vez por dispositivo`() = runTest {
+        engine.run()
+        engine.run()
+
+        assertEquals(1, api.activateCalls)
+
+        DeviceActivator(api, preferences).activate()
+
+        assertEquals(1, api.activateCalls)
+    }
+
+    @Test
+    fun `restauracao completa aplica contas instrumentos e lancamentos na ordem certa`() = runTest {
+        api.pullResult = PullChangesResult(
+            servidorEm = init.toString(),
+            contas = listOf(contaSnapshot("conta-1", atualizadoEm = init)),
+            instrumentos = listOf(
+                com.pingo.core.network.sync.InstrumentoSnapshotDto(
+                    publicId = "instrumento-1",
+                    contaPublicId = "conta-1",
+                    tipo = "Debito",
+                    apelido = "Conta",
+                    arquivado = false,
+                    criadoEm = init.toString(),
+                    atualizadoEm = init.toString(),
+                ),
+            ),
+            lancamentos = listOf(
+                com.pingo.core.network.sync.LancamentoSnapshotDto(
+                    publicId = "lancamento-1",
+                    instrumentoPublicId = "instrumento-1",
+                    valor = 42.9,
+                    dataHora = init.toString(),
+                    tipo = "Despesa",
+                    status = "Confirmado",
+                    origem = "Manual",
+                    confianca = 1.0,
+                    criadoEm = init.toString(),
+                    atualizadoEm = init.toString(),
+                ),
+            ),
+        )
+
+        engine.run()
+
+        assertNotNull(database.contaDao().buscar("conta-1"))
+        assertNotNull(database.instrumentoDao().buscar("instrumento-1"))
+        assertEquals(4290L, database.lancamentoDao().buscar("lancamento-1")?.valorCentavos)
+        assertEquals(0, api.pushCalls)
+    }
+
+    @Test
+    fun `restauracao interrompida pela rede retoma sem duplicar dados`() = runTest {
+        api.pullResult = PullChangesResult(
+            proximoCursor = "cursor-1",
+            servidorEm = init.toString(),
+            contas = listOf(contaSnapshot("conta-1", atualizadoEm = init)),
+        )
+        api.failure = IOException("sem rede")
+
+        runCatching { engine.run() }
+
+        assertNull(preferences.pullCursor())
+        assertNull(database.contaDao().buscar("conta-1"))
+
+        api.failure = null
+        engine.run()
+
+        assertEquals("cursor-1", preferences.pullCursor())
+        assertEquals(1, api.pullCalls)
+        assertNotNull(database.contaDao().buscar("conta-1"))
+    }
+
+    @Test
+    fun `falha na ativacao nao impede a sincronizacao`() = runTest {
+        api.activateFailure = IOException("sem rede")
+        api.pullResult = PullChangesResult(
+            proximoCursor = "cursor-1",
+            servidorEm = init.toString(),
+            contas = listOf(contaSnapshot("conta-1", atualizadoEm = init)),
+        )
+
+        engine.run()
+
+        assertEquals(1, api.activateCalls)
+        assertNull(preferences.activatedDeviceId())
+        assertEquals("cursor-1", preferences.pullCursor())
+        assertEquals(SyncStatus.IDLE, preferences.status)
+    }
+
+    @Test
+    fun `pull aplica tombstone do servidor`() = runTest {
+        api.pullResult = PullChangesResult(
+            servidorEm = init.toString(),
+            contas = listOf(contaSnapshot("conta-1", atualizadoEm = init).copy(excluidoEm = init.toString())),
+        )
+
+        engine.run()
+
+        assertNotNull(database.contaDao().buscar("conta-1")?.excluidoEm)
     }
 
     private fun contaSnapshot(publicId: String, atualizadoEm: Instant, apelido: String = "Conta 1") = ContaSnapshotDto(
@@ -264,13 +381,23 @@ class SyncEngineTest {
         var pushResult = PushChangesResult()
         var failure: Exception? = null
         var pushFailure: Exception? = null
+        var activateFailure: Exception? = null
         var pushed: PushChangesPayload? = null
+        var activatedDeviceId: String? = null
         var pullCalls = 0
         var pushCalls = 0
+        var activateCalls = 0
 
         override suspend fun healthCheck(): Boolean = true
 
         override suspend fun getProfile(): ApiProfile = error("nao usado")
+
+        override suspend fun activateDevice(deviceId: String, deviceName: String?): com.pingo.core.network.ApiDevice {
+            activateCalls++
+            (activateFailure ?: failure)?.let { throw it }
+            activatedDeviceId = deviceId
+            return com.pingo.core.network.ApiDevice(deviceId, deviceName, Instant.EPOCH.toString())
+        }
 
         override suspend fun pushChanges(payload: PushChangesPayload): PushChangesResult {
             (pushFailure ?: failure)?.let { throw it }
@@ -296,6 +423,7 @@ class SyncEngineTest {
         private var pull: String? = null
         private var push: Instant? = null
         private var last: Instant? = null
+        private var activated: String? = null
 
         override val syncStatus: Flow<SyncStatus> = statusFlow
 
@@ -323,6 +451,14 @@ class SyncEngineTest {
         override suspend fun setLastSyncAt(instant: Instant) {
             last = instant
         }
+
+        override suspend fun activatedDeviceId(): String? = activated
+
+        override suspend fun setActivatedDeviceId(deviceId: String) {
+            activated = deviceId
+        }
+
+        override suspend fun deviceId(): String = "device-test"
     }
 
     private class FakeAuth(private val state: SessionState = SessionState.LoggedIn) : AuthRepository {

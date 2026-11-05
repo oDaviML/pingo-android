@@ -8,7 +8,10 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.Instant
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,6 +20,8 @@ private val Context.userPreferencesDataStore by preferencesDataStore(name = "use
 @Singleton
 class UserPreferencesDataSourceImpl @Inject constructor(@param:ApplicationContext private val context: Context) :
     UserPreferencesDataSource {
+    private val deviceIdMutex = Mutex()
+
     override val syncStatus: Flow<SyncStatus> = context.userPreferencesDataStore.data.map { preferences ->
         preferences[Keys.SYNC_STATUS]
             ?.let { value -> runCatching { SyncStatus.valueOf(value) }.getOrNull() }
@@ -57,12 +62,38 @@ class UserPreferencesDataSourceImpl @Inject constructor(@param:ApplicationContex
         }
     }
 
+    override suspend fun deviceId(): String = deviceIdMutex.withLock {
+        val existing = context.userPreferencesDataStore.data.first()[Keys.DEVICE_ID]
+
+        if (existing != null) {
+            return@withLock existing
+        }
+
+        val generated = UUID.randomUUID().toString()
+
+        context.userPreferencesDataStore.edit { preferences ->
+            preferences[Keys.DEVICE_ID] = generated
+        }
+
+        generated
+    }
+
+    override suspend fun activatedDeviceId(): String? = context.userPreferencesDataStore.data.first()[Keys.ACTIVATED_DEVICE_ID]
+
+    override suspend fun setActivatedDeviceId(deviceId: String) {
+        context.userPreferencesDataStore.edit { preferences ->
+            preferences[Keys.ACTIVATED_DEVICE_ID] = deviceId
+        }
+    }
+
     private companion object {
         object Keys {
             val SYNC_STATUS = stringPreferencesKey("sync_status")
             val PULL_CURSOR = stringPreferencesKey("pull_cursor")
             val PUSH_CURSOR = stringPreferencesKey("push_cursor")
             val LAST_SYNC_AT = stringPreferencesKey("last_sync_at")
+            val DEVICE_ID = stringPreferencesKey("device_id")
+            val ACTIVATED_DEVICE_ID = stringPreferencesKey("activated_device_id")
         }
     }
 }
