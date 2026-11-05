@@ -2,6 +2,8 @@ package com.pingo.sync
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.pingo.core.auth.AuthRepository
@@ -22,22 +24,17 @@ import com.pingo.core.model.TipoLancamento
 import com.pingo.core.network.ApiProfile
 import com.pingo.core.network.PingoApiClient
 import com.pingo.core.network.sync.ContaSnapshotDto
-import com.pingo.core.network.sync.LancamentoChangeDto
-import com.pingo.core.network.sync.LancamentoSnapshotDto
 import com.pingo.core.network.sync.PublicIdAliasDto
 import com.pingo.core.network.sync.PullChangesResult
 import com.pingo.core.network.sync.PushChangesPayload
 import com.pingo.core.network.sync.PushChangesResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -58,6 +55,13 @@ class SyncEngineTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         database = Room.inMemoryDatabaseBuilder(context, PingoDatabase::class.java)
             .allowMainThreadQueries()
+            .addCallback(
+                object : RoomDatabase.Callback() {
+                    override fun onOpen(db: SupportSQLiteDatabase) {
+                        db.setForeignKeyConstraintsEnabled(true)
+                    }
+                },
+            )
             .build()
         api = FakeApi()
         preferences = FakePreferences()
