@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pingo.core.data.AccountRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,7 +45,11 @@ class SettingsViewModel @Inject constructor(private val accountRepository: Accou
                             it.copy(deleting = false, showDeleteDialog = false, accountDeleted = true)
                         }
                     },
-                    onFailure = {
+                    onFailure = { exception ->
+                        if (exception is CancellationException) {
+                            throw exception
+                        }
+
                         mutableUiState.update { it.copy(deleting = false, deleteFailed = true) }
                     },
                 )
