@@ -4,6 +4,8 @@ import com.pingo.core.datastore.CapturaDataSource
 import com.pingo.core.datastore.EstadoListenerPersistido
 import com.pingo.core.datastore.MotivoParada
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.Clock
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -15,55 +17,88 @@ class CapturaControllerImpl @Inject constructor(
     private val rebindDeListener: RebindDeListener,
     private val servicoDeCaptura: ServicoDeCaptura,
     private val conexaoDoListener: ConexaoDoListener,
+    private val escopoDeCaptura: EscopoDeCaptura,
     private val clock: Clock,
 ) : CapturaController {
+    private val persistencia = Mutex()
+
     override fun iniciarServico() = servicoDeCaptura.iniciar()
 
     override fun pararServico() = servicoDeCaptura.parar()
 
-    override suspend fun registrarConectado() {
-        conexaoDoListener.marcarConectado()
-        capturaDataSource.registrarAtivo(clock.instant())
+    override fun registrarConectado() {
+        val versao = conexaoDoListener.marcarConectado()
         servicoDeCaptura.iniciar()
+        escopoDeCaptura.lancar {
+            persistirSeVigente(versao) {
+                capturaDataSource.registrarAtivo(clock.instant())
+            }
+        }
     }
 
-    override suspend fun registrarDesconectado() {
-        conexaoDoListener.marcarDesconectado()
+    override fun registrarDesconectado() {
+        val versao = conexaoDoListener.marcarDesconectado()
+        val acessoConcedido = acessoNotificacoes.concedido()
 
-        if (!acessoNotificacoes.concedido()) {
-            capturaDataSource.registrarParado(MotivoParada.PERMISSAO_REVOGADA, clock.instant())
-            return
+        if (acessoConcedido) {
+            rebindDeListener.solicitar()
         }
 
-        capturaDataSource.registrarParado(MotivoParada.DESCONECTADO, clock.instant())
-        rebindDeListener.solicitar()
+        escopoDeCaptura.lancar {
+            persistirSeVigente(versao) {
+                capturaDataSource.registrarParado(motivoDaParada(acessoConcedido), clock.instant())
+            }
+        }
     }
 
     override suspend fun reconectar(): EstadoListenerPersistido {
+        val conexao = conexaoDoListener.instantaneo()
+
         if (acessoNotificacoes.concedido()) {
             servicoDeCaptura.iniciar()
-            if (conexaoDoListener.conexao.value) {
-                capturaDataSource.registrarAtivo(clock.instant())
+            if (conexao.conectado) {
+                persistirSeVigente(conexao.versao) {
+                    capturaDataSource.registrarAtivo(clock.instant())
+                }
             } else {
                 rebindDeListener.solicitar()
             }
         } else {
-            capturaDataSource.registrarParado(MotivoParada.PERMISSAO_REVOGADA, clock.instant())
+            persistirSeVigente(conexao.versao) {
+                capturaDataSource.registrarParado(MotivoParada.PERMISSAO_REVOGADA, clock.instant())
+            }
         }
 
         return capturaDataSource.estadoListener.first()
     }
 
     override suspend fun reconciliar(): EstadoListenerPersistido {
+        val conexao = conexaoDoListener.instantaneo()
+
         if (acessoNotificacoes.concedido()) {
             servicoDeCaptura.iniciar()
-            if (conexaoDoListener.conexao.value) {
-                capturaDataSource.registrarAtivo(clock.instant())
+            if (conexao.conectado) {
+                persistirSeVigente(conexao.versao) {
+                    capturaDataSource.registrarAtivo(clock.instant())
+                }
             }
         } else {
-            capturaDataSource.registrarParado(MotivoParada.PERMISSAO_REVOGADA, clock.instant())
+            persistirSeVigente(conexao.versao) {
+                capturaDataSource.registrarParado(MotivoParada.PERMISSAO_REVOGADA, clock.instant())
+            }
         }
 
         return capturaDataSource.estadoListener.first()
     }
+
+    private suspend fun persistirSeVigente(versao: Long, persistir: suspend () -> Unit) {
+        persistencia.withLock {
+            if (conexaoDoListener.vigente(versao)) {
+                persistir()
+            }
+        }
+    }
+
+    private fun motivoDaParada(acessoConcedido: Boolean): MotivoParada =
+        if (acessoConcedido) MotivoParada.DESCONECTADO else MotivoParada.PERMISSAO_REVOGADA
 }

@@ -7,9 +7,9 @@ interface CapturaController {
 
     fun pararServico()
 
-    suspend fun registrarConectado()
+    fun registrarConectado()
 
-    suspend fun registrarDesconectado()
+    fun registrarDesconectado()
 
     suspend fun reconectar(): EstadoListenerPersistido
 

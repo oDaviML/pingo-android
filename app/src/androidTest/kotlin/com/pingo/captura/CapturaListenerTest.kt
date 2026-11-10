@@ -7,6 +7,7 @@ import android.os.ParcelFileDescriptor
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.pingo.core.common.DefaultAppDispatchers
 import com.pingo.core.data.di.CapturaEntryPoint
 import com.pingo.core.datastore.CapturaDataSource
 import com.pingo.core.datastore.CapturaDataSourceImpl
@@ -28,6 +29,7 @@ import com.pingo.core.notifications.AcessoNotificacoesDoSistema
 import com.pingo.core.notifications.CapturaController
 import com.pingo.core.notifications.CapturaControllerImpl
 import com.pingo.core.notifications.ConexaoDoListener
+import com.pingo.core.notifications.EscopoDeCaptura
 import com.pingo.core.notifications.NotificacoesDeCaptura
 import com.pingo.core.notifications.RebindDeListenerDoSistema
 import com.pingo.core.notifications.ServicoDeCapturaDoAndroid
@@ -65,6 +67,7 @@ class CapturaListenerTest {
         rebindDeListener = RebindDeListenerDoSistema(contexto),
         servicoDeCaptura = ServicoDeCapturaDoAndroid(contexto),
         conexaoDoListener = ConexaoDoListener(),
+        escopoDeCaptura = EscopoDeCaptura(DefaultAppDispatchers),
         clock = Clock.systemDefaultZone(),
     )
     private val gerenciadorNotificacoes: NotificationManager = contexto.getSystemService(NotificationManager::class.java)

@@ -18,13 +18,12 @@ class PingoNotificationListenerService : NotificationListenerService() {
 
     @Inject lateinit var capturaController: CapturaController
 
-    @Inject lateinit var conexaoDoListener: ConexaoDoListener
-
     @Inject lateinit var atualizadorDeRegras: AtualizadorDeRegras
 
     @Inject lateinit var dispatchers: AppDispatchers
 
     private var escopo: CoroutineScope? = null
+    private var desconexaoProcessada = false
 
     override fun onCreate() {
         super.onCreate()
@@ -33,15 +32,20 @@ class PingoNotificationListenerService : NotificationListenerService() {
 
     override fun onListenerConnected() {
         super.onListenerConnected()
-        conexaoDoListener.marcarConectado()
-        executar { capturaController.registrarConectado() }
+        desconexaoProcessada = false
+        capturaController.registrarConectado()
         executar { atualizadorDeRegras.atualizar() }
     }
 
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
-        conexaoDoListener.marcarDesconectado()
-        executar { capturaController.registrarDesconectado() }
+
+        if (desconexaoProcessada) {
+            return
+        }
+
+        desconexaoProcessada = true
+        capturaController.registrarDesconectado()
     }
 
     override fun onNotificationPosted(statusBarNotification: StatusBarNotification) {

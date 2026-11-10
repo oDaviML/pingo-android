@@ -19,4 +19,6 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     testImplementation(project(":core:testing"))
     testImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
 }
