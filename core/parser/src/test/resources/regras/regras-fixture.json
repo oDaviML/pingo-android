@@ -1,0 +1,42 @@
+{
+  "INTER": [
+    {
+      "id": "inter-compra-debito",
+      "tipoLancamento": "COMPRA",
+      "direcao": "DESPESA",
+      "ancoras": ["você acaba de comprar no débito"],
+      "exclusoes": ["negada"],
+      "extracoes": {
+        "valor": "o valor de R$ {valor}",
+        "estabelecimento": "comprar no débito no {estabelecimento} o valor"
+      }
+    }
+  ],
+  "ITAU": [
+    {
+      "id": "itau-compra-aprovada",
+      "tipoLancamento": "COMPRA",
+      "direcao": "DESPESA",
+      "ancoras": ["Compra aprovada de R$"],
+      "exclusoes": ["negada"],
+      "extracoes": {
+        "valor": "Compra aprovada de R$ {valor}",
+        "estabelecimento": "em {estabelecimento} no dia"
+      }
+    }
+  ],
+  "NUBANK": [
+    {
+      "id": "nubank-compra",
+      "tipoLancamento": "COMPRA",
+      "direcao": "DESPESA",
+      "ancoras": ["Compra de R$"],
+      "exclusoes": ["negada"],
+      "extracoes": {
+        "valor": "Compra de R$ {valor}",
+        "estabelecimento": "em {estabelecimento} para o cartão",
+        "digitos": "cartão com final {digitos}"
+      }
+    }
+  ]
+}

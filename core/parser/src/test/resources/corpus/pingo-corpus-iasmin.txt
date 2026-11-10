@@ -1,0 +1,140 @@
+2026-11-04 08:07:39 · Caju (com.caju.employeeApp)
+Título: Pagamento aprovado
+Texto: Compra de R$ 10,50 em Gilda Silva Barbo APROVADA no VOUCHER, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 1669,97.
+BigText: Compra de R$ 10,50 em Gilda Silva Barbo APROVADA no VOUCHER, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 1669,97.
+
+2026-11-04 06:44:47 · Caju (com.caju.employeeApp)
+Título: Pagamento aprovado
+Texto: Compra de R$ 75,00 em Cartao Otimo Otm APROVADA no CRÉDITO, seu saldo em MOBILIDADE é R$ 205,00.
+BigText: Compra de R$ 75,00 em Cartao Otimo Otm APROVADA no CRÉDITO, seu saldo em MOBILIDADE é R$ 205,00.
+
+2026-11-03 14:21:21 · Nubank (com.nu.production)
+Título: Alguns dos seus limites foram atualizados
+Texto: Clique aqui e confira os novos valores. Você também pode editar esses limites, se preferir.
+BigText: Clique aqui e confira os novos valores. Você também pode editar esses limites, se preferir.
+
+2026-11-03 14:02:19 · Nubank (com.nu.production)
+Título: Transferência recebida
+Texto: Você recebeu uma transferência de R$ 800,00 de INSTITUTO DE GESTAO TERRITORIAL E GEOTECNOLOGIAS -.
+BigText: Você recebeu uma transferência de R$ 800,00 de INSTITUTO DE GESTAO TERRITORIAL E GEOTECNOLOGIAS -.
+
+2026-11-03 11:15:41 · Caju (com.caju.employeeApp)
+Título: Seu Caju caiu!
+Texto: Oba! R$ 830,00 disponíveis no seu Caju. Aproveite!
+BigText: Oba! R$ 830,00 disponíveis no seu Caju. Aproveite!
+
+2026-11-03 10:05:34 · Nubank (com.nu.production)
+Título: Só cliente Nu tem 50% OFF na Shopee
+Texto: O 11.11 tá chegando. Aproveite o desconto exclusivo e comece a montar seu carrinho.
+BigText: O 11.11 tá chegando. Aproveite o desconto exclusivo e comece a montar seu carrinho.
+
+2026-11-03 08:12:57 · Nubank (com.nu.production)
+Título: Todos seus saldos em um só lugar
+Texto: Gerencie suas contas de outros bancos no app do Nu com Open Finance. Traga seus dados agora.
+BigText: Gerencie suas contas de outros bancos no app do Nu com Open Finance. Traga seus dados agora.
+
+2026-11-03 06:25:47 · Nubank (com.nu.production)
+Título: Compra no débito aprovada
+Texto: Compra de R$ 44,90 em NETFLIX ENTRETENIMENTO
+BigText: Compra de R$ 44,90 em NETFLIX ENTRETENIMENTO
+
+2026-11-02 16:45:07 · Inter (br.com.intermedium)
+Título: Electrolux em oferta!
+Texto: Iasmin, garanta seu produto desejado com até 13% de cashback no Inter Shop. Vem aproveitar antes que expire!
+BigText: Iasmin, garanta seu produto desejado com até 13% de cashback no Inter Shop. Vem aproveitar antes que expire!
+
+2026-11-01 16:22:08 · Nubank (com.nu.production)
+Título: 
+Texto: 
+BigText: 
+
+2026-11-01 16:22:07 · Nubank (com.nu.production)
+Título: Transferência recebida
+Texto: Recebemos sua transferência de R$ 150,00.
+BigText: Recebemos sua transferência de R$ 150,00.
+
+2026-11-01 16:22:07 · Nubank (com.nu.production)
+Título: Traga seus dados para o Nubank
+Texto: Iasmin, compartilhando seus dados do Banco Inter PF, você recebe limites e créditos ainda mais adequados ao seu perfil.
+BigText: Iasmin, compartilhando seus dados do Banco Inter PF, você recebe limites e créditos ainda mais adequados ao seu perfil.
+
+2026-11-01 09:39:40 · Nubank (com.nu.production)
+Título: Transferência recebida
+Texto: Você recebeu uma transferência de R$ 45,00 de Wanderson de Oliveira Furtado.
+BigText: Você recebeu uma transferência de R$ 45,00 de Wanderson de Oliveira Furtado.
+
+2026-10-31 16:56:43 · Inter (br.com.intermedium)
+Título: Samsung em oferta!
+Texto: Iasmin, garanta seu produto desejado com até 26% de cashback no Inter Shop. Vem aproveitar antes que expire!
+BigText: Iasmin, garanta seu produto desejado com até 26% de cashback no Inter Shop. Vem aproveitar antes que expire!
+
+2026-10-30 12:03:22 · Caju (com.caju.employeeApp)
+Título: Pagamento aprovado
+Texto: Compra de R$ 57,21 em Msn Paracatu APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 1130,47.
+BigText: Compra de R$ 57,21 em Msn Paracatu APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 1130,47.
+
+2026-10-29 11:58:35 · Caju (com.caju.employeeApp)
+Título: Pagamento aprovado
+Texto: Compra de R$ 20,00 em Tia Sol Comida Mineira APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 1187,68.
+BigText: Compra de R$ 20,00 em Tia Sol Comida Mineira APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 1187,68.
+
+2026-10-29 08:16:10 · Nubank (com.nu.production)
+Título: Concorra a até R$ 1 milhão 🎁
+Texto: Ative o NuCoin grátis, use seu cartão do Nu, concorra a prêmios toda semana e desbloqueie novos benefícios.
+
+
+BigText: Ative o NuCoin grátis, use seu cartão do Nu, concorra a prêmios toda semana e desbloqueie novos benefícios.
+
+
+
+2026-10-29 07:20:45 · Caju (com.caju.employeeApp)
+Título: Pagamento aprovado
+Texto: Compra de R$ 16,70 em Supermercado Via Bahia APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 1207,68.
+BigText: Compra de R$ 16,70 em Supermercado Via Bahia APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 1207,68.
+
+2026-10-28 13:16:23 · Nubank (com.nu.production)
+Título: Dicas personalizadas para você
+Texto: Conectando seus outros bancos com o Nu podemos te indicar formas de guardar dinheiro com melhores rendimentos.
+BigText: Conectando seus outros bancos com o Nu podemos te indicar formas de guardar dinheiro com melhores rendimentos.
+
+2026-10-26 12:35:03 · Caju (com.caju.employeeApp)
+Título: Pagamento aprovado
+Texto: Compra de R$ 14,99 em Msn Paracatu APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 1224,38.
+BigText: Compra de R$ 14,99 em Msn Paracatu APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 1224,38.
+
+2026-10-26 11:31:41 · Caju (com.caju.employeeApp)
+Título: Pagamento aprovado
+Texto: Compra de R$ 20,00 em Tia Sol Comida Mineira APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 1239,37.
+BigText: Compra de R$ 20,00 em Tia Sol Comida Mineira APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 1239,37.
+
+2026-10-26 08:24:19 · Nubank (com.nu.production)
+Título: NuCel com mais internet
+Texto: Agora, você conta com opções a partir de 35GB por R$ 45/mês. É a sua chance de experimentar NuCel. Vem conferir no app.
+BigText: Agora, você conta com opções a partir de 35GB por R$ 45/mês. É a sua chance de experimentar NuCel. Vem conferir no app.
+
+2026-10-26 07:35:23 · Caju (com.caju.employeeApp)
+Título: Pagamento aprovado
+Texto: Compra de R$ 4,00 em Tia Sol Comida Mineira APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 1259,37.
+BigText: Compra de R$ 4,00 em Tia Sol Comida Mineira APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 1259,37.
+
+2026-10-23 16:34:27 · Inter (br.com.intermedium)
+Título: As melhores ofertas em Smartwatch
+Texto: Não deixe pra depois, Iasmin!
+Somente hoje com até 43% OFF e até 10% de cashback.
+BigText: Não deixe pra depois, Iasmin!
+Somente hoje com até 43% OFF e até 10% de cashback.
+
+2026-10-23 12:35:50 · Caju (com.caju.employeeApp)
+Título: Pagamento aprovado
+Texto: Compra de R$ 12,00 em Ludy Doces APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 1263,37.
+BigText: Compra de R$ 12,00 em Ludy Doces APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 1263,37.
+
+2026-10-23 10:16:13 · Nubank (com.nu.production)
+Título: Concorra a até R$10 mil semana que vem
+Texto: São 110 prêmios sorteados dia 28/10. Ative o NuCoin de graça e use o cartão do Nu para participar.
+BigText: São 110 prêmios sorteados dia 28/10. Ative o NuCoin de graça e use o cartão do Nu para participar.
+
+2026-10-23 07:49:13 · Caju (com.caju.employeeApp)
+Título: Pagamento aprovado
+Texto: Compra de R$ 36,56 em Msn Paracatu APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 1275,37.
+BigText: Compra de R$ 36,56 em Msn Paracatu APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 1275,37.

@@ -1,0 +1,213 @@
+arquivo	ordem	timestamp	pacote	instituicao	esperado	tipo	motivo
+pingo-corpus.txt	1	2026-11-10 10:48:05	com.itau	ITAU	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	2	2026-11-10 10:41:29	com.itau	ITAU	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	3	2026-11-10 10:08:02	br.com.intermedium	INTER	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	4	2026-11-10 08:14:49	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	5	2026-11-10 00:55:50	com.itau	ITAU	TRANSACIONAL	COMPRA	Itaú compra aprovada
+pingo-corpus.txt	6	2026-11-09 19:54:08	br.com.intermedium	INTER	TRANSACIONAL	PIX_RECEBIDO	Inter Pix recebido
+pingo-corpus.txt	7	2026-11-09 19:27:54	com.itau	ITAU	TRANSACIONAL	PIX_ENVIADO	Itaú Pix enviado
+pingo-corpus.txt	8	2026-11-09 16:46:32	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	9	2026-11-09 16:17:21	br.com.intermedium	INTER	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	10	2026-11-09 12:48:24	br.com.intermedium	INTER	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	11	2026-11-09 10:55:54	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	12	2026-11-09 10:34:53	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	13	2026-11-08 12:43:56	br.com.intermedium	INTER	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	14	2026-11-08 09:58:25	com.caju.employeeApp	CAJU	TRANSACIONAL	COMPRA	Caju compra aprovada
+pingo-corpus.txt	15	2026-11-06 15:27:52	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	16	2026-11-06 14:01:36	com.itau	ITAU	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus.txt	17	2026-11-06 14:01:36	com.itau	ITAU	TRANSACIONAL	PIX_RECEBIDO	Itaú Pix recebido
+pingo-corpus.txt	18	2026-11-06 14:01:36	com.itau	ITAU	TRANSACIONAL	COMPRA	Itaú boleto pago de terceiro (tipo COMPRA, sem tipo próprio no enum)
+pingo-corpus.txt	19	2026-11-06 14:01:32	com.itau	ITAU	TRANSACIONAL	COMPRA	Itaú boleto pago de terceiro (tipo COMPRA, sem tipo próprio no enum)
+pingo-corpus.txt	20	2026-11-06 13:54:48	com.itau	ITAU	TRANSACIONAL	PIX_RECEBIDO	Itaú Pix recebido
+pingo-corpus.txt	21	2026-11-06 12:54:12	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	22	2026-11-06 12:19:16	br.com.intermedium	INTER	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	23	2026-11-06 10:26:50	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	24	2026-11-05 20:44:19	com.itau	ITAU	TRANSACIONAL	COMPRA	Itaú compra aprovada
+pingo-corpus.txt	25	2026-11-05 18:23:42	br.com.intermedium	INTER	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	26	2026-11-05 17:56:37	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	27	2026-11-05 17:23:55	br.com.intermedium	INTER	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus.txt	28	2026-11-05 17:23:55	br.com.intermedium	INTER	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	29	2026-11-05 17:17:25	br.com.intermedium	INTER	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	30	2026-11-05 16:19:35	com.caju.employeeApp	CAJU	TRANSACIONAL	COMPRA	Caju compra aprovada
+pingo-corpus.txt	31	2026-11-05 09:35:11	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	32	2026-11-05 09:18:42	com.mercadopago.wallet	MERCADO_PAGO	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus.txt	33	2026-11-05 09:18:42	com.mercadopago.wallet	MERCADO_PAGO	FORA_V1		cashback (sem regra v1)
+pingo-corpus.txt	34	2026-11-05 09:07:25	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento de cartão (valor no título)
+pingo-corpus.txt	35	2026-11-05 08:16:29	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	36	2026-11-04 16:53:30	br.com.intermedium	INTER	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	37	2026-11-04 14:24:24	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	38	2026-11-04 11:18:04	com.caju.employeeApp	CAJU	TRANSACIONAL	COMPRA	Caju compra aprovada
+pingo-corpus.txt	39	2026-11-04 08:23:40	br.com.intermedium	INTER	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	40	2026-11-04 08:12:26	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	41	2026-11-03 16:48:18	com.itau	ITAU	FORA_V1		fatura fechada com valor (F2)
+pingo-corpus.txt	42	2026-11-03 15:32:04	com.itau	ITAU	FORA_V1		fatura fechada com valor (F2)
+pingo-corpus.txt	43	2026-11-03 14:06:18	br.com.intermedium	INTER	TRANSACIONAL	PIX_RECEBIDO	Inter Pix recebido
+pingo-corpus.txt	44	2026-11-03 13:30:17	com.itau	ITAU	TRANSACIONAL	COMPRA	Itaú compra aprovada em USD (PENDENTE MOEDA_ESTRANGEIRA no pós-processamento)
+pingo-corpus.txt	45	2026-11-03 13:30:05	com.itau	ITAU	TRANSACIONAL	COMPRA	Itaú compra aprovada em USD (PENDENTE MOEDA_ESTRANGEIRA no pós-processamento)
+pingo-corpus.txt	46	2026-11-03 13:29:56	com.itau	ITAU	TRANSACIONAL	COMPRA	Itaú compra aprovada em USD (PENDENTE MOEDA_ESTRANGEIRA no pós-processamento)
+pingo-corpus.txt	47	2026-11-03 13:24:23	com.itau	ITAU	NEGADA		compra negada (exclusão NEGADA; sem lançamento)
+pingo-corpus.txt	48	2026-11-03 13:24:23	com.itau	ITAU	NEGADA		compra negada (exclusão NEGADA; sem lançamento)
+pingo-corpus.txt	49	2026-11-03 13:24:20	com.itau	ITAU	NEGADA		compra negada (exclusão NEGADA; sem lançamento)
+pingo-corpus.txt	50	2026-11-03 13:24:20	com.itau	ITAU	NEGADA		compra negada (exclusão NEGADA; sem lançamento)
+pingo-corpus.txt	51	2026-11-03 13:24:02	com.itau	ITAU	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus.txt	52	2026-11-03 13:24:02	com.itau	ITAU	TRANSACIONAL	COMPRA	Itaú compra aprovada em USD (PENDENTE MOEDA_ESTRANGEIRA no pós-processamento)
+pingo-corpus.txt	53	2026-11-03 13:24:02	com.itau	ITAU	TRANSACIONAL	COMPRA	Itaú compra aprovada em USD (PENDENTE MOEDA_ESTRANGEIRA no pós-processamento)
+pingo-corpus.txt	54	2026-11-03 13:23:59	com.itau	ITAU	TRANSACIONAL	COMPRA	Itaú compra aprovada em USD (PENDENTE MOEDA_ESTRANGEIRA no pós-processamento)
+pingo-corpus.txt	55	2026-11-03 13:23:39	com.itau	ITAU	TRANSACIONAL	COMPRA	Itaú compra aprovada em USD (PENDENTE MOEDA_ESTRANGEIRA no pós-processamento)
+pingo-corpus.txt	56	2026-11-03 11:42:04	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	57	2026-11-03 10:51:48	br.com.intermedium	INTER	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	58	2026-11-03 10:51:43	com.itau	ITAU	FORA_V1		fatura fechada com valor (F2)
+pingo-corpus.txt	59	2026-11-03 08:27:17	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	60	2026-11-03 04:48:02	com.itau	ITAU	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus.txt	61	2026-11-03 04:48:02	com.itau	ITAU	FORA_V1		boleto de fatura emitido (F2)
+pingo-corpus.txt	62	2026-11-03 04:48:02	com.itau	ITAU	FORA_V1		fatura fechada com valor (F2)
+pingo-corpus.txt	63	2026-11-03 04:47:59	com.itau	ITAU	FORA_V1		fatura fechada com valor (F2)
+pingo-corpus.txt	64	2026-11-03 03:47:20	com.itau	ITAU	FORA_V1		boleto de fatura emitido (F2)
+pingo-corpus.txt	65	2026-11-01 12:36:48	com.caju.employeeApp	CAJU	TRANSACIONAL	COMPRA	Caju compra aprovada
+pingo-corpus.txt	66	2026-11-01 09:59:11	com.itau	ITAU	TRANSACIONAL	COMPRA	Itaú compra aprovada
+pingo-corpus.txt	67	2026-10-31 15:49:30	br.com.intermedium	INTER	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	68	2026-10-31 10:47:49	com.caju.employeeApp	CAJU	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	69	2026-10-31 08:58:15	com.caju.employeeApp	CAJU	TRANSACIONAL	COMPRA	Caju compra aprovada
+pingo-corpus.txt	70	2026-10-31 08:01:12	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	71	2026-10-31 00:02:07	com.caju.employeeApp	CAJU	TRANSACIONAL	DEPOSITO	Caju depósito
+pingo-corpus.txt	72	2026-10-30 17:41:41	com.nu.production	NUBANK	NEGADA		compra negada (exclusão NEGADA; sem lançamento)
+pingo-corpus.txt	73	2026-10-30 15:42:01	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	74	2026-10-30 14:54:23	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	75	2026-10-30 11:40:56	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	76	2026-10-30 10:44:05	com.caju.employeeApp	CAJU	TRANSACIONAL	COMPRA	Caju compra aprovada
+pingo-corpus.txt	77	2026-10-28 18:58:46	com.itau	ITAU	TRANSACIONAL	COMPRA	Itaú compra aprovada
+pingo-corpus.txt	78	2026-10-28 18:00:09	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento de cartão (valor no título)
+pingo-corpus.txt	79	2026-10-28 17:15:22	br.com.intermedium	INTER	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	80	2026-10-28 10:52:54	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	81	2026-10-28 08:28:37	com.nu.production	NUBANK	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus.txt	82	2026-10-28 08:28:37	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	83	2026-10-28 01:53:28	com.nu.production	NUBANK	NEGADA		compra negada (exclusão NEGADA; sem lançamento)
+pingo-corpus.txt	84	2026-10-27 21:54:22	com.itau	ITAU	TRANSACIONAL	COMPRA	Itaú compra aprovada
+pingo-corpus.txt	85	2026-10-27 18:03:54	com.nu.production	NUBANK	NEGADA		compra negada (exclusão NEGADA; sem lançamento)
+pingo-corpus.txt	86	2026-10-27 17:11:10	com.caju.employeeApp	CAJU	TRANSACIONAL	COMPRA	Caju compra aprovada
+pingo-corpus.txt	87	2026-10-27 14:29:54	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	88	2026-10-27 09:03:17	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	89	2026-10-27 08:08:02	br.com.intermedium	INTER	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	90	2026-10-24 11:12:05	com.nu.production	NUBANK	NEGADA		compra negada (exclusão NEGADA; sem lançamento)
+pingo-corpus.txt	91	2026-10-24 11:01:06	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	92	2026-10-24 10:55:45	br.com.intermedium	INTER	TRANSACIONAL	COMPRA	Inter compra no crédito (não listada em corpus-patterns; cai em compra)
+pingo-corpus.txt	93	2026-10-23 10:46:20	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus.txt	94	2026-10-22 22:35:32	com.itau	ITAU	TRANSACIONAL	COMPRA	Itaú compra aprovada
+pingo-corpus.txt	95	2026-10-22 19:37:26	com.nu.production	NUBANK	TRANSACIONAL	TRANSFERENCIA_RECEBIDA	Nubank transferência recebida
+pingo-corpus-iasmin.txt	1	2026-11-04 08:07:39	com.caju.employeeApp	CAJU	TRANSACIONAL	COMPRA	Caju compra aprovada
+pingo-corpus-iasmin.txt	2	2026-11-04 06:44:47	com.caju.employeeApp	CAJU	TRANSACIONAL	COMPRA	Caju compra aprovada
+pingo-corpus-iasmin.txt	3	2026-11-03 14:21:21	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-iasmin.txt	4	2026-11-03 14:02:19	com.nu.production	NUBANK	TRANSACIONAL	TRANSFERENCIA_RECEBIDA	Nubank transferência recebida
+pingo-corpus-iasmin.txt	5	2026-11-03 11:15:41	com.caju.employeeApp	CAJU	TRANSACIONAL	DEPOSITO	Caju depósito
+pingo-corpus-iasmin.txt	6	2026-11-03 10:05:34	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-iasmin.txt	7	2026-11-03 08:12:57	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-iasmin.txt	8	2026-11-03 06:25:47	com.nu.production	NUBANK	TRANSACIONAL	COMPRA	Nubank compra aprovada
+pingo-corpus-iasmin.txt	9	2026-11-02 16:45:07	br.com.intermedium	INTER	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-iasmin.txt	10	2026-11-01 16:22:08	com.nu.production	NUBANK	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-iasmin.txt	11	2026-11-01 16:22:07	com.nu.production	NUBANK	TRANSACIONAL	TRANSFERENCIA_RECEBIDA	Nubank transferência recebida
+pingo-corpus-iasmin.txt	12	2026-11-01 16:22:07	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-iasmin.txt	13	2026-11-01 09:39:40	com.nu.production	NUBANK	TRANSACIONAL	TRANSFERENCIA_RECEBIDA	Nubank transferência recebida
+pingo-corpus-iasmin.txt	14	2026-10-31 16:56:43	br.com.intermedium	INTER	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-iasmin.txt	15	2026-10-30 12:03:22	com.caju.employeeApp	CAJU	TRANSACIONAL	COMPRA	Caju compra aprovada
+pingo-corpus-iasmin.txt	16	2026-10-29 11:58:35	com.caju.employeeApp	CAJU	TRANSACIONAL	COMPRA	Caju compra aprovada
+pingo-corpus-iasmin.txt	17	2026-10-29 08:16:10	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-iasmin.txt	18	2026-10-29 07:20:45	com.caju.employeeApp	CAJU	TRANSACIONAL	COMPRA	Caju compra aprovada
+pingo-corpus-iasmin.txt	19	2026-10-28 13:16:23	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-iasmin.txt	20	2026-10-26 12:35:03	com.caju.employeeApp	CAJU	TRANSACIONAL	COMPRA	Caju compra aprovada
+pingo-corpus-iasmin.txt	21	2026-10-26 11:31:41	com.caju.employeeApp	CAJU	TRANSACIONAL	COMPRA	Caju compra aprovada
+pingo-corpus-iasmin.txt	22	2026-10-26 08:24:19	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-iasmin.txt	23	2026-10-26 07:35:23	com.caju.employeeApp	CAJU	TRANSACIONAL	COMPRA	Caju compra aprovada
+pingo-corpus-iasmin.txt	24	2026-10-23 16:34:27	br.com.intermedium	INTER	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-iasmin.txt	25	2026-10-23 12:35:50	com.caju.employeeApp	CAJU	TRANSACIONAL	COMPRA	Caju compra aprovada
+pingo-corpus-iasmin.txt	26	2026-10-23 10:16:13	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-iasmin.txt	27	2026-10-23 07:49:13	com.caju.employeeApp	CAJU	TRANSACIONAL	COMPRA	Caju compra aprovada
+pingo-corpus-kaua.txt	1	2026-10-30 12:15:48	com.mercadopago.wallet	MERCADO_PAGO	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	2	2026-10-30 12:15:48	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	3	2026-10-30 11:43:35	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	4	2026-10-30 11:18:48	com.nu.production	NUBANK	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	5	2026-10-30 11:18:48	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	6	2026-10-30 08:43:49	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	7	2026-10-29 16:17:56	com.mercadopago.wallet	MERCADO_PAGO	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	8	2026-10-29 16:17:56	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento de cartão (valor no título)
+pingo-corpus-kaua.txt	9	2026-10-29 16:17:56	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	10	2026-10-29 08:02:13	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	11	2026-10-28 18:32:13	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento em conta (mercador no título)
+pingo-corpus-kaua.txt	12	2026-10-28 12:01:09	com.mercadopago.wallet	MERCADO_PAGO	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	13	2026-10-28 12:01:09	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	14	2026-10-28 11:43:23	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	15	2026-10-28 11:42:15	com.nu.production	NUBANK	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	16	2026-10-28 11:40:29	com.mercadopago.wallet	MERCADO_PAGO	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	17	2026-10-28 11:20:41	com.mercadopago.wallet	MERCADO_PAGO	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	18	2026-10-28 11:20:41	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento em conta (mercador no título)
+pingo-corpus-kaua.txt	19	2026-10-28 09:50:27	com.nu.production	NUBANK	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	20	2026-10-28 09:50:27	com.nu.production	NUBANK	TRANSACIONAL	TRANSFERENCIA_RECEBIDA	Nubank transferência recebida
+pingo-corpus-kaua.txt	21	2026-10-28 09:43:27	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento em conta (mercador no título)
+pingo-corpus-kaua.txt	22	2026-10-28 09:15:59	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	23	2026-10-27 22:18:39	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	24	2026-10-27 18:26:12	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento em conta (mercador no título)
+pingo-corpus-kaua.txt	25	2026-10-27 15:33:01	com.mercadopago.wallet	MERCADO_PAGO	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	26	2026-10-27 15:33:01	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento em conta (mercador no título)
+pingo-corpus-kaua.txt	27	2026-10-27 15:33:01	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento em conta (mercador no título)
+pingo-corpus-kaua.txt	28	2026-10-27 14:02:35	com.mercadopago.wallet	MERCADO_PAGO	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	29	2026-10-27 13:46:05	com.mercadopago.wallet	MERCADO_PAGO	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	30	2026-10-27 13:46:05	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	31	2026-10-27 13:24:00	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento em conta (mercador no título)
+pingo-corpus-kaua.txt	32	2026-10-27 11:17:37	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento em conta (mercador no título)
+pingo-corpus-kaua.txt	33	2026-10-27 09:37:23	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	34	2026-10-27 06:09:09	com.nu.production	NUBANK	TRANSACIONAL	COMPRA	Nubank compra aprovada
+pingo-corpus-kaua.txt	35	2026-10-26 23:04:33	br.com.intermedium	INTER	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	36	2026-10-26 22:03:26	br.com.intermedium	INTER	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	37	2026-10-26 22:03:26	br.com.intermedium	INTER	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	38	2026-10-26 22:00:36	com.nu.production	NUBANK	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	39	2026-10-26 22:00:36	com.nu.production	NUBANK	FORA_V1		pagamento recebido ambíguo (fatura ou transferência; sem regra automática)
+pingo-corpus-kaua.txt	40	2026-10-26 22:00:14	com.nu.production	NUBANK	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	41	2026-10-26 22:00:14	com.nu.production	NUBANK	TRANSACIONAL	TRANSFERENCIA_RECEBIDA	Nubank transferência recebida
+pingo-corpus-kaua.txt	42	2026-10-26 21:58:00	com.nu.production	NUBANK	TRANSACIONAL	TRANSFERENCIA_RECEBIDA	Nubank transferência recebida
+pingo-corpus-kaua.txt	43	2026-10-26 21:53:39	br.com.intermedium	INTER	TRANSACIONAL	PIX_RECEBIDO	Inter Pix recebido
+pingo-corpus-kaua.txt	44	2026-10-26 20:18:35	com.nu.production	NUBANK	TRANSACIONAL	TRANSFERENCIA_RECEBIDA	Nubank transferência recebida
+pingo-corpus-kaua.txt	45	2026-10-26 19:44:39	com.mercadopago.wallet	MERCADO_PAGO	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	46	2026-10-26 19:39:10	com.mercadopago.wallet	MERCADO_PAGO	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	47	2026-10-26 19:39:10	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento em conta (mercador no título)
+pingo-corpus-kaua.txt	48	2026-10-26 18:41:12	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento em conta (mercador no título)
+pingo-corpus-kaua.txt	49	2026-10-26 18:03:23	com.nu.production	NUBANK	NEGADA		compra negada (exclusão NEGADA; sem lançamento)
+pingo-corpus-kaua.txt	50	2026-10-26 16:43:38	com.nu.production	NUBANK	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	51	2026-10-26 15:07:07	com.nu.production	NUBANK	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	52	2026-10-26 15:07:07	com.nu.production	NUBANK	TRANSACIONAL	TRANSFERENCIA_RECEBIDA	Nubank transferência recebida
+pingo-corpus-kaua.txt	53	2026-10-26 12:41:50	br.com.intermedium	INTER	TRANSACIONAL	PIX_RECEBIDO	Inter Pix recebido
+pingo-corpus-kaua.txt	54	2026-10-26 10:48:20	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento em conta (mercador no título)
+pingo-corpus-kaua.txt	55	2026-10-26 09:39:23	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	56	2026-10-26 09:19:29	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento em conta (mercador no título)
+pingo-corpus-kaua.txt	57	2026-10-26 06:48:04	br.com.intermedium	INTER	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	58	2026-10-26 06:48:04	br.com.intermedium	INTER	TRANSACIONAL	COMPRA	Inter compra débito (título vazio)
+pingo-corpus-kaua.txt	59	2026-10-26 06:37:25	br.com.intermedium	INTER	TRANSACIONAL	COMPRA	Inter compra débito (título vazio)
+pingo-corpus-kaua.txt	60	2026-10-25 16:21:50	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento em conta (mercador no título)
+pingo-corpus-kaua.txt	61	2026-10-25 14:57:39	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	62	2026-10-25 12:22:25	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	63	2026-10-25 11:17:46	com.mercadopago.wallet	MERCADO_PAGO	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	64	2026-10-25 11:17:45	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento em conta (mercador no título)
+pingo-corpus-kaua.txt	65	2026-10-25 11:14:58	com.mercadopago.wallet	MERCADO_PAGO	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	66	2026-10-25 11:14:58	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento em conta (mercador no título)
+pingo-corpus-kaua.txt	67	2026-10-24 23:13:26	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento em conta (mercador no título)
+pingo-corpus-kaua.txt	68	2026-10-24 18:45:53	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	69	2026-10-24 18:09:20	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento em conta (mercador no título)
+pingo-corpus-kaua.txt	70	2026-10-24 18:07:03	com.mercadopago.wallet	MERCADO_PAGO	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	71	2026-10-24 18:06:58	com.mercadopago.wallet	MERCADO_PAGO	VAZIO		todos os campos vazios (group-summary do Android)
+pingo-corpus-kaua.txt	72	2026-10-24 18:06:58	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento em conta (mercador no título)
+pingo-corpus-kaua.txt	73	2026-10-24 17:34:22	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento em conta (mercador no título)
+pingo-corpus-kaua.txt	74	2026-10-24 15:29:10	br.com.intermedium	INTER	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	75	2026-10-24 14:23:07	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	76	2026-10-23 22:02:32	br.com.intermedium	INTER	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	77	2026-10-23 21:15:31	br.com.intermedium	INTER	TRANSACIONAL	PIX_RECEBIDO	Inter Pix recebido
+pingo-corpus-kaua.txt	78	2026-10-23 12:29:33	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	79	2026-10-23 10:22:40	com.nu.production	NUBANK	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	80	2026-10-23 05:40:53	com.mercadopago.wallet	MERCADO_PAGO	RUIDO		marketing, lembrete ou aviso sem transação
+pingo-corpus-kaua.txt	81	2026-10-23 05:07:01	br.com.intermedium	INTER	TRANSACIONAL	PIX_ENVIADO	Inter Pix Automático
+pingo-corpus-kaua.txt	82	2026-10-22 21:11:20	com.mercadopago.wallet	MERCADO_PAGO	FORA_V1		devolução de Pix (sem regra v1)
+pingo-corpus-kaua.txt	83	2026-10-22 16:45:42	com.mercadopago.wallet	MERCADO_PAGO	TRANSACIONAL	COMPRA	MP pagamento em conta (mercador no título)
+pingo-corpus-kaua.txt	84	2026-10-22 11:58:03	com.whatsapp		NAO_BANCARIO		pacote com.whatsapp não é app financeiro
+pingo-corpus-kaua.txt	85	2026-10-22 11:58:03	com.whatsapp		NAO_BANCARIO		pacote com.whatsapp não é app financeiro
+pingo-corpus-kaua.txt	86	2026-10-22 11:58:02	com.android.systemui		NAO_BANCARIO		pacote com.android.systemui não é app financeiro
+pingo-corpus-kaua.txt	87	2026-10-22 11:57:18	com.whatsapp		NAO_BANCARIO		pacote com.whatsapp não é app financeiro
+pingo-corpus-kaua.txt	88	2026-10-22 11:57:18	com.whatsapp		NAO_BANCARIO		pacote com.whatsapp não é app financeiro
+pingo-corpus-kaua.txt	89	2026-10-22 11:57:10	com.whatsapp		NAO_BANCARIO		pacote com.whatsapp não é app financeiro
+pingo-corpus-kaua.txt	90	2026-10-22 11:57:10	com.whatsapp		NAO_BANCARIO		pacote com.whatsapp não é app financeiro

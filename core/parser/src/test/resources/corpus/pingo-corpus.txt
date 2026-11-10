@@ -1,0 +1,478 @@
+2026-11-10 10:48:05 · Itaú (com.itau)
+Título: Seu Limite da Conta evoluiu
+Texto: Mais controle para gerenciar seu limite do seu jeito. Conheça a novidade.
+BigText: Mais controle para gerenciar seu limite do seu jeito. Conheça a novidade.
+
+2026-11-10 10:41:29 · Itaú (com.itau)
+Título: Seu Limite da Conta evoluiu
+Texto: Mais controle para gerenciar seu limite do seu jeito. Conheça a novidade.
+BigText: Mais controle para gerenciar seu limite do seu jeito. Conheça a novidade.
+
+2026-11-10 10:08:02 · Inter (br.com.intermedium)
+Título: É só até domingo, 15/11! ⏰
+Texto: Cadastre-se! Suas compras no crédito desde 16/10 valem chances de concorrer a R$ 500 mil. Não deixe passar!
+BigText: Cadastre-se! Suas compras no crédito desde 16/10 valem chances de concorrer a R$ 500 mil. Não deixe passar!
+
+2026-11-10 08:14:49 · Mercado Pago (com.mercadopago.wallet)
+Título: Você usou sua Linha de Crédito!
+Texto: Confira no app os detalhes dos seus empréstimos, datas de fechamento e vencimento.
+BigText: Confira no app os detalhes dos seus empréstimos, datas de fechamento e vencimento.
+
+2026-11-10 00:55:50 · Itaú (com.itau)
+Título: Sua compra foi aprovada 💳
+Texto: Olá! Compra aprovada de R$ 37,90 em CLARO *31987905690 no dia 10/11 às 00:55 no seu cartão Itau. Boas compras.
+BigText: Olá! Compra aprovada de R$ 37,90 em CLARO *31987905690 no dia 10/11 às 00:55 no seu cartão Itau. Boas compras.
+
+2026-11-09 19:54:08 · Inter (br.com.intermedium)
+Título: Pix recebido
+Texto: Maria das Dores Martins Lage te enviou um Pix de R$ 450,00 creditado na sua conta final ***28074-0.
+BigText: Maria das Dores Martins Lage te enviou um Pix de R$ 450,00 creditado na sua conta final ***28074-0.
+
+2026-11-09 19:27:54 · Itaú (com.itau)
+Título: Feito. Pix enviado
+Texto: Você enviou R$ 500,00 para DELMIRO, CPF XXX.969.808-XX.
+BigText: Você enviou R$ 500,00 para DELMIRO, CPF XXX.969.808-XX.
+
+2026-11-09 16:46:32 · Mercado Pago (com.mercadopago.wallet)
+Título: Seu celular também vende parcelado
+Texto: Experimente Tap e aceite crédito em até 18x com as melhores taxas. Tudo direto pelo celular, sem precisar de maquininha.
+BigText: Experimente Tap e aceite crédito em até 18x com as melhores taxas. Tudo direto pelo celular, sem precisar de maquininha.
+
+2026-11-09 16:17:21 · Inter (br.com.intermedium)
+Título: Samsung em oferta!
+Texto: Davi, garanta seu produto desejado com até 26% de cashback no Inter Shop. Vem aproveitar antes que expire!
+BigText: Davi, garanta seu produto desejado com até 26% de cashback no Inter Shop. Vem aproveitar antes que expire!
+
+2026-11-09 12:48:24 · Inter (br.com.intermedium)
+Título: A Orange Friday já começou! 🔥
+Texto: Upgrade para o cartão Inter Prime com R$177OFF no plano anual do Duo + $100 em vinhos Concha y Toro. Cupom ORANGE26. 
+BigText: Upgrade para o cartão Inter Prime com R$177OFF no plano anual do Duo + $100 em vinhos Concha y Toro. Cupom ORANGE26. 
+
+2026-11-09 10:55:54 · Mercado Pago (com.mercadopago.wallet)
+Título: Ainda dá tempo de parcelar💳
+Texto: Parcele seu PIX e pague suas compras no seu ritmo, com a flexibilidade do seu cartão.
+BigText: Parcele seu PIX e pague suas compras no seu ritmo, com a flexibilidade do seu cartão.
+
+2026-11-09 10:34:53 · Nubank (com.nu.production)
+Título: NuCel por apenas R$1/dia
+Texto: Preço fixo, sem pegadinhas e sem letrinhas miúdas. Garanta sua oferta exclusiva de R$1 por dia direto no app do Nu.
+BigText: Preço fixo, sem pegadinhas e sem letrinhas miúdas. Garanta sua oferta exclusiva de R$1 por dia direto no app do Nu.
+
+2026-11-08 12:43:56 · Inter (br.com.intermedium)
+Título: Presente de R$100 em vinhos 🎁
+Texto: Duo anual com R$177OFF e voucher de R$100 para comprar vinhos Concha y Toro. Use ORANGE26.
+BigText: Duo anual com R$177OFF e voucher de R$100 para comprar vinhos Concha y Toro. Use ORANGE26.
+
+2026-11-08 09:58:25 · Caju (com.caju.employeeApp)
+Título: Pagamento aprovado
+Texto: Compra de R$ 31,00 em Pastelaria Capixada APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 270,02.
+BigText: Compra de R$ 31,00 em Pastelaria Capixada APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 270,02.
+
+2026-11-06 15:27:52 · Mercado Pago (com.mercadopago.wallet)
+Título: Davi, sua chance em 2026 ⭐
+Texto: Você conquistou um empréstimo pessoal para pagar o que precisar. Aproveite agora! 🙌🛍️
+BigText: Você conquistou um empréstimo pessoal para pagar o que precisar. Aproveite agora! 🙌🛍️
+
+2026-11-06 14:01:36 · Itaú (com.itau)
+Título: 
+Texto: 
+BigText: 
+
+2026-11-06 14:01:36 · Itaú (com.itau)
+Título: Pix recebido
+Texto: Você recebeu R$ 430,65 de DAVI, CPF XXX.760.386-XX.
+BigText: Você recebeu R$ 430,65 de DAVI, CPF XXX.760.386-XX.
+
+2026-11-06 14:01:36 · Itaú (com.itau)
+Título: Seu pagamento foi feito
+Texto: O boleto de R$ 1.251,74 para SOCIEDADE MINEIRA DE CULT foi pago. Confira no extrato
+BigText: O boleto de R$ 1.251,74 para SOCIEDADE MINEIRA DE CULT foi pago. Confira no extrato
+
+2026-11-06 14:01:32 · Itaú (com.itau)
+Título: Seu pagamento foi feito
+Texto: O boleto de R$ 1.251,74 para SOCIEDADE MINEIRA DE CULT foi pago. Confira no extrato
+BigText: O boleto de R$ 1.251,74 para SOCIEDADE MINEIRA DE CULT foi pago. Confira no extrato
+
+2026-11-06 13:54:48 · Itaú (com.itau)
+Título: Pix recebido
+Texto: Você recebeu R$ 430,65 de DAVI, CPF XXX.760.386-XX.
+BigText: Você recebeu R$ 430,65 de DAVI, CPF XXX.760.386-XX.
+
+2026-11-06 12:54:12 · Mercado Pago (com.mercadopago.wallet)
+Título: Venda pelo celular. Receba em Segundos.⚡
+Texto: Com Tap do Mercado Pago, seu celular vira maquininha grátis com as melhores taxas. Ative agora!
+BigText: Com Tap do Mercado Pago, seu celular vira maquininha grátis com as melhores taxas. Ative agora!
+
+2026-11-06 12:19:16 · Inter (br.com.intermedium)
+Título: GTA 6 tá te esperando 🎮 
+Texto: Aproveite o cupom e garanta um dos jogos mais aguardados dos últimos anos. Vem conferir! 
+BigText: Aproveite o cupom e garanta um dos jogos mais aguardados dos últimos anos. Vem conferir! 
+
+2026-11-06 10:26:50 · Nubank (com.nu.production)
+Título: Pague boletos no crédito em até 12x
+Texto: Surgiu um boleto pra pagar? Parcele no crédito em até 12x. Conheça no app do Nu.
+BigText: Surgiu um boleto pra pagar? Parcele no crédito em até 12x. Conheça no app do Nu.
+
+2026-11-05 20:44:19 · Itaú (com.itau)
+Título: Sua compra foi aprovada 💳
+Texto: Olá! Compra aprovada de R$ 10,29 em DL *UberRides no dia 05/11 às 20:44 no seu cartão Itau. Boas compras.
+BigText: Olá! Compra aprovada de R$ 10,29 em DL *UberRides no dia 05/11 às 20:44 no seu cartão Itau. Boas compras.
+
+2026-11-05 18:23:42 · Inter (br.com.intermedium)
+Título: Tic, tac... ⏳ 
+Texto: Contagem regressiva para a próxima inovação do Inter. Seu dia a dia vai ficar muito mais prático. Clique e descubra! 
+BigText: Contagem regressiva para a próxima inovação do Inter. Seu dia a dia vai ficar muito mais prático. Clique e descubra! 
+
+2026-11-05 17:56:37 · Mercado Pago (com.mercadopago.wallet)
+Título: Seu limite aumentou! 🤑
+Texto: Aproveite seu novo limite de empréstimo pessoal e compre o que quiser🤩
+BigText: Aproveite seu novo limite de empréstimo pessoal e compre o que quiser🤩
+
+2026-11-05 17:23:55 · Inter (br.com.intermedium)
+Título: 
+Texto: 
+BigText: 
+
+2026-11-05 17:23:55 · Inter (br.com.intermedium)
+Título: 📢 Última chamada! 
+Texto: Hoje é o último dia para escolher o Inter, Duo Gourmet e Inter Cel no Prêmio Reclame Aqui 2026. Participe agora!
+BigText: Hoje é o último dia para escolher o Inter, Duo Gourmet e Inter Cel no Prêmio Reclame Aqui 2026. Participe agora!
+
+2026-11-05 17:17:25 · Inter (br.com.intermedium)
+Título: Sua fatura vence em breve 🗓️
+Texto: O cartão final 6181 está esperando! Realize o pagamento no Super App ou parcele o valor. Saiba mais!
+BigText: O cartão final 6181 está esperando! Realize o pagamento no Super App ou parcele o valor. Saiba mais!
+
+2026-11-05 16:19:35 · Caju (com.caju.employeeApp)
+Título: Pagamento aprovado
+Texto: Compra de R$ 135,41 em Supermercados Bh APROVADA no VOUCHER, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 456,59.
+BigText: Compra de R$ 135,41 em Supermercados Bh APROVADA no VOUCHER, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 456,59.
+
+2026-11-05 09:35:11 · Mercado Pago (com.mercadopago.wallet)
+Título: Dinheiro disponível e rendendo! 😱
+Texto: Aqui seu dinheiro rende, automaticamente e está sempre disponível! Faça um pix 🤑
+BigText: Aqui seu dinheiro rende, automaticamente e está sempre disponível! Faça um pix 🤑
+
+2026-11-05 09:18:42 · Mercado Pago (com.mercadopago.wallet)
+Título: 
+Texto: 
+BigText: 
+
+2026-11-05 09:18:42 · Mercado Pago (com.mercadopago.wallet)
+Título: Você ganhou R$ 0,39 de cashback
+Texto: Continue usando seu Cartão de Crédito Mercado Pago para ganhar mais.
+BigText: Continue usando seu Cartão de Crédito Mercado Pago para ganhar mais.
+
+2026-11-05 09:07:25 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou R$ 78,02 a Amazon
+Texto: O valor vai entrar na próxima fatura do seu Cartão Mercado Pago.
+BigText: O valor vai entrar na próxima fatura do seu Cartão Mercado Pago.
+
+2026-11-05 08:16:29 · Nubank (com.nu.production)
+Título: Venha para NuCel você também
+Texto: Junte-se a mais de 1 milhão de clientes que já usam NuCel. Contrate a internet 5G com a qualidade Nu que você já conhece.
+BigText: Junte-se a mais de 1 milhão de clientes que já usam NuCel. Contrate a internet 5G com a qualidade Nu que você já conhece.
+
+2026-11-04 16:53:30 · Inter (br.com.intermedium)
+Título: Esquenta Black Friday
+Texto: Mais cashback pra viajar!  🏨 8% Booking  🏨 7% Hoteis.com  🌍 7% GetYourGuide
+BigText: Mais cashback pra viajar!  🏨 8% Booking  🏨 7% Hoteis.com  🌍 7% GetYourGuide
+
+2026-11-04 14:24:24 · Mercado Pago (com.mercadopago.wallet)
+Título: Davi, o crédito que você precisa💰
+Texto: Você já tem um empréstimo aprovado. Solicite agora mesmo e aproveite para começar a realizar seus objetivos
+BigText: Você já tem um empréstimo aprovado. Solicite agora mesmo e aproveite para começar a realizar seus objetivos
+
+2026-11-04 11:18:04 · Caju (com.caju.employeeApp)
+Título: Pagamento aprovado
+Texto: Compra de R$ 29,98 em Supermercados Bh APROVADA no CRÉDITO, seu saldo em SALDO LIVRE é R$ 20,02.
+BigText: Compra de R$ 29,98 em Supermercados Bh APROVADA no CRÉDITO, seu saldo em SALDO LIVRE é R$ 20,02.
+
+2026-11-04 08:23:40 · Inter (br.com.intermedium)
+Título: Sua fatura fechou
+Texto: E hoje é o melhor dia para compras com seu cartão! Para mais detalhes, acesse sua área de cartões. 
+BigText: E hoje é o melhor dia para compras com seu cartão! Para mais detalhes, acesse sua área de cartões. 
+
+2026-11-04 08:12:26 · Nubank (com.nu.production)
+Título: Seu limite evolui com você
+Texto: Com o cartão de crédito você tem opções para construir seu limite de crédito e organizar suas finanças. Saiba mais.
+BigText: Com o cartão de crédito você tem opções para construir seu limite de crédito e organizar suas finanças. Saiba mais.
+
+2026-11-03 16:48:18 · Itaú (com.itau)
+Título: A fatura do cartão final 7674 fechou
+Texto: O débito automático de R$ 77,88 vai ser em 10/11/2026. Confira os detalhes
+BigText: O débito automático de R$ 77,88 vai ser em 10/11/2026. Confira os detalhes
+
+2026-11-03 15:32:04 · Itaú (com.itau)
+Título: A fatura do cartão final 4923 fechou
+Texto: O total é de R$ 676,96 e vence em 10/11/2026. Confira detalhes
+BigText: O total é de R$ 676,96 e vence em 10/11/2026. Confira detalhes
+
+2026-11-03 14:06:18 · Inter (br.com.intermedium)
+Título: Pix recebido
+Texto: Iasmin de Almeida Furtado te enviou um Pix de R$ 70,00 creditado na sua conta final ***28074-0.
+BigText: Iasmin de Almeida Furtado te enviou um Pix de R$ 70,00 creditado na sua conta final ***28074-0.
+
+2026-11-03 13:30:17 · Itaú (com.itau)
+Título: Sua compra foi aprovada 💳
+Texto: Olá! Compra aprovada de USD 20.00 em FACTORY AI no dia 03/11 às 13:30 no seu cartão Itau. Boas compras.
+BigText: Olá! Compra aprovada de USD 20.00 em FACTORY AI no dia 03/11 às 13:30 no seu cartão Itau. Boas compras.
+
+2026-11-03 13:30:05 · Itaú (com.itau)
+Título: Sua compra foi aprovada 💳
+Texto: Olá! Compra aprovada de USD 0.50 em FACTORY AI no dia 03/11 às 13:29 no seu cartão Itau. Boas compras.
+BigText: Olá! Compra aprovada de USD 0.50 em FACTORY AI no dia 03/11 às 13:29 no seu cartão Itau. Boas compras.
+
+2026-11-03 13:29:56 · Itaú (com.itau)
+Título: Sua compra foi aprovada 💳
+Texto: Olá! Compra aprovada de USD 0.50 em FACTORY AI no dia 03/11 às 13:29 no seu cartão Itau. Boas compras.
+BigText: Olá! Compra aprovada de USD 0.50 em FACTORY AI no dia 03/11 às 13:29 no seu cartão Itau. Boas compras.
+
+2026-11-03 13:24:23 · Itaú (com.itau)
+Título: Segurança Cartoes Itau
+Texto: Olá, foi negada a compra no cartão final 4640 no valor de R$119.23 em FACTORY AI no dia 03/11. Para desbloquear seu cartão e poder refazer a compra, clique aqui.
+BigText: Olá, foi negada a compra no cartão final 4640 no valor de R$119.23 em FACTORY AI no dia 03/11. Para desbloquear seu cartão e poder refazer a compra, clique aqui.
+
+2026-11-03 13:24:23 · Itaú (com.itau)
+Título: Segurança Cartoes Itau
+Texto: Olá, foi negada a compra no cartão final 4640 no valor de R$119.23 em FACTORY AI no dia 03/11. Para reconhecer a compra e evitar o bloqueio do seu cartão, clique aqui e vá para Produtos>Cartões>Segurança:Confirmar Compras.
+BigText: Olá, foi negada a compra no cartão final 4640 no valor de R$119.23 em FACTORY AI no dia 03/11. Para reconhecer a compra e evitar o bloqueio do seu cartão, clique aqui e vá para Produtos>Cartões>Segurança:Confirmar Compras.
+
+2026-11-03 13:24:20 · Itaú (com.itau)
+Título: Segurança Cartoes Itau
+Texto: Olá, foi negada a compra no cartão final 4640 no valor de R$119.23 em FACTORY AI no dia 03/11. Para desbloquear seu cartão e poder refazer a compra, clique aqui.
+BigText: Olá, foi negada a compra no cartão final 4640 no valor de R$119.23 em FACTORY AI no dia 03/11. Para desbloquear seu cartão e poder refazer a compra, clique aqui.
+
+2026-11-03 13:24:20 · Itaú (com.itau)
+Título: Segurança Cartoes Itau
+Texto: Olá, foi negada a compra no cartão final 4640 no valor de R$119.23 em FACTORY AI no dia 03/11. Para reconhecer a compra e evitar o bloqueio do seu cartão, clique aqui e vá para Produtos>Cartões>Segurança:Confirmar Compras.
+BigText: Olá, foi negada a compra no cartão final 4640 no valor de R$119.23 em FACTORY AI no dia 03/11. Para reconhecer a compra e evitar o bloqueio do seu cartão, clique aqui e vá para Produtos>Cartões>Segurança:Confirmar Compras.
+
+2026-11-03 13:24:02 · Itaú (com.itau)
+Título: 
+Texto: 
+BigText: 
+
+2026-11-03 13:24:02 · Itaú (com.itau)
+Título: Sua compra foi aprovada 💳
+Texto: Olá! Compra aprovada de USD 0.50 em FACTORY AI no dia 03/11 às 13:23 no seu cartão Itau. Boas compras.
+BigText: Olá! Compra aprovada de USD 0.50 em FACTORY AI no dia 03/11 às 13:23 no seu cartão Itau. Boas compras.
+
+2026-11-03 13:24:02 · Itaú (com.itau)
+Título: Sua compra foi aprovada 💳
+Texto: Olá! Compra aprovada de USD 0.50 em FACTORY AI no dia 03/11 às 13:23 no seu cartão Itau. Boas compras.
+BigText: Olá! Compra aprovada de USD 0.50 em FACTORY AI no dia 03/11 às 13:23 no seu cartão Itau. Boas compras.
+
+2026-11-03 13:23:59 · Itaú (com.itau)
+Título: Sua compra foi aprovada 💳
+Texto: Olá! Compra aprovada de USD 0.50 em FACTORY AI no dia 03/11 às 13:23 no seu cartão Itau. Boas compras.
+BigText: Olá! Compra aprovada de USD 0.50 em FACTORY AI no dia 03/11 às 13:23 no seu cartão Itau. Boas compras.
+
+2026-11-03 13:23:39 · Itaú (com.itau)
+Título: Sua compra foi aprovada 💳
+Texto: Olá! Compra aprovada de USD 0.50 em FACTORY AI no dia 03/11 às 13:23 no seu cartão Itau. Boas compras.
+BigText: Olá! Compra aprovada de USD 0.50 em FACTORY AI no dia 03/11 às 13:23 no seu cartão Itau. Boas compras.
+
+2026-11-03 11:42:04 · Mercado Pago (com.mercadopago.wallet)
+Título: Você já pode pagar seu cartão
+Texto: A fatura fechou e vence em 9 de novembro
+BigText: A fatura fechou e vence em 9 de novembro
+
+2026-11-03 10:51:48 · Inter (br.com.intermedium)
+Título: Tem novidade no embarque!
+Texto: Use seu Inter Mastercard na catraca.
+Complete 15 transações até 15/12 e tenha a chance de ganhar um voucher de delivery.
+
+BigText: Use seu Inter Mastercard na catraca.
+Complete 15 transações até 15/12 e tenha a chance de ganhar um voucher de delivery.
+
+
+2026-11-03 10:51:43 · Itaú (com.itau)
+Título: A fatura do cartão final 7674 fechou
+Texto: O débito automático de R$ 77,88 vai ser em 10/11/2026. Confira os detalhes
+BigText: O débito automático de R$ 77,88 vai ser em 10/11/2026. Confira os detalhes
+
+2026-11-03 08:27:17 · Nubank (com.nu.production)
+Título: Quer mais chances de crédito?
+Texto: Traga seus dados de outros bancos para o Nu e aumente suas chances para mais limite de crédito.
+BigText: Traga seus dados de outros bancos para o Nu e aumente suas chances para mais limite de crédito.
+
+2026-11-03 04:48:02 · Itaú (com.itau)
+Título: 
+Texto: 
+BigText: 
+
+2026-11-03 04:48:02 · Itaú (com.itau)
+Título: Você tem um novo boleto
+Texto: Confira o boleto de R$ 676,96 emitido por Itau Unibanco Holding S.a., que vence em 10/11. Você já pode pagar ou agendar
+BigText: Confira o boleto de R$ 676,96 emitido por Itau Unibanco Holding S.a., que vence em 10/11. Você já pode pagar ou agendar
+
+2026-11-03 04:48:02 · Itaú (com.itau)
+Título: A fatura do cartão final 4923 fechou
+Texto: O total é de R$ 676,96 e vence em 10/11/2026. Confira detalhes
+BigText: O total é de R$ 676,96 e vence em 10/11/2026. Confira detalhes
+
+2026-11-03 04:47:59 · Itaú (com.itau)
+Título: A fatura do cartão final 4923 fechou
+Texto: O total é de R$ 676,96 e vence em 10/11/2026. Confira detalhes
+BigText: O total é de R$ 676,96 e vence em 10/11/2026. Confira detalhes
+
+2026-11-03 03:47:20 · Itaú (com.itau)
+Título: Você tem um novo boleto
+Texto: Confira o boleto de R$ 676,96 emitido por Itau Unibanco Holding S.a., que vence em 10/11. Você já pode pagar ou agendar
+BigText: Confira o boleto de R$ 676,96 emitido por Itau Unibanco Holding S.a., que vence em 10/11. Você já pode pagar ou agendar
+
+2026-11-01 12:36:48 · Caju (com.caju.employeeApp)
+Título: Pagamento aprovado
+Texto: Compra de R$ 50,96 em Supermercado E Padaria APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 831,22.
+BigText: Compra de R$ 50,96 em Supermercado E Padaria APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 831,22.
+
+2026-11-01 09:59:11 · Itaú (com.itau)
+Título: Sua compra foi aprovada 💳
+Texto: Olá! Compra aprovada de R$ 17,97 em DL *UberRides no dia 01/11 às 09:59 no seu cartão Itau. Boas compras.
+BigText: Olá! Compra aprovada de R$ 17,97 em DL *UberRides no dia 01/11 às 09:59 no seu cartão Itau. Boas compras.
+
+2026-10-31 15:49:30 · Inter (br.com.intermedium)
+Título: Davi, você merece esse combo 💍 
+Texto: Garanta seu Inter Ring e tenha acesso a um ano de vantagens exclusivas com o Inter Prime.
+BigText: Garanta seu Inter Ring e tenha acesso a um ano de vantagens exclusivas com o Inter Prime.
+
+2026-10-31 10:47:49 · Caju (com.caju.employeeApp)
+Título: Seu treino pode virar viagem ✈️
+Texto: Quem tem Wellhub pela empresa concorre a 20 prêmios de R$ 10 mil com a Decolar 🍀 Faça a inscrição grátis até 19/11 e garanta 5 números. Planos pagos e check-ins rendem mais.
+BigText: Quem tem Wellhub pela empresa concorre a 20 prêmios de R$ 10 mil com a Decolar 🍀 Faça a inscrição grátis até 19/11 e garanta 5 números. Planos pagos e check-ins rendem mais.
+
+2026-10-31 08:58:15 · Caju (com.caju.employeeApp)
+Título: Pagamento aprovado
+Texto: Compra de R$ 38,85 em Boi Chefe Guarani APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 882,18.
+BigText: Compra de R$ 38,85 em Boi Chefe Guarani APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 882,18.
+
+2026-10-31 08:01:12 · Nubank (com.nu.production)
+Título: Nubank
+Texto: Sua fatura com vencimento em 07/11 fechou. Faça o pagamento através da sua conta do Nubank e seu limite será liberado na hora.
+BigText: Sua fatura com vencimento em 07/11 fechou. Faça o pagamento através da sua conta do Nubank e seu limite será liberado na hora.
+
+2026-10-31 00:02:07 · Caju (com.caju.employeeApp)
+Título: Seu Caju caiu!
+Texto: Oba! R$ 725,61 disponíveis no seu Caju. Aproveite!
+BigText: Oba! R$ 725,61 disponíveis no seu Caju. Aproveite!
+
+2026-10-30 17:41:41 · Nubank (com.nu.production)
+Título: Compra no crédito negada
+Texto: Compra de R$ 58,67 NEGADA em OPENCODE para o cartão com final 1084, pois o limite disponível não é suficiente.
+BigText: Compra de R$ 58,67 NEGADA em OPENCODE para o cartão com final 1084, pois o limite disponível não é suficiente.
+
+2026-10-30 15:42:01 · Mercado Pago (com.mercadopago.wallet)
+Título: Exclusivo para compras 🐷
+Texto: Davi, o novo Cofrinho foi feito para você comprar no Mercado Livre. Seu dinheiro rende ainda mais. Vem conferir!
+BigText: Davi, o novo Cofrinho foi feito para você comprar no Mercado Livre. Seu dinheiro rende ainda mais. Vem conferir!
+
+2026-10-30 14:54:23 · Nubank (com.nu.production)
+Título: Alguns dos seus limites foram atualizados
+Texto: Clique aqui e confira os novos valores. Você também pode editar esses limites, se preferir.
+BigText: Clique aqui e confira os novos valores. Você também pode editar esses limites, se preferir.
+
+2026-10-30 11:40:56 · Mercado Pago (com.mercadopago.wallet)
+Título: Você tem R$ 3.696 disponíveis⚡
+Texto: Davi, aproveite e parcele suas compras como quiser — fácil, rápido e no seu tempo.
+BigText: Davi, aproveite e parcele suas compras como quiser — fácil, rápido e no seu tempo.
+
+2026-10-30 10:44:05 · Caju (com.caju.employeeApp)
+Título: Pagamento aprovado
+Texto: Compra de R$ 275,94 em Apoio Waldomiro Lobo APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 195,42.
+BigText: Compra de R$ 275,94 em Apoio Waldomiro Lobo APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 195,42.
+
+2026-10-28 18:58:46 · Itaú (com.itau)
+Título: Sua compra foi aprovada 💳
+Texto: Olá! Compra aprovada de R$ 9,84 em DL*UberRides no dia 28/10 às 18:58 no seu cartão Itau. Boas compras.
+BigText: Olá! Compra aprovada de R$ 9,84 em DL*UberRides no dia 28/10 às 18:58 no seu cartão Itau. Boas compras.
+
+2026-10-28 18:00:09 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou R$ 23,99 a Google One
+Texto: O valor vai entrar na próxima fatura do seu Cartão Mercado Pago.
+BigText: O valor vai entrar na próxima fatura do seu Cartão Mercado Pago.
+
+2026-10-28 17:15:22 · Inter (br.com.intermedium)
+Título: Café com pontos em dobro!
+Texto: Ganhe pontos Loop em dobro pagando seus pedidos no Inter Café com o seu cartão de crédito! Aproveite! 
+BigText: Ganhe pontos Loop em dobro pagando seus pedidos no Inter Café com o seu cartão de crédito! Aproveite! 
+
+2026-10-28 10:52:54 · Mercado Pago (com.mercadopago.wallet)
+Título: Aproveite seus R$ 3.696 disponivell! 🤑
+Texto: Davi, aproveite o Mercado Parcelado para comprar agora e pagar em até 12x 🛍️✨
+BigText: Davi, aproveite o Mercado Parcelado para comprar agora e pagar em até 12x 🛍️✨
+
+2026-10-28 08:28:37 · Nubank (com.nu.production)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-28 08:28:37 · Nubank (com.nu.production)
+Título: Pix com ainda mais praticidade
+Texto: Conheça uma nova forma de fazer seus pagamentos, com mais rapidez e total segurança.
+BigText: Conheça uma nova forma de fazer seus pagamentos, com mais rapidez e total segurança.
+
+2026-10-28 01:53:28 · Nubank (com.nu.production)
+Título: Compra no crédito negada
+Texto: Compra de R$ 34,88 NEGADA em CONTABO* HOLD ONLY para o cartão com final 0812, pois o limite disponível não é suficiente.
+BigText: Compra de R$ 34,88 NEGADA em CONTABO* HOLD ONLY para o cartão com final 0812, pois o limite disponível não é suficiente.
+
+2026-10-27 21:54:22 · Itaú (com.itau)
+Título: Sua compra foi aprovada 💳
+Texto: Olá! Compra aprovada de R$ 10,91 em DL*UberRides no dia 27/10 às 21:54 no seu cartão Itau. Boas compras.
+BigText: Olá! Compra aprovada de R$ 10,91 em DL*UberRides no dia 27/10 às 21:54 no seu cartão Itau. Boas compras.
+
+2026-10-27 18:03:54 · Nubank (com.nu.production)
+Título: Compra no crédito negada
+Texto: Compra de R$ 23,99 NEGADA em DL*GOOGLE Google para o cartão com final 1084, pois o limite disponível não é suficiente.
+BigText: Compra de R$ 23,99 NEGADA em DL*GOOGLE Google para o cartão com final 1084, pois o limite disponível não é suficiente.
+
+2026-10-27 17:11:10 · Caju (com.caju.employeeApp)
+Título: Pagamento aprovado
+Texto: Compra de R$ 52,30 em Paygo*empada APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 521,63.
+BigText: Compra de R$ 52,30 em Paygo*empada APROVADA no CRÉDITO, seu saldo em AUXÍLIO ALIMENTAÇÃO é R$ 521,63.
+
+2026-10-27 14:29:54 · Mercado Pago (com.mercadopago.wallet)
+Título: ⚡R$ 813 aprovados!
+Texto: Davi, solicite em segundos e sem burocracia.
+BigText: Davi, solicite em segundos e sem burocracia.
+
+2026-10-27 09:03:17 · Nubank (com.nu.production)
+Título: Gastos sob seu controle
+Texto: Ajuste o limite do seu cartão de forma simples pelo app, crie cartões virtuais e cartão adicional para maior controle dos seus gastos. Saiba mais.
+BigText: Ajuste o limite do seu cartão de forma simples pelo app, crie cartões virtuais e cartão adicional para maior controle dos seus gastos. Saiba mais.
+
+2026-10-27 08:08:02 · Inter (br.com.intermedium)
+Título: Libere seu Crédito 🛎️
+Texto: O Crédito Consignado CLT do Inter tem condições exclusivas esperando por você. Simule agora ✅
+BigText: O Crédito Consignado CLT do Inter tem condições exclusivas esperando por você. Simule agora ✅
+
+2026-10-24 11:12:05 · Nubank (com.nu.production)
+Título: Compra no crédito negada
+Texto: Compra de R$ 24,90 NEGADA em Google Crunchyroll An para o cartão com final 0812, pois o limite disponível não é suficiente.
+BigText: Compra de R$ 24,90 NEGADA em Google Crunchyroll An para o cartão com final 0812, pois o limite disponível não é suficiente.
+
+2026-10-24 11:01:06 · Mercado Pago (com.mercadopago.wallet)
+Título: 📈Boa notícia, Davi
+Texto: Seu Dinheiro Extra aumentou. Confira em 1 clique!
+BigText: Seu Dinheiro Extra aumentou. Confira em 1 clique!
+
+2026-10-24 10:55:45 · Inter (br.com.intermedium)
+Título: Compra no crédito
+Texto: Olá, Davi. Você acaba de comprar R$ 29,00 em FLASH UTILIDADES. A compra foi no crédito nacional, com o cartão final 0809.
+BigText: Olá, Davi. Você acaba de comprar R$ 29,00 em FLASH UTILIDADES. A compra foi no crédito nacional, com o cartão final 0809.
+
+2026-10-23 10:46:20 · Nubank (com.nu.production)
+Título: NuCel com mais internet
+Texto: Agora, você conta com opções a partir de 17GB por R$30/mês. É a sua chance de experimentar NuCel. Vem conferir no app.
+BigText: Agora, você conta com opções a partir de 17GB por R$30/mês. É a sua chance de experimentar NuCel. Vem conferir no app.
+
+2026-10-22 22:35:32 · Itaú (com.itau)
+Título: Sua compra foi aprovada 💳
+Texto: Olá! Compra aprovada de R$ 13,40 em DL*99 RIDE no dia 22/10 às 22:35 no seu cartão Itau. Boas compras.
+BigText: Olá! Compra aprovada de R$ 13,40 em DL*99 RIDE no dia 22/10 às 22:35 no seu cartão Itau. Boas compras.
+
+2026-10-22 19:37:26 · Nubank (com.nu.production)
+Título: Transferência recebida
+Texto: Recebemos sua transferência de R$ 0,01.
+BigText: Recebemos sua transferência de R$ 0,01.

@@ -1,0 +1,453 @@
+2026-10-30 12:15:48 · Mercado Pago (com.mercadopago.wallet)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-30 12:15:48 · Mercado Pago (com.mercadopago.wallet)
+Título: Lembre-se de fechar o caixa
+Texto: Se não fizer isso em 24 horas, o caixa será fechado automaticamente e os detalhes do seu dinheiro ficarão incompletos.
+BigText: Se não fizer isso em 24 horas, o caixa será fechado automaticamente e os detalhes do seu dinheiro ficarão incompletos.
+
+2026-10-30 11:43:35 · Mercado Pago (com.mercadopago.wallet)
+Título: Sonhando com mais lucros?
+Texto: Virou realidade: desconto de até 45% liberado nas taxas da sua maquininha Point! Saiba como ativar.
+BigText: Virou realidade: desconto de até 45% liberado nas taxas da sua maquininha Point! Saiba como ativar.
+
+2026-10-30 11:18:48 · Nubank (com.nu.production)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-30 11:18:48 · Nubank (com.nu.production)
+Título: Alguns dos seus limites foram atualizados
+Texto: Clique aqui e confira os novos valores. Você também pode editar esses limites, se preferir.
+BigText: Clique aqui e confira os novos valores. Você também pode editar esses limites, se preferir.
+
+2026-10-30 08:43:49 · Nubank (com.nu.production)
+Título: Chegou empréstimo mais barato
+Texto: Simule já o Consignado CLT e conte com juros mais baixos que o Empréstimo Pessoal.
+BigText: Simule já o Consignado CLT e conte com juros mais baixos que o Empréstimo Pessoal.
+
+2026-10-29 16:17:56 · Mercado Pago (com.mercadopago.wallet)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-29 16:17:56 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou R$ 99,99 para Google
+Texto: Confira mais detalhes.
+BigText: Confira mais detalhes.
+
+2026-10-29 16:17:56 · Mercado Pago (com.mercadopago.wallet)
+Título: Conta Mercado Pago e Google conectados!
+Texto: Pague mais rápido no futuro com seu saldo em conta.
+BigText: Pague mais rápido no futuro com seu saldo em conta.
+
+2026-10-29 08:02:13 · Nubank (com.nu.production)
+Título: Concorra a até R$ 1 milhão 🎁
+Texto: Ative o NuCoin grátis, use seu cartão do Nu, concorra a prêmios toda semana e desbloqueie novos benefícios.
+
+
+BigText: Ative o NuCoin grátis, use seu cartão do Nu, concorra a prêmios toda semana e desbloqueie novos benefícios.
+
+
+
+2026-10-28 18:32:13 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou Google
+Texto: Debitamos R$ 26,90 da sua conta.
+BigText: Debitamos R$ 26,90 da sua conta.
+
+2026-10-28 12:01:09 · Mercado Pago (com.mercadopago.wallet)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-28 12:01:09 · Mercado Pago (com.mercadopago.wallet)
+Título: Seu cartão de crédito com R$9.600 está disponível! 🎉
+Texto: Sem anuidade e parcelamento em até 18x. Ideal para impulsionar suas vendas!
+BigText: Sem anuidade e parcelamento em até 18x. Ideal para impulsionar suas vendas!
+
+2026-10-28 11:43:23 · Mercado Pago (com.mercadopago.wallet)
+Título: Você bateu a meta da Conta Negócio!
+Texto: Continue aproveitando todos os benefícios da sua conta em novembro
+BigText: Continue aproveitando todos os benefícios da sua conta em novembro
+
+2026-10-28 11:42:15 · Nubank (com.nu.production)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-28 11:40:29 · Mercado Pago (com.mercadopago.wallet)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-28 11:20:41 · Mercado Pago (com.mercadopago.wallet)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-28 11:20:41 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou Supermercados bh comerc
+Texto: Debitamos R$ 114,01 da sua conta.
+BigText: Debitamos R$ 114,01 da sua conta.
+
+2026-10-28 09:50:27 · Nubank (com.nu.production)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-28 09:50:27 · Nubank (com.nu.production)
+Título: Transferência recebida
+Texto: Recebemos sua transferência de R$ 50,00.
+BigText: Recebemos sua transferência de R$ 50,00.
+
+2026-10-28 09:43:27 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou Cartao de todos out
+Texto: Debitamos R$ 33,40 da sua conta.
+BigText: Debitamos R$ 33,40 da sua conta.
+
+2026-10-28 09:15:59 · Nubank (com.nu.production)
+Título: Pix com ainda mais praticidade
+Texto: Conheça uma nova forma de fazer seus pagamentos, com mais rapidez e total segurança.
+BigText: Conheça uma nova forma de fazer seus pagamentos, com mais rapidez e total segurança.
+
+2026-10-27 22:18:39 · Mercado Pago (com.mercadopago.wallet)
+Título: Crédito sem juros está liberado✅
+Texto: Você tem R$ 1990 garantido. Peça o Crédito sem juros por 7 dias e invista no seu negócio.
+BigText: Você tem R$ 1990 garantido. Peça o Crédito sem juros por 7 dias e invista no seu negócio.
+
+2026-10-27 18:26:12 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou Araujo
+Texto: Debitamos R$ 4,49 da sua conta.
+BigText: Debitamos R$ 4,49 da sua conta.
+
+2026-10-27 15:33:01 · Mercado Pago (com.mercadopago.wallet)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-27 15:33:01 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou Uber
+Texto: Debitamos R$ 4,89 da sua conta.
+BigText: Debitamos R$ 4,89 da sua conta.
+
+2026-10-27 15:33:01 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou Uber
+Texto: Debitamos R$ 12,95 da sua conta.
+BigText: Debitamos R$ 12,95 da sua conta.
+
+2026-10-27 14:02:35 · Mercado Pago (com.mercadopago.wallet)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-27 13:46:05 · Mercado Pago (com.mercadopago.wallet)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-27 13:46:05 · Mercado Pago (com.mercadopago.wallet)
+Título: Lembre-se de pagar Copasa
+Texto: Você tem um lembrete para hoje: pague sua conta antes que vença.
+BigText: Você tem um lembrete para hoje: pague sua conta antes que vença.
+
+2026-10-27 13:24:00 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou Uber
+Texto: Debitamos R$ 11,96 da sua conta.
+BigText: Debitamos R$ 11,96 da sua conta.
+
+2026-10-27 11:17:37 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou Transfacil atm tacom
+Texto: Debitamos R$ 12,50 da sua conta.
+BigText: Debitamos R$ 12,50 da sua conta.
+
+2026-10-27 09:37:23 · Nubank (com.nu.production)
+Título: Gastos sob seu controle
+Texto: Ajuste o limite do seu cartão de forma simples pelo app, crie cartões virtuais e cartão adicional para maior controle dos seus gastos. Saiba mais.
+BigText: Ajuste o limite do seu cartão de forma simples pelo app, crie cartões virtuais e cartão adicional para maior controle dos seus gastos. Saiba mais.
+
+2026-10-27 06:09:09 · Nubank (com.nu.production)
+Título: Compra no crédito aprovada
+Texto: Compra de R$ 23,99 APROVADA em Google One para o cartão com final 9759.
+BigText: Compra de R$ 23,99 APROVADA em Google One para o cartão com final 9759.
+
+2026-10-26 23:04:33 · Inter (br.com.intermedium)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-26 22:03:26 · Inter (br.com.intermedium)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-26 22:03:26 · Inter (br.com.intermedium)
+Título: Não se esqueça, Kaua:
+Texto: Caso queira fazer o reinvestimento da sua Renda Fixa, basta acessar nossa Seleção Renda Fixa e escolher o melhor pra você!
+BigText: Caso queira fazer o reinvestimento da sua Renda Fixa, basta acessar nossa Seleção Renda Fixa e escolher o melhor pra você!
+
+2026-10-26 22:00:36 · Nubank (com.nu.production)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-26 22:00:36 · Nubank (com.nu.production)
+Título: Nubank
+Texto: Recebemos seu pagamento no valor de R$ 1.263,10. Obrigado!
+BigText: Recebemos seu pagamento no valor de R$ 1.263,10. Obrigado!
+
+2026-10-26 22:00:14 · Nubank (com.nu.production)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-26 22:00:14 · Nubank (com.nu.production)
+Título: Transferência recebida
+Texto: Recebemos sua transferência de R$ 166,47.
+BigText: Recebemos sua transferência de R$ 166,47.
+
+2026-10-26 21:58:00 · Nubank (com.nu.production)
+Título: Transferência recebida
+Texto: Recebemos sua transferência de R$ 350,00.
+BigText: Recebemos sua transferência de R$ 350,00.
+
+2026-10-26 21:53:39 · Inter (br.com.intermedium)
+Título: Pix recebido
+Texto: Valdeir Rodrigues da Silva te enviou um Pix de R$ 350,00 creditado na sua conta final ***88052-5.
+BigText: Valdeir Rodrigues da Silva te enviou um Pix de R$ 350,00 creditado na sua conta final ***88052-5.
+
+2026-10-26 20:18:35 · Nubank (com.nu.production)
+Título: Transferência recebida
+Texto: Você recebeu uma transferência de R$ 450,00 de 64.411.414 KAUA DOS SANTOS RODRIGUES.
+BigText: Você recebeu uma transferência de R$ 450,00 de 64.411.414 KAUA DOS SANTOS RODRIGUES.
+
+2026-10-26 19:44:39 · Mercado Pago (com.mercadopago.wallet)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-26 19:39:10 · Mercado Pago (com.mercadopago.wallet)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-26 19:39:10 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou Uber
+Texto: Debitamos R$ 11,95 da sua conta.
+BigText: Debitamos R$ 11,95 da sua conta.
+
+2026-10-26 18:41:12 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou Aeg lanches medicina
+Texto: Debitamos R$ 8,70 da sua conta.
+BigText: Debitamos R$ 8,70 da sua conta.
+
+2026-10-26 18:03:23 · Nubank (com.nu.production)
+Título: Compra no crédito negada
+Texto: Compra de R$ 23,99 NEGADA em Google One para o cartão com final 9759, mas você pode aumentar seu limite pelo app.
+BigText: Compra de R$ 23,99 NEGADA em Google One para o cartão com final 9759, mas você pode aumentar seu limite pelo app.
+
+2026-10-26 16:43:38 · Nubank (com.nu.production)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-26 15:07:07 · Nubank (com.nu.production)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-26 15:07:07 · Nubank (com.nu.production)
+Título: Transferência recebida
+Texto: Recebemos sua transferência de R$ 177,96.
+BigText: Recebemos sua transferência de R$ 177,96.
+
+2026-10-26 12:41:50 · Inter (br.com.intermedium)
+Título: Pix recebido
+Texto: Pedro Lucas dos Santos Rodrigues te enviou um Pix de R$ 177,96 creditado na sua conta final ***88052-5.
+BigText: Pedro Lucas dos Santos Rodrigues te enviou um Pix de R$ 177,96 creditado na sua conta final ***88052-5.
+
+2026-10-26 10:48:20 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou Aeg lanches medicina
+Texto: Debitamos R$ 15,37 da sua conta.
+BigText: Debitamos R$ 15,37 da sua conta.
+
+2026-10-26 09:39:23 · Nubank (com.nu.production)
+Título: Concorra a até R$10 mil semana que vem
+Texto: São 110 prêmios sorteados dia 28/10. Ative o NuCoin de graça e use o cartão do Nu para participar.
+BigText: São 110 prêmios sorteados dia 28/10. Ative o NuCoin de graça e use o cartão do Nu para participar.
+
+2026-10-26 09:19:29 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou Eeg lanches
+Texto: Debitamos R$ 14,65 da sua conta.
+BigText: Debitamos R$ 14,65 da sua conta.
+
+2026-10-26 06:48:04 · Inter (br.com.intermedium)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-26 06:48:04 · Inter (br.com.intermedium)
+Título: 
+Texto: Olá Kaua, você acaba de comprar no débito no DL*99 99 o valor de R$ 37,50.
+BigText: Olá Kaua, você acaba de comprar no débito no DL*99 99 o valor de R$ 37,50.
+
+2026-10-26 06:37:25 · Inter (br.com.intermedium)
+Título: 
+Texto: Olá Kaua, você acaba de comprar no débito no DL*99 99 o valor de R$ 32,90.
+BigText: Olá Kaua, você acaba de comprar no débito no DL*99 99 o valor de R$ 32,90.
+
+2026-10-25 16:21:50 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou Indigo
+Texto: Debitamos R$ 17,25 da sua conta.
+BigText: Debitamos R$ 17,25 da sua conta.
+
+2026-10-25 14:57:39 · Nubank (com.nu.production)
+Título: Nubank
+Texto: Sua fatura vence amanhã. Faça o pagamento através da sua conta do Nubank e seu limite será liberado na hora.
+BigText: Sua fatura vence amanhã. Faça o pagamento através da sua conta do Nubank e seu limite será liberado na hora.
+
+2026-10-25 12:22:25 · Mercado Pago (com.mercadopago.wallet)
+Título: O limite do seu cartão de crédito aumentou para R$9.600!🚀
+Texto: Com seu novo limite e sem anuidade, aproveite mais flexibilidade para suas compras e vendas!
+BigText: Com seu novo limite e sem anuidade, aproveite mais flexibilidade para suas compras e vendas!
+
+2026-10-25 11:17:46 · Mercado Pago (com.mercadopago.wallet)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-25 11:17:45 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou B91 pastel mineiro
+Texto: Debitamos R$ 14,00 da sua conta.
+BigText: Debitamos R$ 14,00 da sua conta.
+
+2026-10-25 11:14:58 · Mercado Pago (com.mercadopago.wallet)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-25 11:14:58 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou Drogaria wanessa
+Texto: Debitamos R$ 7,99 da sua conta.
+BigText: Debitamos R$ 7,99 da sua conta.
+
+2026-10-24 23:13:26 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou Vivo lite vivo easy
+Texto: Debitamos R$ 38,00 da sua conta.
+BigText: Debitamos R$ 38,00 da sua conta.
+
+2026-10-24 18:45:53 · Mercado Pago (com.mercadopago.wallet)
+Título: Ainda não pediu seu cartão? 😱
+Texto: Seu limite aumentou para R$9.600. Sem anuidade e com parcelamento em até 18x no Mercado Livre!
+BigText: Seu limite aumentou para R$9.600. Sem anuidade e com parcelamento em até 18x no Mercado Livre!
+
+2026-10-24 18:09:20 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou Adeafmainkoski
+Texto: Debitamos R$ 15,00 da sua conta.
+BigText: Debitamos R$ 15,00 da sua conta.
+
+2026-10-24 18:07:03 · Mercado Pago (com.mercadopago.wallet)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-24 18:06:58 · Mercado Pago (com.mercadopago.wallet)
+Título: 
+Texto: 
+BigText: 
+
+2026-10-24 18:06:58 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou Araujo
+Texto: Debitamos R$ 40,00 da sua conta.
+BigText: Debitamos R$ 40,00 da sua conta.
+
+2026-10-24 17:34:22 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou Starcomerciode
+Texto: Debitamos R$ 14,47 da sua conta.
+BigText: Debitamos R$ 14,47 da sua conta.
+
+2026-10-24 15:29:10 · Inter (br.com.intermedium)
+Título: Você tem limite de crédito pré-aprovado!
+Texto: Pra começar a aproveitar, é só clicar AQUI e ativar o seu limite de R$2200.00.
+BigText: Pra começar a aproveitar, é só clicar AQUI e ativar o seu limite de R$2200.00.
+
+2026-10-24 14:23:07 · Mercado Pago (com.mercadopago.wallet)
+Título: Mercado Pago
+Texto: Houve um acesso em sua conta a partir de um novo dispositivo, foi você?
+BigText: Houve um acesso em sua conta a partir de um novo dispositivo, foi você?
+
+2026-10-23 22:02:32 · Inter (br.com.intermedium)
+Título: Vai deixar seu portfólio de lado?
+Texto: Não deixe de reinvestir, Kaua! No Super App do Inter tem opções diversas pra você escolher!
+BigText: Não deixe de reinvestir, Kaua! No Super App do Inter tem opções diversas pra você escolher!
+
+2026-10-23 21:15:31 · Inter (br.com.intermedium)
+Título: Pix recebido
+Texto: Guilherme Rodrigues de Oliveira Pereira te enviou um Pix de R$ 131,00 creditado na sua conta final ***88052-5.
+BigText: Guilherme Rodrigues de Oliveira Pereira te enviou um Pix de R$ 131,00 creditado na sua conta final ***88052-5.
+
+2026-10-23 12:29:33 · Mercado Pago (com.mercadopago.wallet)
+Título: Você tem R$1.990 disponível
+Texto: Com o Dinheiro Express você pede agora e paga só daqui 28 dias. 🤑📣
+BigText: Com o Dinheiro Express você pede agora e paga só daqui 28 dias. 🤑📣
+
+2026-10-23 10:22:40 · Nubank (com.nu.production)
+Título: NuCel com mais internet
+Texto: Agora, você conta com opções a partir de 17GB por R$30/mês. É a sua chance de experimentar NuCel. Vem conferir no app.
+BigText: Agora, você conta com opções a partir de 17GB por R$30/mês. É a sua chance de experimentar NuCel. Vem conferir no app.
+
+2026-10-23 05:40:53 · Mercado Pago (com.mercadopago.wallet)
+Título: O fechamento de caixa foi feito automaticamente
+Texto: O caixa foi fechado às 04:40. Consulte o relatório pelo computador.
+BigText: O caixa foi fechado às 04:40. Consulte o relatório pelo computador.
+
+2026-10-23 05:07:01 · Inter (br.com.intermedium)
+Título: Pix Automático realizado
+Texto: Tudo certo com o pagamento de R$ 12,90 feito à Ebanx em 23/10/2026.
+BigText: Tudo certo com o pagamento de R$ 12,90 feito à Ebanx em 23/10/2026.
+
+2026-10-22 21:11:20 · Mercado Pago (com.mercadopago.wallet)
+Título: Devolução de R$ 9,73 do Pix
+Texto: Você pode conferir mais detalhes na atividade.
+BigText: Você pode conferir mais detalhes na atividade.
+
+2026-10-22 16:45:42 · Mercado Pago (com.mercadopago.wallet)
+Título: Você pagou Uber
+Texto: Debitamos R$ 19,94 da sua conta.
+BigText: Debitamos R$ 19,94 da sua conta.
+
+2026-10-22 11:58:03 · com.whatsapp (com.whatsapp)
+Título: Davi Martins 💵
+Texto: Ent deixa desativado que ele vai puxar só desses
+BigText: 
+
+2026-10-22 11:58:03 · com.whatsapp (com.whatsapp)
+Título: Davi Martins 💵
+Texto: Ent deixa desativado que ele vai puxar só desses
+BigText: 
+
+2026-10-22 11:58:02 · com.android.systemui (com.android.systemui)
+Título: Salvando captura de tela...
+Texto: 
+BigText: 
+
+2026-10-22 11:57:18 · com.whatsapp (com.whatsapp)
+Título: Davi Martins 💵
+Texto: Sim
+BigText: 
+
+2026-10-22 11:57:18 · com.whatsapp (com.whatsapp)
+Título: Davi Martins 💵
+Texto: Sim
+BigText: 
+
+2026-10-22 11:57:10 · com.whatsapp (com.whatsapp)
+Título: Davi Martins 💵
+Texto: É só pq aquele financ lá n é mt prático. O acesso é só pelo navegdaor, tem q cadastrar na mão, mobile é inutilizável
+BigText: 
+
+2026-10-22 11:57:10 · com.whatsapp (com.whatsapp)
+Título: Davi Martins 💵
+Texto: É só pq aquele financ lá n é mt prático. O acesso é só pelo navegdaor, tem q cadastrar na mão, mobile é inutilizável
+BigText: 

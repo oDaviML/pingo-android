@@ -1,5 +1,6 @@
 plugins {
     id("pingo.android.library")
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -9,4 +10,5 @@ android {
 dependencies {
     api(project(":core:model"))
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.serialization.json)
 }
