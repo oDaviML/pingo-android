@@ -3,7 +3,7 @@ package com.pingo.core.parser
 import java.util.regex.Pattern
 
 internal object TemplateExtracao {
-    private val marcador = Regex("""\{([^{}]*)}""")
+    private val marcador = Regex("""\{([^{}]*)\}""")
     private const val CORINGA = ".*?"
     private const val OPCOES = Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CASE
 

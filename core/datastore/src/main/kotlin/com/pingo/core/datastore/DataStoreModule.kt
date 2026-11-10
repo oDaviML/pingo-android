@@ -12,4 +12,8 @@ abstract class DataStoreModule {
     @Binds
     @Singleton
     abstract fun bindUserPreferencesDataSource(implementation: UserPreferencesDataSourceImpl): UserPreferencesDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindCapturaDataSource(implementation: CapturaDataSourceImpl): CapturaDataSource
 }
