@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.OrigemLancamento
 import com.pingo.core.model.StatusLancamento
 import com.pingo.core.model.TipoLancamento
@@ -64,7 +65,7 @@ import java.time.Instant
 )
 data class LancamentoEntity(
     @PrimaryKey val publicId: String,
-    val instrumentoPublicId: String,
+    val instrumentoPublicId: String?,
     val categoriaPublicId: String?,
     val faturaPublicId: String?,
     val assinaturaPublicId: String?,
@@ -77,6 +78,7 @@ data class LancamentoEntity(
     val estabelecimento: String?,
     val status: StatusLancamento,
     val origem: OrigemLancamento,
+    val instituicaoOrigem: InstituicaoFinanceira? = null,
     val confianca: Double,
     val motivoPendencia: String?,
     val hashDuplicata: String?,

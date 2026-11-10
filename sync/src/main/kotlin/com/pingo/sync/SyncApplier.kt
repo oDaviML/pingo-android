@@ -2,6 +2,7 @@ package com.pingo.sync
 
 import androidx.room.withTransaction
 import com.pingo.core.database.PingoDatabase
+import com.pingo.core.database.entity.LancamentoEntity
 import com.pingo.core.network.sync.AssinaturaSnapshotDto
 import com.pingo.core.network.sync.CategoriaSnapshotDto
 import com.pingo.core.network.sync.ContaSnapshotDto
@@ -84,14 +85,20 @@ internal class SyncApplier(private val database: PingoDatabase) {
         val comCompraPai = aplicaveis.filter { it.estornoDePublicId == null && it.compraPaiPublicId != null }
         val comEstorno = aplicaveis.filter { it.estornoDePublicId != null }
 
-        database.lancamentoDao().upsertAll(semDependencias.map { it.toEntity() })
-        database.lancamentoDao().upsertAll(comCompraPai.map { it.toEntity() })
-        database.lancamentoDao().upsertAll(comEstorno.map { it.toEntity() })
+        database.lancamentoDao().upsertAll(semDependencias.toEntitiesLocais())
+        database.lancamentoDao().upsertAll(comCompraPai.toEntitiesLocais())
+        database.lancamentoDao().upsertAll(comEstorno.toEntitiesLocais())
     }
 
     private suspend fun deveAplicarLancamento(snapshot: LancamentoSnapshotDto): Boolean {
         val local = database.lancamentoDao().buscar(snapshot.publicId) ?: return true
 
         return !local.atualizadoEm.isAfter(snapshot.atualizadoEm.toInstantValue())
+    }
+
+    private suspend fun List<LancamentoSnapshotDto>.toEntitiesLocais(): List<LancamentoEntity> = map { snapshot ->
+        val textoBruto = database.lancamentoDao().buscar(snapshot.publicId)?.textoBruto
+
+        snapshot.toEntity().copy(textoBruto = textoBruto)
     }
 }

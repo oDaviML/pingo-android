@@ -11,18 +11,23 @@ import com.pingo.core.model.TipoLancamento
 internal class FakeProcessadorDeCaptura : ProcessadorDeCaptura {
     var resultado: ResultadoProcessamento? = null
     var status: StatusLancamento = StatusLancamento.CONFIRMADO
+    var instrumentoPublicId: String? = "instrumento-1"
     val capturas: MutableList<CapturaParaProcessar> = mutableListOf()
 
     override suspend fun processar(captura: CapturaParaProcessar): ResultadoProcessamento {
         capturas += captura
 
-        return resultado ?: ResultadoProcessamento.Gravado(lancamentoDe(captura, status))
+        return resultado ?: ResultadoProcessamento.Gravado(lancamentoDe(captura, status, instrumentoPublicId))
     }
 
     companion object {
-        fun lancamentoDe(captura: CapturaParaProcessar, status: StatusLancamento = StatusLancamento.CONFIRMADO): Lancamento = Lancamento(
+        fun lancamentoDe(
+            captura: CapturaParaProcessar,
+            status: StatusLancamento = StatusLancamento.CONFIRMADO,
+            instrumentoPublicId: String? = "instrumento-1",
+        ): Lancamento = Lancamento(
             publicId = "lancamento-${captura.postTime.toEpochMilli()}",
-            instrumentoPublicId = "instrumento-1",
+            instrumentoPublicId = instrumentoPublicId,
             valorCentavos = captura.transacao.valorCentavos,
             dataHora = captura.postTime,
             tipo = TipoLancamento.DESPESA,

@@ -9,8 +9,6 @@ sealed interface ResultadoCaptura {
 
     data object Duplicada : ResultadoCaptura
 
-    data object SemInstrumento : ResultadoCaptura
-
     data object Descartada : ResultadoCaptura
 
     data object PacoteDesconhecido : ResultadoCaptura

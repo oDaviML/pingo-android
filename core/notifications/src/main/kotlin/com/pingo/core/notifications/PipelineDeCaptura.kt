@@ -69,7 +69,6 @@ class PipelineDeCaptura @Inject constructor(
         return when (val resultado = processadorDeCaptura.processar(capturada.paraProcessar())) {
             is ResultadoProcessamento.Gravado -> registrarGravado(notificacao, capturada, resultado)
             ResultadoProcessamento.Duplicada -> ResultadoCaptura.Duplicada
-            ResultadoProcessamento.SemInstrumento -> ResultadoCaptura.SemInstrumento
         }
     }
 

@@ -44,6 +44,7 @@ class ProcessadorDeCapturaTest {
         assertEquals(StatusLancamento.CONFIRMADO, lancamento.status)
         assertNull(lancamento.motivoPendencia)
         assertEquals(OrigemLancamento.NOTIFICACAO, lancamento.origem)
+        assertEquals(InstituicaoFinanceira.ITAU, lancamento.instituicaoOrigem)
         assertEquals(instrumento.publicId, lancamento.instrumentoPublicId)
         assertEquals(categorias.idDe("Outros", TipoCategoria.DESPESA), lancamento.categoriaPublicId)
         assertEquals(3790L, lancamento.valorCentavos)
@@ -143,37 +144,100 @@ class ProcessadorDeCapturaTest {
         val lancamento = (resultado as ResultadoProcessamento.Gravado).lancamento
         assertEquals(StatusLancamento.PENDENTE, lancamento.status)
         assertEquals(MotivoPendencia.INSTRUMENTO_AMBIGUO.name, lancamento.motivoPendencia)
+        assertNull(lancamento.instrumentoPublicId)
     }
 
     @Test
-    fun `digitos sem instrumento correspondente gravam pendente`() = runTest {
+    fun `match nao unico dos digitos grava pendente ambiguo sem instrumento`() = runTest {
         val categorias = AmbienteCategorias().comPadroes()
-        val instrumento = ambiente.instrumentos.criar(InstituicaoFinanceira.ITAU, digitos = "1111")
+        ambiente.instrumentos.criar(InstituicaoFinanceira.ITAU, digitos = "2222")
+        ambiente.instrumentos.criar(InstituicaoFinanceira.ITAU, digitos = "2222")
+
+        val resultado = processador(categorias).processar(captura(digitos = "2222"))
+
+        val lancamento = (resultado as ResultadoProcessamento.Gravado).lancamento
+        assertEquals(StatusLancamento.PENDENTE, lancamento.status)
+        assertEquals(MotivoPendencia.INSTRUMENTO_AMBIGUO.name, lancamento.motivoPendencia)
+        assertNull(lancamento.instrumentoPublicId)
+    }
+
+    @Test
+    fun `digitos sem instrumento correspondente gravam pendente sem instrumento`() = runTest {
+        val categorias = AmbienteCategorias().comPadroes()
+        ambiente.instrumentos.criar(InstituicaoFinanceira.ITAU, digitos = "1111")
 
         val resultado = processador(categorias).processar(captura(digitos = "2222"))
 
         val lancamento = (resultado as ResultadoProcessamento.Gravado).lancamento
         assertEquals(StatusLancamento.PENDENTE, lancamento.status)
         assertEquals(MotivoPendencia.INSTRUMENTO_NAO_ENCONTRADO.name, lancamento.motivoPendencia)
-        assertEquals(instrumento.publicId, lancamento.instrumentoPublicId)
+        assertNull(lancamento.instrumentoPublicId)
     }
 
     @Test
-    fun `sem instrumento da instituicao nao grava lancamento`() = runTest {
+    fun `sem instrumento da instituicao grava pendente com instrumento nulo e origem`() = runTest {
         val categorias = AmbienteCategorias().comPadroes()
 
         val resultado = processador(categorias).processar(captura())
 
-        assertEquals(ResultadoProcessamento.SemInstrumento, resultado)
-        assertTrue(ambiente.lancamentos.todos().isEmpty())
+        val lancamento = (resultado as ResultadoProcessamento.Gravado).lancamento
+        assertEquals(StatusLancamento.PENDENTE, lancamento.status)
+        assertEquals(MotivoPendencia.INSTRUMENTO_NAO_ENCONTRADO.name, lancamento.motivoPendencia)
+        assertNull(lancamento.instrumentoPublicId)
+        assertEquals(InstituicaoFinanceira.ITAU, lancamento.instituicaoOrigem)
+        assertEquals(1, ambiente.lancamentos.todos().size)
+        assertTrue(ambiente.instrumentos.todos().isEmpty())
     }
 
     @Test
-    fun `repostagem minutos depois e descartada em silencio`() = runTest {
+    fun `instrumento irresolvido tem precedencia sobre moeda estrangeira`() = runTest {
+        val categorias = AmbienteCategorias().comPadroes()
+
+        val resultado = processador(categorias).processar(captura(moeda = "USD"))
+
+        val lancamento = (resultado as ResultadoProcessamento.Gravado).lancamento
+        assertEquals(StatusLancamento.PENDENTE, lancamento.status)
+        assertEquals(MotivoPendencia.INSTRUMENTO_NAO_ENCONTRADO.name, lancamento.motivoPendencia)
+        assertNull(lancamento.instrumentoPublicId)
+    }
+
+    @Test
+    fun `mesmo hash descarta mesmo com texto bruto diferente`() = runTest {
         val categorias = AmbienteCategorias().comPadroes()
         ambiente.instrumentos.criar(InstituicaoFinanceira.ITAU)
         val processador = processador(categorias)
         val primeira = captura(valorCentavos = 43065, estabelecimento = "DAVI")
+
+        val primeiroResultado = processador.processar(primeira)
+        val segunda = primeira.copy(textoBruto = "Outro texto da mesma transação")
+        val segundoResultado = processador.processar(segunda)
+
+        assertTrue(primeiroResultado is ResultadoProcessamento.Gravado)
+        assertEquals(ResultadoProcessamento.Duplicada, segundoResultado)
+        assertEquals(1, ambiente.lancamentos.todos().size)
+    }
+
+    @Test
+    fun `hash com texto bruto nulo tambem descarta`() = runTest {
+        val categorias = AmbienteCategorias().comPadroes()
+        ambiente.instrumentos.criar(InstituicaoFinanceira.ITAU)
+        val processador = processador(categorias)
+        val primeira = captura(valorCentavos = 43065, estabelecimento = "DAVI", textoBruto = null)
+
+        val primeiroResultado = processador.processar(primeira)
+        val segundoResultado = processador.processar(primeira.copy(textoBruto = "Texto que chegou depois"))
+
+        assertTrue(primeiroResultado is ResultadoProcessamento.Gravado)
+        assertEquals(ResultadoProcessamento.Duplicada, segundoResultado)
+        assertEquals(1, ambiente.lancamentos.todos().size)
+    }
+
+    @Test
+    fun `textos iguais em minutos diferentes sao mantidos`() = runTest {
+        val categorias = AmbienteCategorias().comPadroes()
+        ambiente.instrumentos.criar(InstituicaoFinanceira.ITAU)
+        val processador = processador(categorias)
+        val primeira = captura(valorCentavos = 43065, estabelecimento = "DAVI", textoBruto = "Compra aprovada")
 
         val primeiroResultado = processador.processar(primeira)
         val segunda = primeira.copy(postTime = primeira.postTime.plus(Duration.ofMinutes(7)))
@@ -181,8 +245,8 @@ class ProcessadorDeCapturaTest {
         val segundoResultado = processador.processar(segunda)
 
         assertTrue(primeiroResultado is ResultadoProcessamento.Gravado)
-        assertEquals(ResultadoProcessamento.Duplicada, segundoResultado)
-        assertEquals(1, ambiente.lancamentos.todos().size)
+        assertTrue(segundoResultado is ResultadoProcessamento.Gravado)
+        assertEquals(2, ambiente.lancamentos.todos().size)
     }
 
     @Test
@@ -310,6 +374,77 @@ class ProcessadorDeCapturaTest {
     }
 
     @Test
+    fun `captura sem instrumento nao forma transferencia nem altera o parceiro`() = runTest {
+        val categorias = AmbienteCategorias().comPadroes()
+        ambiente.instrumentos.criar(InstituicaoFinanceira.NUBANK)
+        val processador = processador(categorias)
+
+        val recebida = processador.processar(
+            captura(
+                instituicao = InstituicaoFinanceira.NUBANK,
+                direcao = DirecaoPadrao.RECEITA,
+                tipo = TipoLancamentoPadrao.TRANSFERENCIA_RECEBIDA,
+                valorCentavos = 15000,
+                estabelecimento = "DAVI",
+            ),
+        )
+        val enviada = processador.processar(
+            captura(
+                direcao = DirecaoPadrao.DESPESA,
+                tipo = TipoLancamentoPadrao.PIX_ENVIADO,
+                valorCentavos = 15000,
+                estabelecimento = "DAVI",
+            ),
+        )
+
+        val parceiro = (recebida as ResultadoProcessamento.Gravado).lancamento
+        val despesa = (enviada as ResultadoProcessamento.Gravado).lancamento
+
+        assertNull(despesa.instrumentoPublicId)
+        assertNull(despesa.transferenciaId)
+        assertEquals(InstituicaoFinanceira.ITAU, despesa.instituicaoOrigem)
+        assertEquals(StatusLancamento.PENDENTE, despesa.status)
+
+        val parceiroPersistido = ambiente.lancamentos.todos().first { lancamento -> lancamento.publicId == parceiro.publicId }
+
+        assertNull(parceiroPersistido.transferenciaId)
+        assertEquals(TipoLancamento.RECEITA, parceiroPersistido.tipo)
+        assertEquals(StatusLancamento.CONFIRMADO, parceiroPersistido.status)
+    }
+
+    @Test
+    fun `candidato sem instrumento nao entra no pareamento`() = runTest {
+        val categorias = AmbienteCategorias().comPadroes()
+        ambiente.instrumentos.criar(InstituicaoFinanceira.ITAU)
+        val processador = processador(categorias)
+
+        processador.processar(
+            captura(
+                instituicao = InstituicaoFinanceira.NUBANK,
+                direcao = DirecaoPadrao.RECEITA,
+                tipo = TipoLancamentoPadrao.TRANSFERENCIA_RECEBIDA,
+                valorCentavos = 15000,
+                estabelecimento = "DAVI",
+            ),
+        )
+        processador.processar(
+            captura(
+                direcao = DirecaoPadrao.DESPESA,
+                tipo = TipoLancamentoPadrao.PIX_ENVIADO,
+                valorCentavos = 15000,
+                estabelecimento = "DAVI",
+            ),
+        )
+
+        val lancamentos = ambiente.lancamentos.todos()
+
+        assertTrue(lancamentos.all { lancamento -> lancamento.transferenciaId == null })
+        assertTrue(lancamentos.none { lancamento -> lancamento.tipo == TipoLancamento.TRANSFERENCIA })
+        val semInstrumento = lancamentos.single { lancamento -> lancamento.instituicaoOrigem == InstituicaoFinanceira.NUBANK }
+        assertNull(semInstrumento.instrumentoPublicId)
+    }
+
+    @Test
     fun `receita e despesa na mesma conta nao formam transferencia`() = runTest {
         val categorias = AmbienteCategorias().comPadroes()
         val conta = ambiente.contas.criar(InstituicaoFinanceira.ITAU, "Itaú")
@@ -368,7 +503,7 @@ class ProcessadorDeCapturaTest {
     private class AmbienteDeCaptura {
         val contas = FakeContas()
         val instrumentos = FakeInstrumentos(contas)
-        val lancamentos = FakeLancamentos(instrumentos, contas)
+        val lancamentos = FakeLancamentos(instrumentos)
         val transacoes = FakeTransacaoLocal()
         val clock = MutableClock(AGORA_DA_CAPTURA, FUSO_DA_CAPTURA)
     }

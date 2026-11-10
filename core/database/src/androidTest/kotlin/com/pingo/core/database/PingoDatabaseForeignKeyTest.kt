@@ -59,6 +59,24 @@ class PingoDatabaseForeignKeyTest {
     }
 
     @Test
+    fun pendingCaptureWithoutInstrumentIsAccepted() = runBlocking {
+        database.lancamentoDao().upsert(lancamento().copy(instrumentoPublicId = null, faturaPublicId = null))
+
+        assertNotNull(database.lancamentoDao().buscar(LANCAMENTO_ID))
+    }
+
+    @Test
+    fun pendingCaptureWithMissingInstrumentIsRejected() = runBlocking {
+        val falhou = runCatching {
+            database.lancamentoDao().upsert(
+                lancamento().copy(instrumentoPublicId = "instrumento-inexistente", faturaPublicId = null),
+            )
+        }.isFailure
+
+        assertTrue(falhou)
+    }
+
+    @Test
     fun invoiceCanReferenceAPaymentSavedAfterIt() = runBlocking {
         database.contaDao().upsert(conta())
         database.instrumentoDao().upsert(instrumento())

@@ -97,15 +97,16 @@ class PipelineDeCapturaTest {
     }
 
     @Test
-    fun semInstrumentoNaoIncrementaContadores() = runTest {
-        processador.resultado = ResultadoProcessamento.SemInstrumento
+    fun capturaSemInstrumentoPersisteComoPendenteEConta() = runTest {
+        processador.status = StatusLancamento.PENDENTE
+        processador.instrumentoPublicId = null
         val pipeline = pipeline()
 
         val resultado = pipeline.processar(notificacao(pacote = "com.itau", texto = RegrasDeTeste.TEXTO_COMPRA_ITAU))
 
-        assertEquals(ResultadoCaptura.SemInstrumento, resultado)
+        assertTrue(resultado is ResultadoCaptura.Transacao)
         assertEquals(0, capturaDataSource.valorDoContador(YearMonth.of(2026, 11), ContadorCaptura.RECONHECIDAS))
-        assertEquals(0, capturaDataSource.valorDoContador(YearMonth.of(2026, 11), ContadorCaptura.PENDENTES))
+        assertEquals(1, capturaDataSource.valorDoContador(YearMonth.of(2026, 11), ContadorCaptura.PENDENTES))
     }
 
     @Test

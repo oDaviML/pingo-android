@@ -60,14 +60,11 @@ class ProcessadorDeCapturaImpl @Inject constructor(
             captura.postTime,
         )
 
-        if (ehRepostagem(captura, hash, estabelecimentoNormalizado)) {
+        if (lancamentoRepository.buscarPorHash(hash) != null) {
             return ResultadoProcessamento.Duplicada
         }
 
         val instrumentos = instrumentoRepository.ativosDaInstituicao(captura.instituicao)
-        if (instrumentos.isEmpty()) {
-            return ResultadoProcessamento.SemInstrumento
-        }
 
         return gravar(captura, instrumentos, hash)
     }
@@ -77,7 +74,9 @@ class ProcessadorDeCapturaImpl @Inject constructor(
         val resolucao = ResolucaoDeInstrumento.de(transacao.digitos, instrumentos)
         val categoria = resolverCategoria(transacao)
         val dataHora = DataHoraDoLancamento.resolver(transacao.dataHoraTexto, captura.postTime, clock.zone)
-        val candidatos = candidatosDeTransferencia(captura, resolucao.instrumento, dataHora)
+        val candidatos = resolucao.instrumento?.let { instrumento ->
+            candidatosDeTransferencia(captura, instrumento, dataHora)
+        }.orEmpty()
         val motivo = motivoDe(transacao, resolucao, categoria)
             ?: if (candidatos.size > 1) MotivoPendencia.TRANSFERENCIA_AMBIGUA else null
         val par = candidatos.singleOrNull()
@@ -102,7 +101,7 @@ class ProcessadorDeCapturaImpl @Inject constructor(
 
     private fun lancamentoDe(dados: DadosDoLancamento): Lancamento = Lancamento(
         publicId = UUID.randomUUID().toString(),
-        instrumentoPublicId = dados.resolucao.instrumento.publicId,
+        instrumentoPublicId = dados.resolucao.instrumento?.publicId,
         categoriaPublicId = dados.categoria?.publicId,
         transferenciaId = dados.par?.let { UUID.randomUUID().toString() },
         valorCentavos = dados.captura.transacao.valorCentavos,
@@ -111,6 +110,7 @@ class ProcessadorDeCapturaImpl @Inject constructor(
         estabelecimento = dados.captura.transacao.estabelecimento,
         status = if (dados.motivo == null) StatusLancamento.CONFIRMADO else StatusLancamento.PENDENTE,
         origem = OrigemLancamento.NOTIFICACAO,
+        instituicaoOrigem = dados.captura.instituicao,
         confianca = ConfiancaDaLeitura.calcular(
             dados.captura.transacao.valorCentavos,
             dados.captura.transacao.estabelecimento,
@@ -152,24 +152,6 @@ class ProcessadorDeCapturaImpl @Inject constructor(
         }
     }
 
-    private suspend fun ehRepostagem(captura: CapturaParaProcessar, hash: String, estabelecimentoNormalizado: String?): Boolean {
-        if (lancamentoRepository.buscarPorHash(hash) != null) {
-            return true
-        }
-
-        val desde = captura.postTime.minus(JANELA_DE_REPOSTAGEM)
-        val ate = captura.postTime.plus(TOLERANCIA_DE_RELOGIO)
-
-        return lancamentoRepository
-            .recentesDaInstituicao(captura.instituicao, OrigemLancamento.NOTIFICACAO, desde, ate)
-            .any { existente -> mesmaRepostagem(existente, captura, estabelecimentoNormalizado) }
-    }
-
-    private fun mesmaRepostagem(existente: Lancamento, captura: CapturaParaProcessar, estabelecimentoNormalizado: String?): Boolean =
-        existente.valorCentavos == captura.transacao.valorCentavos &&
-            EstabelecimentoNormalizado.de(existente.estabelecimento) == estabelecimentoNormalizado &&
-            (existente.textoBruto == null || existente.textoBruto == captura.textoBruto)
-
     private suspend fun resolverCategoria(transacao: TransacaoExtraida): Categoria? =
         categoriaAprendida.resolver(transacao.estabelecimento) ?: categoriaPadrao(transacao.direcao)
 
@@ -182,8 +164,8 @@ class ProcessadorDeCapturaImpl @Inject constructor(
     }
 
     private fun motivoDe(transacao: TransacaoExtraida, resolucao: ResolucaoDeInstrumento, categoria: Categoria?): MotivoPendencia? = when {
-        transacao.moeda != MOEDA_NACIONAL -> MotivoPendencia.MOEDA_ESTRANGEIRA
         resolucao.motivo != null -> resolucao.motivo
+        transacao.moeda != MOEDA_NACIONAL -> MotivoPendencia.MOEDA_ESTRANGEIRA
         transacao.valorCentavos <= 0 || transacao.estabelecimento.isNullOrBlank() -> MotivoPendencia.CAMPOS_INCOMPLETOS
         categoria == null -> MotivoPendencia.CATEGORIA_DESCONHECIDA
         else -> null
@@ -226,8 +208,6 @@ class ProcessadorDeCapturaImpl @Inject constructor(
     private companion object {
         const val MOEDA_NACIONAL = "BRL"
         const val CATEGORIA_PADRAO = "Outros"
-        val JANELA_DE_REPOSTAGEM: Duration = Duration.ofMinutes(10)
-        val TOLERANCIA_DE_RELOGIO: Duration = Duration.ofMinutes(2)
         val JANELA_DE_TRANSFERENCIA: Duration = Duration.ofMinutes(15)
     }
 }

@@ -105,6 +105,10 @@ class SyncEngine @Inject constructor(
                 val dono = database.lancamentoDao().buscar(alias.ownerPublicId)
 
                 if (duplicado != null && dono != null) {
+                    val textoDoDuplicado = duplicado.textoBruto
+                    if (dono.textoBruto == null && textoDoDuplicado != null) {
+                        database.lancamentoDao().definirTextoBruto(dono.publicId, textoDoDuplicado)
+                    }
                     database.lancamentoDao().repointarCompraPai(de = duplicado.publicId, para = dono.publicId)
                     database.lancamentoDao().repointarEstorno(de = duplicado.publicId, para = dono.publicId)
                     database.faturaDao().repointarPagamento(de = duplicado.publicId, para = dono.publicId)

@@ -108,7 +108,7 @@ internal class FakeInstrumentos(private val contas: FakeContas) : InstrumentoRep
     }
 }
 
-internal class FakeLancamentos(private val instrumentos: FakeInstrumentos, private val contas: FakeContas) : LancamentoRepository {
+internal class FakeLancamentos(private val instrumentos: FakeInstrumentos) : LancamentoRepository {
     private val lancamentos = mutableListOf<Lancamento>()
 
     fun todos(): List<Lancamento> = lancamentos.toList()
@@ -124,18 +124,6 @@ internal class FakeLancamentos(private val instrumentos: FakeInstrumentos, priva
     override suspend fun buscarPorHash(hash: String): Lancamento? =
         lancamentos.firstOrNull { it.hashDuplicata == hash && it.excluidoEm == null }
 
-    override suspend fun recentesDaInstituicao(
-        instituicao: InstituicaoFinanceira,
-        origem: OrigemLancamento,
-        desde: Instant,
-        ate: Instant,
-    ): List<Lancamento> = lancamentos.filter { lancamento ->
-        instituicaoDe(lancamento) == instituicao &&
-            lancamento.origem == origem &&
-            lancamento.excluidoEm == null &&
-            lancamento.criadoEm in desde..ate
-    }
-
     override suspend fun candidatosDeTransferencia(
         tipo: TipoLancamento,
         valorCentavos: Long,
@@ -150,7 +138,7 @@ internal class FakeLancamentos(private val instrumentos: FakeInstrumentos, priva
             lancamento.origem == origem &&
             lancamento.transferenciaId == null &&
             lancamento.excluidoEm == null &&
-            contaDo(lancamento) != contaPublicId
+            contaDo(lancamento).let { conta -> conta != null && conta != contaPublicId }
     }
 
     override suspend fun salvar(lancamento: Lancamento) = salvarTodos(listOf(lancamento))
@@ -166,8 +154,6 @@ internal class FakeLancamentos(private val instrumentos: FakeInstrumentos, priva
             lancamentos[posicao] = lancamentos[posicao].copy(excluidoEm = quando, atualizadoEm = quando)
         }
     }
-
-    private fun instituicaoDe(lancamento: Lancamento): InstituicaoFinanceira? = contaDo(lancamento)?.let(contas::instituicaoDe)
 
     private fun contaDo(lancamento: Lancamento): String? =
         instrumentos.todos().firstOrNull { it.publicId == lancamento.instrumentoPublicId }?.contaPublicId

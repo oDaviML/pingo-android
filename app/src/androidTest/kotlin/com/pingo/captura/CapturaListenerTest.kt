@@ -17,10 +17,13 @@ import com.pingo.core.model.Conta
 import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.Instrumento
 import com.pingo.core.model.Lancamento
+import com.pingo.core.model.MotivoPendencia
 import com.pingo.core.model.OrigemLancamento
+import com.pingo.core.model.StatusLancamento
 import com.pingo.core.model.TipoCategoria
 import com.pingo.core.model.TipoConta
 import com.pingo.core.model.TipoInstrumento
+import com.pingo.core.model.TipoLancamento
 import com.pingo.core.notifications.AcessoNotificacoesDoSistema
 import com.pingo.core.notifications.CapturaController
 import com.pingo.core.notifications.CapturaControllerImpl
@@ -45,8 +48,10 @@ import java.io.File
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @RunWith(AndroidJUnit4::class)
 class CapturaListenerTest {
@@ -167,33 +172,129 @@ class CapturaListenerTest {
         assertTrue("captura notificação→lançamento levou ${decorrido.toMillis()}ms", decorrido <= Duration.ofSeconds(2))
     }
 
-    private fun semearInstrumentoECategoria() = runBlocking {
+    @Test
+    fun capturaSemNenhumInstrumentoCadastradoViraPendenteNuloNoRoomEmAte2Segundos() {
         val agora = Instant.now()
-        if (captura.contaRepository().buscar(CONTA_PUBLIC_ID) == null) {
+        runBlocking {
+            captura.instrumentoRepository().observeInstrumentos().first().forEach { instrumento ->
+                captura.instrumentoRepository().excluir(instrumento.publicId, agora)
+            }
+        }
+        val instrumentosAtivos = runBlocking { captura.instrumentoRepository().observeInstrumentos().first() }
+        assertTrue("o cenário exige zero instrumentos cadastrados", instrumentosAtivos.isEmpty())
+
+        val valor = valorUnico()
+        val inicio = System.nanoTime()
+
+        postar("Compra aprovada", "pingo-teste-NUBANK-$valor", textoCompraNubank(valor))
+
+        val lancamento = runBlocking {
+            withTimeoutOrNull(TEMPO_ESPERA) {
+                captura.lancamentoRepository().observeLancamentos()
+                    .first { lista ->
+                        lista.any {
+                            it.valorCentavos == valor &&
+                                it.origem == OrigemLancamento.NOTIFICACAO &&
+                                it.instituicaoOrigem == InstituicaoFinanceira.NUBANK
+                        }
+                    }
+                    .first { it.valorCentavos == valor }
+            }
+        }
+        val decorrido = Duration.ofNanos(System.nanoTime() - inicio)
+        val instrumentosNubank = runBlocking {
+            captura.instrumentoRepository().ativosDaInstituicao(InstituicaoFinanceira.NUBANK)
+        }
+
+        assertNotNull("captura sem instrumento não apareceu no Room", lancamento)
+        assertNull(lancamento?.instrumentoPublicId)
+        assertEquals(StatusLancamento.PENDENTE, lancamento?.status)
+        assertEquals(MotivoPendencia.INSTRUMENTO_NAO_ENCONTRADO.name, lancamento?.motivoPendencia)
+        assertEquals(InstituicaoFinanceira.NUBANK, lancamento?.instituicaoOrigem)
+        assertTrue(instrumentosNubank.isEmpty())
+        assertTrue("captura notificação→lançamento levou ${decorrido.toMillis()}ms", decorrido <= Duration.ofSeconds(2))
+    }
+
+    @Test
+    fun doisLancamentosComInstrumentosEmContasDistintasFormamTransferencia() {
+        val agora = Instant.now()
+        runBlocking {
             captura.contaRepository().salvar(
                 Conta(
-                    publicId = CONTA_PUBLIC_ID,
-                    instituicao = InstituicaoFinanceira.ITAU,
-                    apelido = "Itaú",
+                    publicId = CONTA_INTER_ID,
+                    instituicao = InstituicaoFinanceira.INTER,
+                    apelido = "Inter",
                     tipo = TipoConta.CORRENTE,
                     criadoEm = agora,
                     atualizadoEm = agora,
                 ),
             )
-        }
-        if (captura.instrumentoRepository().buscar(INSTRUMENTO_PUBLIC_ID) == null) {
             captura.instrumentoRepository().salvar(
                 Instrumento(
-                    publicId = INSTRUMENTO_PUBLIC_ID,
-                    contaPublicId = CONTA_PUBLIC_ID,
-                    tipo = TipoInstrumento.CREDITO,
-                    apelido = "Cartão Itaú",
-                    ultimosDigitos = ULTIMOS_DIGITOS,
+                    publicId = INSTRUMENTO_INTER_ID,
+                    contaPublicId = CONTA_INTER_ID,
+                    tipo = TipoInstrumento.DEBITO,
+                    apelido = "Débito Inter",
                     criadoEm = agora,
                     atualizadoEm = agora,
                 ),
             )
+            captura.categoriaRepository().criar(NOME_CATEGORIA_PADRAO, TipoCategoria.RECEITA, agora)
         }
+
+        val valor = valorUnico()
+        val inicio = Instant.now()
+
+        postar("Pagamento", "pingo-teste-INTER-$valor", textoPagamentoInter(valor))
+        aguardarLancamento(valor, inicio)
+        postar("Pix recebido", "pingo-teste-ITAU-$valor", textoPixRecebidoItau(valor))
+
+        val par = runBlocking {
+            withTimeout(TEMPO_ESPERA) {
+                captura.lancamentoRepository().observeLancamentos()
+                    .first { lista ->
+                        lista.count {
+                            it.valorCentavos == valor &&
+                                it.origem == OrigemLancamento.NOTIFICACAO &&
+                                it.tipo == TipoLancamento.TRANSFERENCIA
+                        } == 2
+                    }
+                    .filter { it.valorCentavos == valor }
+            }
+        }
+
+        assertEquals(2, par.size)
+        assertEquals(setOf(INSTRUMENTO_INTER_ID, INSTRUMENTO_PUBLIC_ID), par.map { it.instrumentoPublicId }.toSet())
+        assertEquals(1, par.mapNotNull { it.transferenciaId }.distinct().size)
+        par.forEach { lancamento ->
+            assertEquals(TipoLancamento.TRANSFERENCIA, lancamento.tipo)
+            assertEquals(StatusLancamento.CONFIRMADO, lancamento.status)
+        }
+    }
+
+    private fun semearInstrumentoECategoria() = runBlocking {
+        val agora = Instant.now()
+        captura.contaRepository().salvar(
+            Conta(
+                publicId = CONTA_PUBLIC_ID,
+                instituicao = InstituicaoFinanceira.ITAU,
+                apelido = "Itaú",
+                tipo = TipoConta.CORRENTE,
+                criadoEm = agora,
+                atualizadoEm = agora,
+            ),
+        )
+        captura.instrumentoRepository().salvar(
+            Instrumento(
+                publicId = INSTRUMENTO_PUBLIC_ID,
+                contaPublicId = CONTA_PUBLIC_ID,
+                tipo = TipoInstrumento.CREDITO,
+                apelido = "Cartão Itaú",
+                ultimosDigitos = ULTIMOS_DIGITOS,
+                criadoEm = agora,
+                atualizadoEm = agora,
+            ),
+        )
         captura.categoriaRepository().criar(NOME_CATEGORIA_PADRAO, TipoCategoria.DESPESA, agora)
     }
 
@@ -212,6 +313,25 @@ class CapturaListenerTest {
     }
 
     private fun valorUnico(): Long = 1000L + Math.floorMod(System.nanoTime(), 90000L)
+
+    private fun textoCompraNubank(valorCentavos: Long): String {
+        val reais = valorCentavos / 100
+        val centavos = (valorCentavos % 100).toString().padStart(2, '0')
+        return "Compra de R$ $reais,$centavos APROVADA em DL*99 99 para o cartão com final 5678."
+    }
+
+    private fun textoPagamentoInter(valorCentavos: Long): String {
+        val reais = valorCentavos / 100
+        val centavos = (valorCentavos % 100).toString().padStart(2, '0')
+        val quando = LocalDateTime.now().minusMinutes(2).format(DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:mm"))
+        return "Pagamento de R$ $reais,$centavos feito à MARIA SILVA em $quando."
+    }
+
+    private fun textoPixRecebidoItau(valorCentavos: Long): String {
+        val reais = valorCentavos / 100
+        val centavos = (valorCentavos % 100).toString().padStart(2, '0')
+        return "Pix recebido. Você recebeu R$ $reais,$centavos de MARIA SILVA, CPF 123.456.789-00."
+    }
 
     private fun textoCompra(valorCentavos: Long): String {
         val reais = valorCentavos / 100
@@ -326,6 +446,8 @@ class CapturaListenerTest {
         const val COMPONENTE = "$PACOTE/com.pingo.core.notifications.PingoNotificationListenerService"
         const val CONTA_PUBLIC_ID = "captura-conta-itau"
         const val INSTRUMENTO_PUBLIC_ID = "captura-instrumento-itau"
+        const val CONTA_INTER_ID = "captura-conta-inter"
+        const val INSTRUMENTO_INTER_ID = "captura-instrumento-inter"
         const val ULTIMOS_DIGITOS = "1234"
         const val NOME_CATEGORIA_PADRAO = "Outros"
         const val TEMPO_ESPERA = 20_000L

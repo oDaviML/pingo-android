@@ -6,7 +6,7 @@ import java.time.Instant
 @Immutable
 data class Lancamento(
     val publicId: String,
-    val instrumentoPublicId: String,
+    val instrumentoPublicId: String? = null,
     val categoriaPublicId: String? = null,
     val faturaPublicId: String? = null,
     val assinaturaPublicId: String? = null,
@@ -19,6 +19,7 @@ data class Lancamento(
     val estabelecimento: String? = null,
     val status: StatusLancamento,
     val origem: OrigemLancamento,
+    val instituicaoOrigem: InstituicaoFinanceira? = null,
     val confianca: Double,
     val motivoPendencia: String? = null,
     val hashDuplicata: String? = null,

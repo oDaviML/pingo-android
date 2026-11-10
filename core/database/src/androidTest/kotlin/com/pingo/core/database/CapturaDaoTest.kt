@@ -52,25 +52,36 @@ class CapturaDaoTest {
     }
 
     @Test
-    fun recentesDaInstituicaoFiltramOrigemJanelaEInstituicao() = runBlocking {
+    fun candidatosDeTransferenciaExcluemLancamentoSemInstrumento() = runBlocking {
         seedConta("itau", InstituicaoFinanceira.ITAU)
-        seedConta("nubank", InstituicaoFinanceira.NUBANK)
         seedInstrumento("cartao-itau", "itau")
-        seedInstrumento("cartao-nubank", "nubank")
         val dao = database.lancamentoDao()
-        dao.upsert(lancamento("recente", "cartao-itau"))
-        dao.upsert(lancamento("manual", "cartao-itau", origem = OrigemLancamento.MANUAL))
-        dao.upsert(lancamento("antigo", "cartao-itau", criadoEm = AGORA.minus(Duration.ofMinutes(20))))
-        dao.upsert(lancamento("nubank", "cartao-nubank"))
+        dao.upsert(lancamento("sem-instrumento", instrumentoPublicId = null))
 
-        val encontrados = dao.recentesDaInstituicao(
-            InstituicaoFinanceira.ITAU,
+        val candidatos = dao.candidatosDeTransferencia(
+            TipoLancamento.RECEITA,
+            15000,
+            AGORA.minus(Duration.ofMinutes(15)),
+            AGORA.plus(Duration.ofMinutes(15)),
+            "itau",
             OrigemLancamento.NOTIFICACAO,
-            AGORA.minus(Duration.ofMinutes(5)),
-            AGORA.plus(Duration.ofMinutes(1)),
         )
 
-        assertEquals(listOf("recente"), encontrados.map(LancamentoEntity::publicId))
+        assertEquals(emptyList<String>(), candidatos.map(LancamentoEntity::publicId))
+    }
+
+    @Test
+    fun capturaPendenteSemInstrumentoEPersistida() = runBlocking {
+        val dao = database.lancamentoDao()
+        dao.upsert(
+            lancamento("pendente", instrumentoPublicId = null, status = StatusLancamento.PENDENTE, motivo = "INSTRUMENTO_NAO_ENCONTRADO"),
+        )
+
+        val salvo = dao.buscar("pendente")
+
+        assertEquals(null, salvo?.instrumentoPublicId)
+        assertEquals(StatusLancamento.PENDENTE, salvo?.status)
+        assertEquals("INSTRUMENTO_NAO_ENCONTRADO", salvo?.motivoPendencia)
     }
 
     @Test
@@ -153,13 +164,15 @@ class CapturaDaoTest {
 
     private fun lancamento(
         publicId: String,
-        instrumentoPublicId: String,
+        instrumentoPublicId: String?,
         valorCentavos: Long = 15000,
         dataHora: Instant = AGORA,
         criadoEm: Instant = AGORA,
         tipo: TipoLancamento = TipoLancamento.RECEITA,
         origem: OrigemLancamento = OrigemLancamento.NOTIFICACAO,
         transferenciaId: String? = null,
+        status: StatusLancamento = StatusLancamento.CONFIRMADO,
+        motivo: String? = null,
     ) = LancamentoEntity(
         publicId = publicId,
         instrumentoPublicId = instrumentoPublicId,
@@ -173,10 +186,10 @@ class CapturaDaoTest {
         dataHora = dataHora,
         tipo = tipo,
         estabelecimento = "DAVI",
-        status = StatusLancamento.CONFIRMADO,
+        status = status,
         origem = origem,
         confianca = 1.0,
-        motivoPendencia = null,
+        motivoPendencia = motivo,
         hashDuplicata = null,
         observacao = null,
         parcelaNumero = 1,

@@ -98,7 +98,7 @@ data class FaturaChangeDto(
 @Serializable
 data class LancamentoChangeDto(
     val publicId: String,
-    val instrumentoPublicId: String,
+    val instrumentoPublicId: String? = null,
     val categoriaPublicId: String? = null,
     val faturaPublicId: String? = null,
     val assinaturaPublicId: String? = null,
@@ -111,6 +111,7 @@ data class LancamentoChangeDto(
     val estabelecimento: String? = null,
     val status: String,
     val origem: String,
+    val instituicaoOrigem: String? = null,
     val confianca: Double,
     val motivoPendencia: String? = null,
     val hashDuplicata: String? = null,
@@ -238,7 +239,7 @@ data class FaturaSnapshotDto(
 @Serializable
 data class LancamentoSnapshotDto(
     val publicId: String,
-    val instrumentoPublicId: String,
+    val instrumentoPublicId: String? = null,
     val categoriaPublicId: String? = null,
     val faturaPublicId: String? = null,
     val assinaturaPublicId: String? = null,
@@ -251,6 +252,7 @@ data class LancamentoSnapshotDto(
     val estabelecimento: String? = null,
     val status: String,
     val origem: String,
+    val instituicaoOrigem: String? = null,
     val confianca: Double,
     val motivoPendencia: String? = null,
     val hashDuplicata: String? = null,

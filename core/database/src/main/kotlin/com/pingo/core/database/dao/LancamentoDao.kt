@@ -5,7 +5,6 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
 import com.pingo.core.database.entity.LancamentoEntity
-import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.OrigemLancamento
 import com.pingo.core.model.TipoLancamento
 import kotlinx.coroutines.flow.Flow
@@ -24,25 +23,6 @@ abstract class LancamentoDao {
 
     @Query("SELECT * FROM lancamentos WHERE hashDuplicata = :hash AND excluidoEm IS NULL LIMIT 1")
     abstract suspend fun buscarPorHash(hash: String): LancamentoEntity?
-
-    @Query(
-        """
-        SELECT lancamentos.* FROM lancamentos
-        INNER JOIN instrumentos ON instrumentos.publicId = lancamentos.instrumentoPublicId
-        INNER JOIN contas ON contas.publicId = instrumentos.contaPublicId
-        WHERE lancamentos.excluidoEm IS NULL
-        AND lancamentos.origem = :origem
-        AND contas.instituicao = :instituicao
-        AND lancamentos.criadoEm BETWEEN :desde AND :ate
-        ORDER BY lancamentos.criadoEm
-        """,
-    )
-    abstract suspend fun recentesDaInstituicao(
-        instituicao: InstituicaoFinanceira,
-        origem: OrigemLancamento,
-        desde: Instant,
-        ate: Instant,
-    ): List<LancamentoEntity>
 
     @Query(
         """
@@ -79,6 +59,9 @@ abstract class LancamentoDao {
 
     @Query("UPDATE lancamentos SET excluidoEm = :quando, atualizadoEm = :quando WHERE publicId = :publicId")
     abstract suspend fun marcarExcluido(publicId: String, quando: Instant)
+
+    @Query("UPDATE lancamentos SET textoBruto = :textoBruto WHERE publicId = :publicId")
+    abstract suspend fun definirTextoBruto(publicId: String, textoBruto: String)
 
     @Query("UPDATE lancamentos SET compraPaiPublicId = :para WHERE compraPaiPublicId = :de")
     abstract suspend fun repointarCompraPai(de: String, para: String)

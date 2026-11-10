@@ -1,6 +1,5 @@
 package com.pingo.core.data
 
-import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.Lancamento
 import com.pingo.core.model.OrigemLancamento
 import com.pingo.core.model.TipoLancamento
@@ -15,13 +14,6 @@ interface LancamentoRepository {
     suspend fun buscar(publicId: String): Lancamento?
 
     suspend fun buscarPorHash(hash: String): Lancamento?
-
-    suspend fun recentesDaInstituicao(
-        instituicao: InstituicaoFinanceira,
-        origem: OrigemLancamento,
-        desde: Instant,
-        ate: Instant,
-    ): List<Lancamento>
 
     suspend fun candidatosDeTransferencia(
         tipo: TipoLancamento,

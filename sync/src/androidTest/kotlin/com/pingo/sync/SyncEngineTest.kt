@@ -370,6 +370,109 @@ class SyncEngineTest {
         assertNotNull(database.contaDao().buscar("conta-1")?.excluidoEm)
     }
 
+    @Test
+    fun pullRestauraPendenteSemInstrumentoComOrigemEMotivo() = runTest {
+        api.pullResult = PullChangesResult(
+            servidorEm = init.toString(),
+            lancamentos = listOf(lancamentoSnapshot("pendente-1", instrumentoPublicId = null)),
+        )
+
+        engine.run()
+
+        val restaurado = database.lancamentoDao().buscar("pendente-1")
+
+        assertNotNull(restaurado)
+        assertNull(restaurado?.instrumentoPublicId)
+        assertEquals(StatusLancamento.PENDENTE, restaurado?.status)
+        assertEquals("INSTRUMENTO_NAO_ENCONTRADO", restaurado?.motivoPendencia)
+        assertEquals(InstituicaoFinanceira.INTER, restaurado?.instituicaoOrigem)
+        assertNull(restaurado?.textoBruto)
+    }
+
+    @Test
+    fun pullIgualPreservaTextoBrutoLocalEAtualizaEstruturados() = runTest {
+        semearInstrumento()
+        database.lancamentoDao().upsert(lancamentoEntity("lancamento-1", estornoDe = null, textoBruto = TEXTO_LOCAL))
+        api.pullResult = PullChangesResult(
+            servidorEm = init.toString(),
+            lancamentos = listOf(lancamentoSnapshot("lancamento-1", estabelecimento = "Servidor", atualizadoEm = init)),
+        )
+
+        engine.run()
+
+        val local = database.lancamentoDao().buscar("lancamento-1")
+
+        assertEquals(TEXTO_LOCAL, local?.textoBruto)
+        assertEquals("Servidor", local?.estabelecimento)
+    }
+
+    @Test
+    fun pullMaisNovoPreservaTextoBrutoLocalEAtualizaEstruturados() = runTest {
+        semearInstrumento()
+        database.lancamentoDao().upsert(lancamentoEntity("lancamento-1", estornoDe = null, textoBruto = TEXTO_LOCAL))
+        val maisNovo = init.plusSeconds(60)
+        api.pullResult = PullChangesResult(
+            servidorEm = maisNovo.toString(),
+            lancamentos = listOf(lancamentoSnapshot("lancamento-1", estabelecimento = "Servidor", atualizadoEm = maisNovo)),
+        )
+
+        engine.run()
+
+        val local = database.lancamentoDao().buscar("lancamento-1")
+
+        assertEquals(TEXTO_LOCAL, local?.textoBruto)
+        assertEquals("Servidor", local?.estabelecimento)
+        assertEquals(maisNovo, local?.atualizadoEm)
+    }
+
+    @Test
+    fun pullAntigoNaoSobrescreveLancamentoLocal() = runTest {
+        semearInstrumento()
+        val maisNovo = init.plusSeconds(60)
+        database.lancamentoDao().upsert(
+            lancamentoEntity("lancamento-1", estornoDe = null, textoBruto = TEXTO_LOCAL, atualizadoEm = maisNovo),
+        )
+        api.pullResult = PullChangesResult(
+            servidorEm = init.toString(),
+            lancamentos = listOf(lancamentoSnapshot("lancamento-1", estabelecimento = "Servidor", atualizadoEm = init)),
+        )
+
+        engine.run()
+
+        val local = database.lancamentoDao().buscar("lancamento-1")
+
+        assertEquals("Loja", local?.estabelecimento)
+        assertEquals(TEXTO_LOCAL, local?.textoBruto)
+        assertEquals(maisNovo, local?.atualizadoEm)
+    }
+
+    @Test
+    fun aliasPreservaTextoDoDuplicadoNoDonoSemTexto() = runTest {
+        database.contaDao().upsert(contaEntity("conta-1"))
+        database.instrumentoDao().upsert(instrumentoEntity("instrumento-1", "conta-1"))
+        database.lancamentoDao().upsert(lancamentoEntity("dono", estornoDe = null, textoBruto = null))
+        database.lancamentoDao().upsert(lancamentoEntity("duplicado", estornoDe = null, textoBruto = TEXTO_LOCAL))
+        api.pushResult = PushChangesResult(aliases = listOf(PublicIdAliasDto("duplicado", "dono")))
+
+        engine.run()
+
+        assertNull(database.lancamentoDao().buscar("duplicado"))
+        assertEquals(TEXTO_LOCAL, database.lancamentoDao().buscar("dono")?.textoBruto)
+    }
+
+    @Test
+    fun aliasNaoSobrescreveTextoJaPresenteNoDono() = runTest {
+        database.contaDao().upsert(contaEntity("conta-1"))
+        database.instrumentoDao().upsert(instrumentoEntity("instrumento-1", "conta-1"))
+        database.lancamentoDao().upsert(lancamentoEntity("dono", estornoDe = null, textoBruto = "texto do dono"))
+        database.lancamentoDao().upsert(lancamentoEntity("duplicado", estornoDe = null, textoBruto = TEXTO_LOCAL))
+        api.pushResult = PushChangesResult(aliases = listOf(PublicIdAliasDto("duplicado", "dono")))
+
+        engine.run()
+
+        assertEquals("texto do dono", database.lancamentoDao().buscar("dono")?.textoBruto)
+    }
+
     private fun contaSnapshot(publicId: String, atualizadoEm: Instant, apelido: String = "Conta 1") = ContaSnapshotDto(
         publicId = publicId,
         instituicao = "Nubank",
@@ -379,6 +482,11 @@ class SyncEngineTest {
         criadoEm = init.toString(),
         atualizadoEm = atualizadoEm.toString(),
     )
+
+    private suspend fun semearInstrumento() {
+        database.contaDao().upsert(contaEntity("conta-1"))
+        database.instrumentoDao().upsert(instrumentoEntity("instrumento-1", "conta-1"))
+    }
 
     private fun contaEntity(publicId: String) = ContaEntity(
         publicId = publicId,
@@ -410,9 +518,15 @@ class SyncEngineTest {
         excluidoEm = null,
     )
 
-    private fun lancamentoEntity(publicId: String, estornoDe: String?) = LancamentoEntity(
+    private fun lancamentoEntity(
+        publicId: String,
+        estornoDe: String?,
+        textoBruto: String? = null,
+        atualizadoEm: Instant = init,
+        instrumentoPublicId: String? = "instrumento-1",
+    ) = LancamentoEntity(
         publicId = publicId,
-        instrumentoPublicId = "instrumento-1",
+        instrumentoPublicId = instrumentoPublicId,
         categoriaPublicId = null,
         faturaPublicId = null,
         assinaturaPublicId = null,
@@ -425,6 +539,7 @@ class SyncEngineTest {
         estabelecimento = "Loja",
         status = StatusLancamento.CONFIRMADO,
         origem = OrigemLancamento.MANUAL,
+        instituicaoOrigem = null,
         confianca = 1.0,
         motivoPendencia = null,
         hashDuplicata = null,
@@ -433,9 +548,30 @@ class SyncEngineTest {
         totalParcelas = 1,
         valorTotalCompraCentavos = null,
         criadoEm = init,
-        atualizadoEm = init,
+        atualizadoEm = atualizadoEm,
         excluidoEm = null,
-        textoBruto = null,
+        textoBruto = textoBruto,
+    )
+
+    private fun lancamentoSnapshot(
+        publicId: String,
+        instrumentoPublicId: String? = "instrumento-1",
+        estabelecimento: String = "Loja",
+        atualizadoEm: Instant = init,
+    ) = com.pingo.core.network.sync.LancamentoSnapshotDto(
+        publicId = publicId,
+        instrumentoPublicId = instrumentoPublicId,
+        valor = 10.0,
+        dataHora = init.toString(),
+        tipo = "Despesa",
+        estabelecimento = estabelecimento,
+        status = "Pendente",
+        origem = "Notificacao",
+        instituicaoOrigem = "Inter",
+        confianca = 0.5,
+        motivoPendencia = "INSTRUMENTO_NAO_ENCONTRADO",
+        criadoEm = init.toString(),
+        atualizadoEm = atualizadoEm.toString(),
     )
 
     private fun engineDoUsuario(): SyncEngine = SyncEngine(
@@ -446,6 +582,10 @@ class SyncEngineTest {
         DeviceActivator(api, preferences),
         seederDe(database, tokensDo("auth0|lucas")),
     )
+
+    private companion object {
+        const val TEXTO_LOCAL = "Compra aprovada de R$ 10,00 em LOJA"
+    }
 
     private fun seederDe(database: PingoDatabase, tokens: StoredTokens?): CategoriaSeeder = CategoriaSeeder(
         CategoriaRepositoryImpl(database.categoriaDao()),

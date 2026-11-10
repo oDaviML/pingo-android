@@ -6,6 +6,4 @@ sealed interface ResultadoProcessamento {
     data class Gravado(val lancamento: Lancamento) : ResultadoProcessamento
 
     data object Duplicada : ResultadoProcessamento
-
-    data object SemInstrumento : ResultadoProcessamento
 }

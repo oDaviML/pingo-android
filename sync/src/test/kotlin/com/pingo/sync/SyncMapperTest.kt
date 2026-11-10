@@ -53,6 +53,41 @@ class SyncMapperTest {
     }
 
     @Test
+    fun `push de pendente sem instrumento serializa o vazio sem inventar vinculo`() {
+        val entidade = lancamentoEntity(textoBruto = null, instrumentoPublicId = null, instituicaoOrigem = InstituicaoFinanceira.INTER)
+
+        val dto = entidade.toChangeDto()
+        val json = Json.encodeToString(LancamentoChangeDto.serializer(), dto)
+
+        assertNull(dto.instrumentoPublicId)
+        assertEquals("Inter", dto.instituicaoOrigem)
+        assertFalse(json.contains("instrumentoPublicId"))
+    }
+
+    @Test
+    fun `pull de pendente sem instrumento preserva origem estruturada`() {
+        val entidade = LancamentoSnapshotDto(
+            publicId = "lancamento-1",
+            instrumentoPublicId = null,
+            valor = 37.90,
+            dataHora = "2026-11-10T12:00:00Z",
+            tipo = "Despesa",
+            status = "Pendente",
+            origem = "Notificacao",
+            instituicaoOrigem = "MercadoPago",
+            confianca = 0.5,
+            motivoPendencia = "INSTRUMENTO_NAO_ENCONTRADO",
+            criadoEm = "2026-11-10T12:00:00Z",
+            atualizadoEm = "2026-11-10T12:00:00Z",
+        ).toEntity()
+
+        assertNull(entidade.instrumentoPublicId)
+        assertEquals(InstituicaoFinanceira.MERCADO_PAGO, entidade.instituicaoOrigem)
+        assertEquals("INSTRUMENTO_NAO_ENCONTRADO", entidade.motivoPendencia)
+        assertNull(entidade.textoBruto)
+    }
+
+    @Test
     fun `pull de lancamento nao preenche o texto bruto local`() {
         val lancamento = LancamentoSnapshotDto(
             publicId = "lancamento-1",
@@ -70,9 +105,13 @@ class SyncMapperTest {
         assertNull(lancamento.textoBruto)
     }
 
-    private fun lancamentoEntity(textoBruto: String?): LancamentoEntity = LancamentoEntity(
+    private fun lancamentoEntity(
+        textoBruto: String?,
+        instrumentoPublicId: String? = "instrumento-1",
+        instituicaoOrigem: InstituicaoFinanceira? = null,
+    ): LancamentoEntity = LancamentoEntity(
         publicId = "lancamento-1",
-        instrumentoPublicId = "instrumento-1",
+        instrumentoPublicId = instrumentoPublicId,
         categoriaPublicId = null,
         faturaPublicId = null,
         assinaturaPublicId = null,
@@ -85,6 +124,7 @@ class SyncMapperTest {
         estabelecimento = "CLARO *31987905690",
         status = StatusLancamento.CONFIRMADO,
         origem = OrigemLancamento.NOTIFICACAO,
+        instituicaoOrigem = instituicaoOrigem,
         confianca = 1.0,
         motivoPendencia = null,
         hashDuplicata = "hash-do-lancamento",

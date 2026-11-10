@@ -53,14 +53,35 @@ class PingoDatabaseSchemaTest {
             assertTrue("Tabela ausente: $tabela", tabela in tables)
         }
 
-        val colunas = mutableListOf<String>()
-        database.openHelper.readableDatabase.query("PRAGMA table_info(lancamentos)").use { cursor ->
-            while (cursor.moveToNext()) {
-                colunas.add(cursor.getString(1))
-            }
-        }
-        assertTrue("Coluna textoBruto ausente", "textoBruto" in colunas)
+        val colunas = colunasDe(database, "lancamentos")
+        assertTrue("Coluna textoBruto ausente", colunas.any { coluna -> coluna.nome == "textoBruto" })
+        assertTrue(
+            "instrumentoPublicId deveria aceitar nulo",
+            colunas.single { coluna -> coluna.nome == "instrumentoPublicId" }.aceitaNulo,
+        )
+        assertTrue(
+            "instituicaoOrigem deveria existir e aceitar nulo",
+            colunas.single { coluna -> coluna.nome == "instituicaoOrigem" }.aceitaNulo,
+        )
+
+        val colunasDaFatura = colunasDe(database, "faturas")
+        assertTrue(
+            "instrumentoPublicId da fatura continua obrigatório",
+            !colunasDaFatura.single { coluna -> coluna.nome == "instrumentoPublicId" }.aceitaNulo,
+        )
 
         database.close()
     }
+
+    private fun colunasDe(database: PingoDatabase, tabela: String): List<Coluna> {
+        val colunas = mutableListOf<Coluna>()
+        database.openHelper.readableDatabase.query("PRAGMA table_info($tabela)").use { cursor ->
+            while (cursor.moveToNext()) {
+                colunas.add(Coluna(cursor.getString(1), cursor.getInt(3) == 0))
+            }
+        }
+        return colunas
+    }
+
+    private data class Coluna(val nome: String, val aceitaNulo: Boolean)
 }
