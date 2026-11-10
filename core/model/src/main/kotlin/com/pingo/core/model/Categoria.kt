@@ -13,4 +13,7 @@ data class Categoria(
     val criadoEm: Instant,
     val atualizadoEm: Instant,
     val excluidoEm: Instant? = null,
-)
+) {
+    val podeSerEscolhida: Boolean
+        get() = !arquivada && excluidoEm == null
+}

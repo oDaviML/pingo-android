@@ -19,6 +19,7 @@ dependencies {
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(project(":core:testing"))
     androidTestImplementation(libs.androidx.test.core)

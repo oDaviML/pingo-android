@@ -3,6 +3,7 @@ package com.pingo.sync
 import androidx.room.withTransaction
 import com.pingo.core.auth.AuthRepository
 import com.pingo.core.auth.SessionState
+import com.pingo.core.data.categoria.CategoriaSeeder
 import com.pingo.core.database.PingoDatabase
 import com.pingo.core.datastore.SyncStatus
 import com.pingo.core.datastore.UserPreferencesDataSource
@@ -27,6 +28,7 @@ class SyncEngine @Inject constructor(
     private val preferences: UserPreferencesDataSource,
     private val authRepository: AuthRepository,
     private val deviceActivator: DeviceActivator,
+    private val categoriaSeeder: CategoriaSeeder,
 ) : SyncRunner {
     private val applier = SyncApplier(database)
     private val syncMutex = Mutex()
@@ -49,6 +51,7 @@ class SyncEngine @Inject constructor(
             val payload = coletar(preferences.pushCursor() ?: Instant.EPOCH)
 
             pull()
+            categoriaSeeder.garantirPadroes(Instant.now())
             push(payload = payload, inicio = inicio)
 
             preferences.setLastSyncAt(Instant.now())

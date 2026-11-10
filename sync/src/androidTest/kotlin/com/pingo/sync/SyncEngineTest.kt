@@ -9,6 +9,11 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.pingo.core.auth.AuthRepository
 import com.pingo.core.auth.LoginResult
 import com.pingo.core.auth.SessionState
+import com.pingo.core.auth.StoredTokens
+import com.pingo.core.auth.TokenStore
+import com.pingo.core.auth.UsuarioAutenticado
+import com.pingo.core.data.categoria.CategoriaSeeder
+import com.pingo.core.data.impl.CategoriaRepositoryImpl
 import com.pingo.core.database.PingoDatabase
 import com.pingo.core.database.entity.ContaEntity
 import com.pingo.core.database.entity.InstrumentoEntity
@@ -23,6 +28,7 @@ import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.model.TipoLancamento
 import com.pingo.core.network.ApiProfile
 import com.pingo.core.network.PingoApiClient
+import com.pingo.core.network.sync.CategoriaSnapshotDto
 import com.pingo.core.network.sync.ContaSnapshotDto
 import com.pingo.core.network.sync.PublicIdAliasDto
 import com.pingo.core.network.sync.PullChangesResult
@@ -30,6 +36,7 @@ import com.pingo.core.network.sync.PushChangesPayload
 import com.pingo.core.network.sync.PushChangesResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -40,6 +47,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.IOException
 import java.time.Instant
+import java.util.Base64
 
 @RunWith(AndroidJUnit4::class)
 class SyncEngineTest {
@@ -65,7 +73,7 @@ class SyncEngineTest {
             .build()
         api = FakeApi()
         preferences = FakePreferences()
-        engine = SyncEngine(api, database, preferences, FakeAuth(), DeviceActivator(api, preferences))
+        engine = SyncEngine(api, database, preferences, FakeAuth(), DeviceActivator(api, preferences), seederDe(database, null))
     }
 
     @After
@@ -184,7 +192,14 @@ class SyncEngineTest {
 
     @Test
     fun semSessaoNaoSincroniza() = runTest {
-        val semSessao = SyncEngine(api, database, preferences, FakeAuth(SessionState.LoggedOut), DeviceActivator(api, preferences))
+        val semSessao = SyncEngine(
+            api,
+            database,
+            preferences,
+            FakeAuth(SessionState.LoggedOut),
+            DeviceActivator(api, preferences),
+            seederDe(database, null),
+        )
 
         semSessao.run()
 
@@ -195,13 +210,47 @@ class SyncEngineTest {
     @Test
     fun semConsentimentoNaoSincronizaNemAtivaOAparelho() = runTest {
         val semConsentimento = FakePreferences(consent = null)
-        val engineSemConsentimento = SyncEngine(api, database, semConsentimento, FakeAuth(), DeviceActivator(api, semConsentimento))
+        val engineSemConsentimento = SyncEngine(
+            api,
+            database,
+            semConsentimento,
+            FakeAuth(),
+            DeviceActivator(api, semConsentimento),
+            seederDe(database, null),
+        )
 
         engineSemConsentimento.run()
 
         assertEquals(0, api.activateCalls)
         assertEquals(0, api.pullCalls)
         assertEquals(0, api.pushCalls)
+    }
+
+    @Test
+    fun primeiroSyncSemeiaAsCategoriasPadraoDepoisDoPull() = runTest {
+        engineDoUsuario().run()
+
+        val categorias = database.categoriaDao().observeAtivas().first()
+        assertEquals(15, categorias.size)
+        assertEquals(15, categorias.count { it.padrao && !it.arquivada })
+    }
+
+    @Test
+    fun seedNaoRecriaPadraoQueOServidorJaRenomeou() = runTest {
+        engineDoUsuario().run()
+        val lazer = database.categoriaDao().observeAtivas().first().single { it.nome == "Lazer" }
+        database.clearAllTables()
+        api.pullResult = PullChangesResult(
+            servidorEm = init.toString(),
+            categorias = listOf(categoriaSnapshot(publicId = lazer.publicId, nome = "Diversão")),
+        )
+
+        engineDoUsuario().run()
+
+        val categorias = database.categoriaDao().observeAtivas().first()
+        assertEquals(15, categorias.size)
+        assertEquals("Diversão", database.categoriaDao().buscar(lazer.publicId)?.nome)
+        assertEquals(0, categorias.count { it.nome == "Lazer" })
     }
 
     @Test
@@ -387,6 +436,57 @@ class SyncEngineTest {
         atualizadoEm = init,
         excluidoEm = null,
     )
+
+    private fun engineDoUsuario(): SyncEngine = SyncEngine(
+        api,
+        database,
+        preferences,
+        FakeAuth(),
+        DeviceActivator(api, preferences),
+        seederDe(database, tokensDo("auth0|lucas")),
+    )
+
+    private fun seederDe(database: PingoDatabase, tokens: StoredTokens?): CategoriaSeeder = CategoriaSeeder(
+        CategoriaRepositoryImpl(database.categoriaDao()),
+        UsuarioAutenticado(FakeTokenStore(tokens)),
+    )
+
+    private fun tokensDo(sub: String): StoredTokens = StoredTokens(
+        accessToken = jwtComSub(sub),
+        refreshToken = null,
+        expiresAtEpochMillis = Long.MAX_VALUE,
+    )
+
+    private fun jwtComSub(sub: String): String {
+        val codificador = Base64.getUrlEncoder().withoutPadding()
+        val cabecalho = codificador.encodeToString("""{"alg":"RS256"}""".toByteArray())
+        val corpo = codificador.encodeToString("""{"sub":"$sub"}""".toByteArray())
+
+        return "$cabecalho.$corpo.assinatura"
+    }
+
+    private fun categoriaSnapshot(publicId: String, nome: String): CategoriaSnapshotDto = CategoriaSnapshotDto(
+        publicId = publicId,
+        nome = nome,
+        tipo = "Despesa",
+        padrao = true,
+        arquivada = false,
+        criadoEm = init.toString(),
+        atualizadoEm = init.toString(),
+        excluidoEm = null,
+    )
+
+    private class FakeTokenStore(private var tokens: StoredTokens?) : TokenStore {
+        override suspend fun read(): StoredTokens? = tokens
+
+        override suspend fun write(tokens: StoredTokens) {
+            this.tokens = tokens
+        }
+
+        override suspend fun clear() {
+            tokens = null
+        }
+    }
 
     private class FakeApi : PingoApiClient {
         var pullResult = PullChangesResult(servidorEm = Instant.EPOCH.toString())
