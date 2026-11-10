@@ -14,6 +14,7 @@ dependencies {
     implementation(project(":core:database"))
     implementation(project(":core:datastore"))
     implementation(project(":core:network"))
+    implementation(project(":core:parser"))
     implementation(libs.room.runtime)
     implementation(libs.kotlinx.coroutines.android)
     androidTestImplementation(libs.androidx.test.runner)

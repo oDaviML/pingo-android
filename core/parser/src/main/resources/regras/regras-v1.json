@@ -1,0 +1,549 @@
+[
+  {
+    "instituicao": "NUBANK",
+    "padroes": [
+      {
+        "id": "nubank-compra-credito-aprovada",
+        "tipoLancamento": "COMPRA",
+        "direcao": "DESPESA",
+        "ancoras": ["Compra de R$", "APROVADA em"],
+        "exclusoes": ["negada"],
+        "extracoes": {
+          "valor": "Compra de R$ {valor} APROVADA",
+          "estabelecimento": "APROVADA em {estabelecimento} para",
+          "digitos": "cartão com final {digitos}"
+        }
+      },
+      {
+        "id": "nubank-compra-debito-aprovada",
+        "tipoLancamento": "COMPRA",
+        "direcao": "DESPESA",
+        "ancoras": ["Compra no débito aprovada", "Compra de R$"],
+        "exclusoes": ["negada"],
+        "extracoes": {
+          "valor": "Compra de R$ {valor} em",
+          "estabelecimento": "Compra de R$ {valor} em {estabelecimento}"
+        }
+      },
+      {
+        "id": "nubank-transferencia-recebida-recebemos",
+        "tipoLancamento": "TRANSFERENCIA_RECEBIDA",
+        "direcao": "RECEITA",
+        "ancoras": ["Recebemos sua transferência"],
+        "exclusoes": ["negada"],
+        "extracoes": {
+          "valor": "Recebemos sua transferência de R$ {valor}"
+        }
+      },
+      {
+        "id": "nubank-transferencia-recebida-voce-recebeu",
+        "tipoLancamento": "TRANSFERENCIA_RECEBIDA",
+        "direcao": "RECEITA",
+        "ancoras": ["Você recebeu uma transferência de R$"],
+        "exclusoes": ["negada"],
+        "extracoes": {
+          "valor": "transferência de R$ {valor} de",
+          "estabelecimento": "transferência de R$ {valor} de {estabelecimento}"
+        }
+      },
+      {
+        "id": "nubank-ruido-negada",
+        "ancoras": ["negada"],
+        "ruido": true
+      },
+      {
+        "id": "nubank-ruido-nucel",
+        "ancoras": ["NuCel"],
+        "ruido": true
+      },
+      {
+        "id": "nubank-ruido-boletos",
+        "ancoras": ["Pague boletos no crédito"],
+        "ruido": true
+      },
+      {
+        "id": "nubank-ruido-limite-evolui",
+        "ancoras": ["Seu limite evolui com você"],
+        "ruido": true
+      },
+      {
+        "id": "nubank-ruido-chances-credito",
+        "ancoras": ["Quer mais chances de crédito"],
+        "ruido": true
+      },
+      {
+        "id": "nubank-ruido-fatura",
+        "ancoras": ["Sua fatura"],
+        "ruido": true
+      },
+      {
+        "id": "nubank-ruido-limites-atualizados",
+        "ancoras": ["Alguns dos seus limites foram atualizados"],
+        "ruido": true
+      },
+      {
+        "id": "nubank-ruido-pix-praticidade",
+        "ancoras": ["Pix com ainda mais praticidade"],
+        "ruido": true
+      },
+      {
+        "id": "nubank-ruido-gastos-controle",
+        "ancoras": ["Gastos sob seu controle"],
+        "ruido": true
+      },
+      {
+        "id": "nubank-ruido-shopee",
+        "ancoras": ["Só cliente Nu tem 50% OFF"],
+        "ruido": true
+      },
+      {
+        "id": "nubank-ruido-saldos",
+        "ancoras": ["Todos seus saldos em um só lugar"],
+        "ruido": true
+      },
+      {
+        "id": "nubank-ruido-traga-dados",
+        "ancoras": ["Traga seus dados"],
+        "ruido": true
+      },
+      {
+        "id": "nubank-ruido-concorra",
+        "ancoras": ["Concorra a até R$"],
+        "ruido": true
+      },
+      {
+        "id": "nubank-ruido-dicas",
+        "ancoras": ["Dicas personalizadas para você"],
+        "ruido": true
+      },
+      {
+        "id": "nubank-ruido-emprestimo",
+        "ancoras": ["Chegou empréstimo mais barato"],
+        "ruido": true
+      }
+    ]
+  },
+  {
+    "instituicao": "INTER",
+    "padroes": [
+      {
+        "id": "inter-pix-recebido",
+        "tipoLancamento": "PIX_RECEBIDO",
+        "direcao": "RECEITA",
+        "ancoras": ["te enviou um Pix de R$", "creditado na sua conta final"],
+        "exclusoes": ["negada"],
+        "extracoes": {
+          "valor": "Pix de R$ {valor} creditado",
+          "estabelecimento": "{estabelecimento} te enviou um Pix"
+        }
+      },
+      {
+        "id": "inter-compra-debito",
+        "tipoLancamento": "COMPRA",
+        "direcao": "DESPESA",
+        "ancoras": ["você acaba de comprar no débito"],
+        "exclusoes": ["negada"],
+        "extracoes": {
+          "valor": "o valor de R$ {valor}",
+          "estabelecimento": "comprar no débito no {estabelecimento} o valor"
+        }
+      },
+      {
+        "id": "inter-compra-credito",
+        "tipoLancamento": "COMPRA",
+        "direcao": "DESPESA",
+        "ancoras": ["Você acaba de comprar R$"],
+        "exclusoes": ["negada"],
+        "extracoes": {
+          "valor": "comprar R$ {valor} em",
+          "estabelecimento": "comprar R$ {valor} em {estabelecimento}. A compra",
+          "digitos": "cartão final {digitos}"
+        }
+      },
+      {
+        "id": "inter-pix-automatico",
+        "tipoLancamento": "PIX_ENVIADO",
+        "direcao": "DESPESA",
+        "ancoras": ["pagamento de R$", "feito à"],
+        "exclusoes": ["negada"],
+        "extracoes": {
+          "valor": "pagamento de R$ {valor} feito",
+          "estabelecimento": "feito à {estabelecimento} em"
+        }
+      },
+      {
+        "id": "inter-ruido-negada",
+        "ancoras": ["negada"],
+        "ruido": true
+      },
+      {
+        "id": "inter-ruido-domingo",
+        "ancoras": ["só até domingo"],
+        "ruido": true
+      },
+      {
+        "id": "inter-ruido-em-oferta",
+        "ancoras": ["em oferta!"],
+        "ruido": true
+      },
+      {
+        "id": "inter-ruido-orange-friday",
+        "ancoras": ["Orange Friday"],
+        "ruido": true
+      },
+      {
+        "id": "inter-ruido-presente",
+        "ancoras": ["Presente de R$100"],
+        "ruido": true
+      },
+      {
+        "id": "inter-ruido-gta",
+        "ancoras": ["GTA 6"],
+        "ruido": true
+      },
+      {
+        "id": "inter-ruido-tic-tac",
+        "ancoras": ["Tic, tac"],
+        "ruido": true
+      },
+      {
+        "id": "inter-ruido-ultima-chamada",
+        "ancoras": ["Última chamada"],
+        "ruido": true
+      },
+      {
+        "id": "inter-ruido-fatura",
+        "ancoras": ["Sua fatura"],
+        "ruido": true
+      },
+      {
+        "id": "inter-ruido-black-friday",
+        "ancoras": ["Black Friday"],
+        "ruido": true
+      },
+      {
+        "id": "inter-ruido-embarque",
+        "ancoras": ["Tem novidade no embarque"],
+        "ruido": true
+      },
+      {
+        "id": "inter-ruido-combo",
+        "ancoras": ["merece esse combo"],
+        "ruido": true
+      },
+      {
+        "id": "inter-ruido-cafe-pontos",
+        "ancoras": ["Café com pontos em dobro"],
+        "ruido": true
+      },
+      {
+        "id": "inter-ruido-consignado",
+        "ancoras": ["Libere seu Crédito"],
+        "ruido": true
+      },
+      {
+        "id": "inter-ruido-smartwatch",
+        "ancoras": ["ofertas em Smartwatch"],
+        "ruido": true
+      },
+      {
+        "id": "inter-ruido-renda-fixa",
+        "ancoras": ["Não se esqueça"],
+        "ruido": true
+      },
+      {
+        "id": "inter-ruido-pre-aprovado",
+        "ancoras": ["Você tem limite de crédito pré-aprovado"],
+        "ruido": true
+      },
+      {
+        "id": "inter-ruido-portfolio",
+        "ancoras": ["portfólio de lado"],
+        "ruido": true
+      }
+    ]
+  },
+  {
+    "instituicao": "ITAU",
+    "padroes": [
+      {
+        "id": "itau-compra-aprovada-usd",
+        "tipoLancamento": "COMPRA",
+        "direcao": "DESPESA",
+        "ancoras": ["Compra aprovada de USD"],
+        "exclusoes": ["negada"],
+        "extracoes": {
+          "moeda": "Compra aprovada de {moeda}",
+          "valor": "Compra aprovada de USD {valor} em",
+          "estabelecimento": "Compra aprovada de USD {valor} em {estabelecimento} no dia"
+        }
+      },
+      {
+        "id": "itau-compra-aprovada",
+        "tipoLancamento": "COMPRA",
+        "direcao": "DESPESA",
+        "ancoras": ["Compra aprovada de R$"],
+        "exclusoes": ["negada"],
+        "extracoes": {
+          "valor": "Compra aprovada de R$ {valor} em",
+          "estabelecimento": "Compra aprovada de R$ {valor} em {estabelecimento} no dia",
+          "digitos": "cartão final {digitos}"
+        }
+      },
+      {
+        "id": "itau-pix-enviado",
+        "tipoLancamento": "PIX_ENVIADO",
+        "direcao": "DESPESA",
+        "ancoras": ["Pix enviado", "Você enviou R$"],
+        "exclusoes": ["negada"],
+        "extracoes": {
+          "valor": "Você enviou R$ {valor} para",
+          "estabelecimento": "Você enviou R$ {valor} para {estabelecimento}, CPF"
+        }
+      },
+      {
+        "id": "itau-pix-recebido",
+        "tipoLancamento": "PIX_RECEBIDO",
+        "direcao": "RECEITA",
+        "ancoras": ["Pix recebido", "Você recebeu R$"],
+        "exclusoes": ["negada"],
+        "extracoes": {
+          "valor": "Você recebeu R$ {valor} de",
+          "estabelecimento": "Você recebeu R$ {valor} de {estabelecimento}, CPF"
+        }
+      },
+      {
+        "id": "itau-boleto-pago",
+        "tipoLancamento": "COMPRA",
+        "direcao": "DESPESA",
+        "ancoras": ["O boleto de R$", "foi pago"],
+        "exclusoes": ["negada"],
+        "extracoes": {
+          "valor": "O boleto de R$ {valor} para",
+          "estabelecimento": "O boleto de R$ {valor} para {estabelecimento} foi pago"
+        }
+      },
+      {
+        "id": "itau-ruido-negada",
+        "ancoras": ["negada"],
+        "ruido": true
+      },
+      {
+        "id": "itau-ruido-limite-conta",
+        "ancoras": ["Mais controle para gerenciar seu limite"],
+        "ruido": true
+      }
+    ]
+  },
+  {
+    "instituicao": "MERCADO_PAGO",
+    "padroes": [
+      {
+        "id": "mp-pagamento-conta",
+        "tipoLancamento": "COMPRA",
+        "direcao": "DESPESA",
+        "ancoras": ["Você pagou", "Debitamos R$", "da sua conta"],
+        "exclusoes": ["negada"],
+        "extracoes": {
+          "valor": "Debitamos R$ {valor} da sua conta",
+          "estabelecimento": "Você pagou {estabelecimento}"
+        }
+      },
+      {
+        "id": "mp-pagamento-cartao-a",
+        "tipoLancamento": "COMPRA",
+        "direcao": "DESPESA",
+        "ancoras": ["Você pagou R$", "próxima fatura"],
+        "exclusoes": ["negada"],
+        "extracoes": {
+          "valor": "Você pagou R$ {valor} a",
+          "estabelecimento": "Você pagou R$ {valor} a {estabelecimento}"
+        }
+      },
+      {
+        "id": "mp-pagamento-cartao-para",
+        "tipoLancamento": "COMPRA",
+        "direcao": "DESPESA",
+        "ancoras": ["Você pagou R$", "Confira mais detalhes"],
+        "exclusoes": ["negada"],
+        "extracoes": {
+          "valor": "Você pagou R$ {valor} para",
+          "estabelecimento": "Você pagou R$ {valor} para {estabelecimento}"
+        }
+      },
+      {
+        "id": "mp-ruido-negada",
+        "ancoras": ["negada"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-linha-credito",
+        "ancoras": ["Você usou sua Linha de Crédito"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-celular-parcelado",
+        "ancoras": ["Seu celular também vende parcelado"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-parcelar",
+        "ancoras": ["Ainda dá tempo de parcelar"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-chance-2026",
+        "ancoras": ["sua chance em 2026"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-venda-celular",
+        "ancoras": ["Venda pelo celular"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-limite-aumentou",
+        "ancoras": ["Seu limite aumentou"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-dinheiro-rendendo",
+        "ancoras": ["Dinheiro disponível e rendendo"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-credito-precisa",
+        "ancoras": ["o crédito que você precisa"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-pagar-cartao",
+        "ancoras": ["Você já pode pagar seu cartão"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-cofrinho",
+        "ancoras": ["Exclusivo para compras"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-tem-3696",
+        "ancoras": ["Você tem R$ 3.696"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-aproveite-3696",
+        "ancoras": ["Aproveite seus R$ 3.696"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-813-aprovados",
+        "ancoras": ["R$ 813 aprovados"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-boa-noticia",
+        "ancoras": ["Boa notícia, Davi"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-fechar-caixa",
+        "ancoras": ["Lembre-se de fechar o caixa"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-lucros",
+        "ancoras": ["Sonhando com mais lucros"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-conta-google",
+        "ancoras": ["Conta Mercado Pago e Google conectados"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-cartao-9600",
+        "ancoras": ["Seu cartão de crédito com R$9.600"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-meta-negocio",
+        "ancoras": ["Você bateu a meta da Conta Negócio"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-sem-juros",
+        "ancoras": ["Crédito sem juros está liberado"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-copasa",
+        "ancoras": ["Lembre-se de pagar Copasa"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-limite-cartao",
+        "ancoras": ["limite do seu cartão de crédito aumentou"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-novo-cartao",
+        "ancoras": ["Ainda não pediu seu cartão"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-acesso",
+        "ancoras": ["Houve um acesso em sua conta"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-1990",
+        "ancoras": ["Você tem R$1.990 disponível"],
+        "ruido": true
+      },
+      {
+        "id": "mp-ruido-fechamento-caixa",
+        "ancoras": ["O fechamento de caixa foi feito"],
+        "ruido": true
+      }
+    ]
+  },
+  {
+    "instituicao": "CAJU",
+    "padroes": [
+      {
+        "id": "caju-compra-aprovada",
+        "tipoLancamento": "COMPRA",
+        "direcao": "DESPESA",
+        "ancoras": ["Compra de R$", "APROVADA no"],
+        "exclusoes": ["negada"],
+        "extracoes": {
+          "valor": "Compra de R$ {valor} em",
+          "estabelecimento": "Compra de R$ {valor} em {estabelecimento} APROVADA",
+          "saldo": "seu saldo em {beneficio} é R$ {saldo}",
+          "beneficio": "seu saldo em {beneficio} é R$ {saldo}"
+        }
+      },
+      {
+        "id": "caju-deposito",
+        "tipoLancamento": "DEPOSITO",
+        "direcao": "RECEITA",
+        "ancoras": ["Oba! R$", "disponíveis no seu Caju"],
+        "exclusoes": ["negada"],
+        "extracoes": {
+          "valor": "Oba! R$ {valor} disponíveis"
+        }
+      },
+      {
+        "id": "caju-ruido-negada",
+        "ancoras": ["negada"],
+        "ruido": true
+      },
+      {
+        "id": "caju-ruido-wellhub",
+        "ancoras": ["Wellhub"],
+        "ruido": true
+      }
+    ]
+  }
+]

@@ -27,8 +27,11 @@ internal class PadraoTransacional(
                 tipo = tipo,
                 direcao = direcao,
                 valorCentavos = centavos,
-                estabelecimento = extrair(texto, CampoExtracao.ESTABELECIMENTO),
+                estabelecimento = extrair(texto, CampoExtracao.ESTABELECIMENTO)?.let(EstabelecimentoLimpo::de),
                 digitos = extrair(texto, CampoExtracao.DIGITOS)?.takeLast(QUANTIDADE_DIGITOS_CARTAO),
+                moeda = extrair(texto, CampoExtracao.MOEDA)?.uppercase() ?: MOEDA_PADRAO,
+                saldoCentavos = extrair(texto, CampoExtracao.SALDO)?.let(ValorMonetario::centavos),
+                beneficio = extrair(texto, CampoExtracao.BENEFICIO),
             ),
         )
     }

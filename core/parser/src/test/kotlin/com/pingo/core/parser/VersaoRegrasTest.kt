@@ -65,7 +65,7 @@ class VersaoRegrasTest {
     fun `ignora extracoes de campos que o motor nao conhece`() {
         val padroes = """
             [{"id":"c","tipoLancamento":"COMPRA","direcao":"DESPESA","ancoras":["Compra"],
-            "extracoes":{"valor":"R$ {valor}","moeda":"USD {moeda}"}}]
+            "extracoes":{"valor":"R$ {valor}","cnpj":"CNPJ {cnpj}"}}]
         """.trimIndent()
 
         assertEquals(1, VersaoRegras.compilar(regraParser(NUBANK, 1, padroes)).padroes.size)

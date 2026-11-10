@@ -2,15 +2,16 @@ package com.pingo.core.parser
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Ignore
 import org.junit.Test
+import java.math.BigDecimal
 
 class CorpusReplayTest {
     private val entradas = CorpusFixtures.entradas()
     private val expectativas = CorpusFixtures.expectativas().associateBy { it.arquivo to it.ordem }
     private val desfechos: List<DesfechoReplay> by lazy {
-        ReplayCorpus(DefaultParserEngine(), CorpusFixtures.regrasFixture()).executar(entradas)
+        ReplayCorpus(DefaultParserEngine(), CorpusFixtures.regrasV1()).executar(entradas)
     }
+    private val transacoes: List<DesfechoReplay> by lazy { desfechos.filter { it.resultado is ResultadoParse.Transacao } }
 
     @Test
     fun `tabela de expectativas tem a contagem esperada por classe`() {
@@ -104,12 +105,71 @@ class CorpusReplayTest {
         )
     }
 
-    @Ignore("VAL-PARSER-001 e VAL-PARSER-003 dependem das regras v1 (STR-177)")
     @Test
     fun `transacionais e ruido batem com a tabela de expectativas`() {
         val divergentes = desfechos.filter { divergeDaExpectativa(it) }
 
         assertEquals(emptyList<String>(), divergentes.map { "${it.entrada.arquivo}#${it.entrada.ordem}" })
+    }
+
+    @Test
+    fun `negadas e ruido viram IGNORADA e fora da v1 vira NAO_ENTENDIDA`() {
+        val porClasse = desfechos.groupBy { expectativaDe(it.entrada).esperado }
+
+        assertTrue(porClasse.getValue(ClasseEsperada.NEGADA).all { it.resultado == ResultadoParse.Ignorada })
+        assertTrue(porClasse.getValue(ClasseEsperada.RUIDO).all { it.resultado == ResultadoParse.Ignorada })
+        assertTrue(porClasse.getValue(ClasseEsperada.FORA_V1).all { it.resultado == ResultadoParse.NaoEntendida })
+    }
+
+    @Test
+    fun `transacoes por instituicao e tipo batem com a tabela de expectativas`() {
+        val esperadas = expectativas.values
+            .filter { it.esperado == ClasseEsperada.TRANSACIONAL }
+            .groupingBy { it.instituicao to it.tipo }
+            .eachCount()
+        val obtidas = transacoes.groupingBy { it.instituicao?.name to it.transacao().tipo.name }.eachCount()
+
+        assertEquals(esperadas, obtidas)
+    }
+
+    @Test
+    fun `ruido e negadas por instituicao batem com a tabela e viram IGNORADA`() {
+        val esperadas = expectativas.values
+            .filter { it.esperado == ClasseEsperada.RUIDO || it.esperado == ClasseEsperada.NEGADA }
+            .groupingBy { it.instituicao }
+            .eachCount()
+        val ignoradas = desfechos.filter { it.resultado == ResultadoParse.Ignorada }.groupingBy { it.instituicao?.name }.eachCount()
+
+        assertEquals(esperadas, ignoradas)
+    }
+
+    @Test
+    fun `valor de cada transacional e o primeiro valor monetario do texto original`() {
+        val divergentes = transacoes.filter { it.transacao().valorCentavos != primeiroValorDoTexto(it.entrada) }
+
+        assertEquals(emptyList<String>(), divergentes.map { "${it.entrada.arquivo}#${it.entrada.ordem}" })
+    }
+
+    @Test
+    fun `transacoes sem estabelecimento sao so depositos e transferencias sem remetente`() {
+        val semEstabelecimento = transacoes.map { it.transacao() }.filter { it.estabelecimento == null }
+
+        assertEquals(
+            mapOf(TipoLancamentoPadrao.DEPOSITO to 2, TipoLancamentoPadrao.TRANSFERENCIA_RECEBIDA to 6),
+            semEstabelecimento.groupingBy { it.tipo }.eachCount(),
+        )
+    }
+
+    private fun DesfechoReplay.transacao(): TransacaoExtraida = (resultado as ResultadoParse.Transacao).dados
+
+    private fun primeiroValorDoTexto(entrada: EntradaCorpus): Long? {
+        val texto = (entrada.titulo + "\n" + entrada.texto).replace('\u00A0', ' ')
+        return valorNoTexto.find(texto)?.groupValues?.get(1)?.let(::centavosDe)
+    }
+
+    private fun centavosDe(numero: String): Long {
+        val decimal = if (',' in numero) numero.replace(".", "").replace(',', '.') else numero
+        return BigDecimal(decimal).movePointRight(2).longValueExact()
     }
 
     private fun divergeDaExpectativa(desfecho: DesfechoReplay): Boolean {
@@ -131,3 +191,5 @@ class CorpusReplayTest {
     private fun chavesDe(desfechos: List<DesfechoReplay>): Set<Pair<String, Int>> =
         desfechos.map { it.entrada.arquivo to it.entrada.ordem }.toSet()
 }
+
+private val valorNoTexto = Regex("""(?:R\$|USD)\s*(\d[\d.,]*\d|\d)""")

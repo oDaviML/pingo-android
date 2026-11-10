@@ -1,9 +1,6 @@
 package com.pingo.core.parser
 
 import com.pingo.core.model.InstituicaoFinanceira
-import com.pingo.core.model.RegraParser
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
 
 internal data class EntradaCorpus(
     val arquivo: String,
@@ -42,12 +39,7 @@ internal object CorpusFixtures {
     fun expectativas(): List<ExpectativaCorpus> =
         recurso("corpus/expectativas.tsv").lines().drop(1).filter(String::isNotBlank).map(::parseExpectativa)
 
-    fun regrasFixture(): Map<InstituicaoFinanceira, VersaoRegras> = RegrasVigentes.selecionar(regrasDoFixture())
-
-    private fun regrasDoFixture(): List<RegraParser> =
-        Json.parseToJsonElement(recurso("regras/regras-fixture.json")).jsonObject.map { (instituicao, padroes) ->
-            regraParser(InstituicaoFinanceira.valueOf(instituicao), 1, padroes.toString())
-        }
+    fun regrasV1(): Map<InstituicaoFinanceira, VersaoRegras> = RegrasVigentes.selecionar(RegrasParserSeed.regras)
 
     private fun recurso(caminho: String): String =
         requireNotNull(CorpusFixtures::class.java.classLoader.getResource(caminho)) { "recurso ausente: $caminho" }.readText()
