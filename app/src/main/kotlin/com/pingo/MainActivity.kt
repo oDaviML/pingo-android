@@ -26,7 +26,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             PingoTheme {
                 val session by viewModel.session.collectAsStateWithLifecycle()
-                val canEnterHome by viewModel.canEnterHome.collectAsStateWithLifecycle()
+                val destinoInicial by viewModel.destinoInicial.collectAsStateWithLifecycle()
 
                 Box(
                     modifier = Modifier
@@ -35,7 +35,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     PingoNavHost(
                         session = session,
-                        canEnterHome = canEnterHome,
+                        destinoInicial = destinoInicial,
                         onConsentAccepted = viewModel::onConsentAccepted,
                     )
                 }

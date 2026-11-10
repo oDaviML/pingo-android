@@ -44,7 +44,7 @@ fun PingoCheckbox(checked: Boolean, onCheckedChange: (Boolean) -> Unit, label: S
         horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        CheckboxMark(checked = checked)
+        PingoCheckboxMark(checked = checked)
         PingoText(
             text = label,
             style = PingoTheme.typography.body,
@@ -54,7 +54,7 @@ fun PingoCheckbox(checked: Boolean, onCheckedChange: (Boolean) -> Unit, label: S
 }
 
 @Composable
-private fun CheckboxMark(checked: Boolean) {
+fun PingoCheckboxMark(checked: Boolean) {
     val colors = PingoTheme.colors
     val shape = RoundedCornerShape(PingoRadius.sm)
 

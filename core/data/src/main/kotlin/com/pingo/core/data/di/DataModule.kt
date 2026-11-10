@@ -9,6 +9,7 @@ import com.pingo.core.data.InstrumentoRepository
 import com.pingo.core.data.LancamentoRepository
 import com.pingo.core.data.RegraCategoriaRepository
 import com.pingo.core.data.RegraParserRepository
+import com.pingo.core.data.TransacaoLocal
 import com.pingo.core.data.UsuarioRepository
 import com.pingo.core.data.impl.AccountRepositoryImpl
 import com.pingo.core.data.impl.AssinaturaRepositoryImpl
@@ -19,6 +20,7 @@ import com.pingo.core.data.impl.InstrumentoRepositoryImpl
 import com.pingo.core.data.impl.LancamentoRepositoryImpl
 import com.pingo.core.data.impl.RegraCategoriaRepositoryImpl
 import com.pingo.core.data.impl.RegraParserRepositoryImpl
+import com.pingo.core.data.impl.RoomTransacaoLocal
 import com.pingo.core.data.impl.UsuarioRepositoryImpl
 import dagger.Binds
 import dagger.Module
@@ -68,4 +70,8 @@ abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindRegraParserRepository(implementation: RegraParserRepositoryImpl): RegraParserRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTransacaoLocal(implementation: RoomTransacaoLocal): TransacaoLocal
 }

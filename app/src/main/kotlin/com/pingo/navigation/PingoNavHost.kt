@@ -21,8 +21,8 @@ import com.pingo.feature.capturestatus.api.CaptureStatusRoute
 import com.pingo.feature.capturestatus.impl.CaptureStatusScreen
 import com.pingo.feature.home.api.HomeRoute
 import com.pingo.feature.home.impl.HomeScreen
+import com.pingo.feature.onboarding.api.OnboardingContasRoute
 import com.pingo.feature.onboarding.api.OnboardingRoute
-import com.pingo.feature.onboarding.impl.OnboardingScreen
 import com.pingo.feature.reports.api.ReportsRoute
 import com.pingo.feature.reports.impl.ReportsScreen
 import com.pingo.feature.review.api.ReviewRoute
@@ -33,32 +33,22 @@ import com.pingo.feature.transactions.api.TransactionsRoute
 import com.pingo.feature.transactions.impl.TransactionsScreen
 
 @Composable
-fun PingoNavHost(session: SessionState, canEnterHome: Boolean?, onConsentAccepted: () -> Unit) {
-    if (session == SessionState.Loading || canEnterHome == null) {
+fun PingoNavHost(session: SessionState, destinoInicial: DestinoInicial?, onConsentAccepted: () -> Unit) {
+    if (session == SessionState.Loading || destinoInicial == null) {
         LoadingScreen()
         return
     }
 
     val navController = rememberNavController()
-    val startDestination = if (canEnterHome) HomeRoute.ROUTE else OnboardingRoute.ROUTE
 
     RedirectToOnboardingOnLogout(session = session, navController = navController)
 
     NavHost(
         navController = navController,
-        startDestination = startDestination,
+        startDestination = destinoInicial.rota(),
         modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars),
     ) {
-        composable(OnboardingRoute.ROUTE) {
-            OnboardingScreen(
-                onContinue = {
-                    onConsentAccepted()
-                    navController.navigate(HomeRoute.ROUTE) {
-                        popUpTo(OnboardingRoute.ROUTE) { inclusive = true }
-                    }
-                },
-            )
-        }
+        onboardingGraph(navController = navController, onConsentAccepted = onConsentAccepted)
         composable(HomeRoute.ROUTE) {
             HomeScreen(onOpenSettings = { navController.navigate(SettingsRoute.ROUTE) })
         }
@@ -74,6 +64,12 @@ fun PingoNavHost(session: SessionState, canEnterHome: Boolean?, onConsentAccepte
             )
         }
     }
+}
+
+private fun DestinoInicial.rota(): String = when (this) {
+    DestinoInicial.ONBOARDING -> OnboardingRoute.ROUTE
+    DestinoInicial.CONTAS -> OnboardingContasRoute.ROUTE
+    DestinoInicial.HOME -> HomeRoute.ROUTE
 }
 
 @Composable

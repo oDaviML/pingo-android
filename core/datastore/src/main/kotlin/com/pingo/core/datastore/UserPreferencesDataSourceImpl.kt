@@ -1,6 +1,7 @@
 package com.pingo.core.datastore
 
 import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -97,6 +98,14 @@ class UserPreferencesDataSourceImpl @Inject constructor(@param:ApplicationContex
         }
     }
 
+    override suspend fun contasConfiguradas(): Boolean = context.userPreferencesDataStore.data.first()[Keys.CONTAS_CONFIGURADAS] ?: false
+
+    override suspend fun setContasConfiguradas(configuradas: Boolean) {
+        context.userPreferencesDataStore.edit { preferences ->
+            preferences[Keys.CONTAS_CONFIGURADAS] = configuradas
+        }
+    }
+
     override suspend fun clear() {
         context.userPreferencesDataStore.edit { preferences -> preferences.clear() }
     }
@@ -111,6 +120,7 @@ class UserPreferencesDataSourceImpl @Inject constructor(@param:ApplicationContex
             val ACTIVATED_DEVICE_ID = stringPreferencesKey("activated_device_id")
             val CONSENT_VERSION = stringPreferencesKey("consent_version")
             val CONSENT_AT = stringPreferencesKey("consent_at")
+            val CONTAS_CONFIGURADAS = booleanPreferencesKey("contas_configuradas")
         }
     }
 }

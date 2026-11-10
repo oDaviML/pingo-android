@@ -6,6 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -73,5 +74,20 @@ class UserPreferencesDataSourceTest {
 
         assertNull(dataSource.consentVersion())
         assertNull(dataSource.consentAt())
+    }
+
+    @Test
+    fun persisteAConfiguracaoDeContasELimpaAoExcluirConta() = runBlocking {
+        dataSource.clear()
+
+        assertFalse(dataSource.contasConfiguradas())
+
+        dataSource.setContasConfiguradas(true)
+
+        assertTrue(dataSource.contasConfiguradas())
+
+        dataSource.clear()
+
+        assertFalse(dataSource.contasConfiguradas())
     }
 }

@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.pingo.core.auth.AuthRepository
 import com.pingo.core.auth.SessionState
 import com.pingo.core.datastore.UserPreferencesDataSource
+import com.pingo.navigation.DestinoInicial
+import com.pingo.navigation.destinoInicialPara
 import com.pingo.sync.SyncScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,10 +25,16 @@ class AppViewModel @Inject constructor(
 ) : ViewModel() {
     val session: StateFlow<SessionState> = authRepository.session
 
-    val canEnterHome: StateFlow<Boolean?> = authRepository.session
+    val destinoInicial: StateFlow<DestinoInicial?> = authRepository.session
         .filter { it != SessionState.Loading }
         .take(1)
-        .map { session -> session == SessionState.LoggedIn && preferences.consentVersion() != null }
+        .map { session ->
+            destinoInicialPara(
+                sessao = session,
+                consentimentoRegistrado = preferences.consentVersion() != null,
+                contasConfiguradas = preferences.contasConfiguradas(),
+            )
+        }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     fun onConsentAccepted() {

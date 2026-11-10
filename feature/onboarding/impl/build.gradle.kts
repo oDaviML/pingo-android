@@ -11,6 +11,7 @@ dependencies {
     implementation(project(":core:auth"))
     implementation(project(":core:common"))
     implementation(project(":core:data"))
+    implementation(project(":core:datastore"))
     testImplementation(project(":core:testing"))
     testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.test.ext.junit)

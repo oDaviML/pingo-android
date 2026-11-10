@@ -38,5 +38,9 @@ interface UserPreferencesDataSource {
 
     suspend fun setConsent(version: String, instant: Instant)
 
+    suspend fun contasConfiguradas(): Boolean
+
+    suspend fun setContasConfiguradas(configuradas: Boolean)
+
     suspend fun clear()
 }

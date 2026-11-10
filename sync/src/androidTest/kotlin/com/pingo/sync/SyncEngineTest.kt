@@ -583,6 +583,10 @@ class SyncEngineTest {
 
         override suspend fun setConsent(version: String, instant: Instant) = Unit
 
+        override suspend fun contasConfiguradas(): Boolean = false
+
+        override suspend fun setContasConfiguradas(configuradas: Boolean) = Unit
+
         override suspend fun clear() = Unit
     }
 
