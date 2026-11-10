@@ -168,7 +168,8 @@
         "exclusoes": ["negada"],
         "extracoes": {
           "valor": "pagamento de R$ {valor} feito",
-          "estabelecimento": "feito à {estabelecimento} em"
+          "estabelecimento": "feito à {estabelecimento} em",
+          "dataHora": "feito à {estabelecimento} em {dataHora}"
         }
       },
       {
@@ -275,7 +276,8 @@
         "extracoes": {
           "moeda": "Compra aprovada de {moeda}",
           "valor": "Compra aprovada de USD {valor} em",
-          "estabelecimento": "Compra aprovada de USD {valor} em {estabelecimento} no dia"
+          "estabelecimento": "Compra aprovada de USD {valor} em {estabelecimento} no dia",
+          "dataHora": "no dia {dataHora}"
         }
       },
       {
@@ -287,7 +289,8 @@
         "extracoes": {
           "valor": "Compra aprovada de R$ {valor} em",
           "estabelecimento": "Compra aprovada de R$ {valor} em {estabelecimento} no dia",
-          "digitos": "cartão final {digitos}"
+          "digitos": "cartão final {digitos}",
+          "dataHora": "no dia {dataHora}"
         }
       },
       {

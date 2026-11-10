@@ -12,4 +12,5 @@ data class TransacaoExtraida(
     val moeda: String = MOEDA_PADRAO,
     val saldoCentavos: Long? = null,
     val beneficio: String? = null,
+    val dataHoraTexto: String? = null,
 )

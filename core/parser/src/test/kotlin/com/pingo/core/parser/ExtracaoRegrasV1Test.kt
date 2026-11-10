@@ -189,6 +189,36 @@ class ExtracaoRegrasV1Test {
         assertEquals("4640", classificar(InstituicaoFinanceira.ITAU, notificacao).digitos)
     }
 
+    @Test
+    fun `compra aprovada do Itau extrai a data e a hora embutidas como texto cru`() {
+        val dados = dadosDe("pingo-corpus.txt", 5)
+
+        assertEquals("10/11 às 00:55", dados.dataHoraTexto)
+    }
+
+    @Test
+    fun `compra em USD do Itau extrai a data e a hora embutidas junto com a moeda`() {
+        val dados = dadosDe("pingo-corpus.txt", 44)
+
+        assertEquals("USD", dados.moeda)
+        assertEquals("03/11 às 13:30", dados.dataHoraTexto)
+    }
+
+    @Test
+    fun `Pix Automatico da Inter extrai a data completa embutida`() {
+        val dados = dadosDe("pingo-corpus-kaua.txt", 81)
+
+        assertEquals("23/10/2026", dados.dataHoraTexto)
+    }
+
+    @Test
+    fun `transacoes sem data embutida no texto nao extraem data e hora`() {
+        assertNull(dadosDe("pingo-corpus.txt", 7).dataHoraTexto)
+        assertNull(dadosDe("pingo-corpus.txt", 14).dataHoraTexto)
+        assertNull(dadosDe("pingo-corpus-iasmin.txt", 8).dataHoraTexto)
+        assertNull(dadosDe("pingo-corpus-kaua.txt", 34).dataHoraTexto)
+    }
+
     private fun dadosDe(arquivo: String, ordem: Int): TransacaoExtraida {
         val entrada = entradas.single { it.arquivo == arquivo && it.ordem == ordem }
         return classificar(requireNotNull(PacotesBancarios.instituicaoDe(entrada.pacote)), entrada.notificacao())

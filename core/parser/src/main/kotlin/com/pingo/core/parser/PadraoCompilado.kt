@@ -32,6 +32,7 @@ internal class PadraoTransacional(
                 moeda = extrair(texto, CampoExtracao.MOEDA)?.uppercase() ?: MOEDA_PADRAO,
                 saldoCentavos = extrair(texto, CampoExtracao.SALDO)?.let(ValorMonetario::centavos),
                 beneficio = extrair(texto, CampoExtracao.BENEFICIO),
+                dataHoraTexto = extrair(texto, CampoExtracao.DATA_HORA),
             ),
         )
     }

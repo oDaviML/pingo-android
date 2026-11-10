@@ -20,14 +20,14 @@ A versão 1 está em `src/main/resources/regras/regras-v1.json`, lida por `Regra
 | Nubank | transferência recebida: sem remetente, remetente comum e remetente com fragmento de CPF | TRANSFERENCIA_RECEBIDA |
 | Inter | Pix recebido (NBSP, "conta final"), compra débito (título vazio), compra crédito (com últimos-4) | PIX_RECEBIDO, COMPRA |
 | Inter | Pix Automático | PIX_ENVIADO |
-| Itaú | compra aprovada em reais (com últimos-4 quando presentes), compra aprovada em USD (moeda `USD`) | COMPRA |
+| Itaú | compra aprovada em reais (com últimos-4 quando presentes e data/hora embutidas), compra aprovada em USD (moeda `USD`, data/hora embutidas) | COMPRA |
 | Itaú | Pix enviado, Pix recebido, boleto pago de terceiro | PIX_ENVIADO, PIX_RECEBIDO, COMPRA |
 | Mercado Pago | pagamento em conta ("Você pagou X" + "Debitamos R$ Y da sua conta"), pagamento de cartão com valor no título | COMPRA |
 | Caju | compra aprovada (extrai também saldo e benefício do texto), depósito "Seu Caju caiu!" | COMPRA, DEPOSITO |
 
 Cada instituição também tem padrões de ruído para marketing, lembretes e negadas. A lista completa está no próprio JSON.
 
-Campos extraídos: valor (centavos), tipo, direção, estabelecimento, últimos-4 dígitos do cartão quando presentes, moeda (BRL por padrão), saldo e benefício (só Caju). Estabelecimento sem fragmento de CPF e sem pontuação final.
+Campos extraídos: valor (centavos), tipo, direção, estabelecimento, últimos-4 dígitos do cartão quando presentes, data e hora embutidas como texto cru (`dataHoraTexto`, só Itaú e Inter Pix Automático), moeda (BRL por padrão), saldo e benefício (só Caju). Estabelecimento sem fragmento de CPF e sem pontuação final.
 
 ## Seed local e fallback
 
@@ -61,7 +61,7 @@ O corpus não tem amostras destes casos. Não há regra para eles, e o resultado
 
 ## Fora do escopo desta versão
 
-- Data e hora embutidas no texto (Itaú "no dia DD/MM às HH:MM", Inter Pix Automático "DD/MM/AAAA") não são extraídas. O timestamp da notificação é a fonte autoritativa.
+- `dataHoraTexto` é o texto cru da data embutida: Itaú "DD/MM às HH:MM" e Inter Pix Automático "DD/MM/AAAA". Sem data no texto, o campo fica nulo. O ano e o fuso não saem do texto, porque o motor não recebe o timestamp da notificação. O pós-processamento (STR-182) converte o texto com esse timestamp, que é a fonte autoritativa.
 - Compra em moeda estrangeira sai com `moeda = USD`. A marcação `PENDENTE MOEDA_ESTRANGEIRA` é do pós-processamento (STR-182).
 - Itaú boleto pago entra como `COMPRA`, porque o enum não tem tipo próprio.
 - Pós-processamento (dedup, categoria, confiança, transferência) fica no STR-182.

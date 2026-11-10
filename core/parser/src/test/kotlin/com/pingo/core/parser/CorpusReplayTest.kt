@@ -106,6 +106,16 @@ class CorpusReplayTest {
     }
 
     @Test
+    fun `data e hora embutidas saem so nas compras aprovadas do Itau e no Pix Automatico da Inter`() {
+        val divergentes = transacoes.filter { it.transacao().dataHoraTexto != dataHoraDoTextoOriginal(it.entrada) }
+        val comData = transacoes.map { it.transacao() }.filter { it.dataHoraTexto != null }
+
+        assertEquals(emptyList<String>(), divergentes.map { "${it.entrada.arquivo}#${it.entrada.ordem}" })
+        assertTrue(comData.isNotEmpty())
+        assertTrue(comData.all { it.padraoId in padroesComDataEmbutida })
+    }
+
+    @Test
     fun `transacionais e ruido batem com a tabela de expectativas`() {
         val divergentes = desfechos.filter { divergeDaExpectativa(it) }
 
@@ -162,6 +172,11 @@ class CorpusReplayTest {
 
     private fun DesfechoReplay.transacao(): TransacaoExtraida = (resultado as ResultadoParse.Transacao).dados
 
+    private fun dataHoraDoTextoOriginal(entrada: EntradaCorpus): String? {
+        val texto = (entrada.titulo + "\n" + entrada.texto).replace('\u00A0', ' ')
+        return dataHoraNoTexto.find(texto)?.let { it.groupValues[1].ifEmpty { it.groupValues[2] } }
+    }
+
     private fun primeiroValorDoTexto(entrada: EntradaCorpus): Long? {
         val texto = (entrada.titulo + "\n" + entrada.texto).replace('\u00A0', ' ')
         return valorNoTexto.find(texto)?.groupValues?.get(1)?.let(::centavosDe)
@@ -193,3 +208,5 @@ class CorpusReplayTest {
 }
 
 private val valorNoTexto = Regex("""(?:R\$|USD)\s*(\d[\d.,]*\d|\d)""")
+private val dataHoraNoTexto = Regex("""no dia (\d{2}/\d{2} às \d{2}:\d{2})|feito à .+? em (\d{2}/\d{2}/\d{4})""")
+private val padroesComDataEmbutida = setOf("itau-compra-aprovada", "itau-compra-aprovada-usd", "inter-pix-automatico")
