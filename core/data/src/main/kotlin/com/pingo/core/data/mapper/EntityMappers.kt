@@ -138,6 +138,7 @@ fun LancamentoEntity.toModel(): Lancamento = Lancamento(
     criadoEm = criadoEm,
     atualizadoEm = atualizadoEm,
     excluidoEm = excluidoEm,
+    textoBruto = textoBruto,
 )
 
 fun Lancamento.toEntity(): LancamentoEntity = LancamentoEntity(
@@ -165,6 +166,7 @@ fun Lancamento.toEntity(): LancamentoEntity = LancamentoEntity(
     criadoEm = criadoEm,
     atualizadoEm = atualizadoEm,
     excluidoEm = excluidoEm,
+    textoBruto = textoBruto,
 )
 
 fun CategoriaEntity.toModel(): Categoria = Categoria(

@@ -53,6 +53,14 @@ class PingoDatabaseSchemaTest {
             assertTrue("Tabela ausente: $tabela", tabela in tables)
         }
 
+        val colunas = mutableListOf<String>()
+        database.openHelper.readableDatabase.query("PRAGMA table_info(lancamentos)").use { cursor ->
+            while (cursor.moveToNext()) {
+                colunas.add(cursor.getString(1))
+            }
+        }
+        assertTrue("Coluna textoBruto ausente", "textoBruto" in colunas)
+
         database.close()
     }
 }

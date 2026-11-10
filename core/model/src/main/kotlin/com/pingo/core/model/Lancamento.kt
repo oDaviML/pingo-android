@@ -29,4 +29,5 @@ data class Lancamento(
     val criadoEm: Instant,
     val atualizadoEm: Instant,
     val excluidoEm: Instant? = null,
+    val textoBruto: String? = null,
 )

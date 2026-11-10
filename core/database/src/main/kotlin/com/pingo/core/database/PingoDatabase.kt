@@ -34,7 +34,7 @@ import com.pingo.core.database.entity.UsuarioEntity
         AssinaturaEntity::class,
         RegraParserEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(PingoTypeConverters::class)
@@ -59,6 +59,6 @@ abstract class PingoDatabase : RoomDatabase() {
 
     companion object {
         const val NAME = "pingo.db"
-        const val VERSION = 1
+        const val VERSION = 2
     }
 }

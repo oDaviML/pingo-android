@@ -87,4 +87,5 @@ data class LancamentoEntity(
     val criadoEm: Instant,
     val atualizadoEm: Instant,
     val excluidoEm: Instant?,
+    val textoBruto: String?,
 )

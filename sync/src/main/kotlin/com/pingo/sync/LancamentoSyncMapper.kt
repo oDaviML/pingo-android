@@ -54,4 +54,5 @@ internal fun LancamentoSnapshotDto.toEntity(): LancamentoEntity = LancamentoEnti
     criadoEm = criadoEm.toInstantValue(),
     atualizadoEm = atualizadoEm.toInstantValue(),
     excluidoEm = excluidoEm?.toInstantValue(),
+    textoBruto = null,
 )

@@ -435,6 +435,7 @@ class SyncEngineTest {
         criadoEm = init,
         atualizadoEm = init,
         excluidoEm = null,
+        textoBruto = null,
     )
 
     private fun engineDoUsuario(): SyncEngine = SyncEngine(

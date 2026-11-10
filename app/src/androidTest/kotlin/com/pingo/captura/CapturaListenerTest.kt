@@ -7,12 +7,20 @@ import android.os.ParcelFileDescriptor
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.pingo.core.data.di.CapturaEntryPoint
 import com.pingo.core.datastore.CapturaDataSource
 import com.pingo.core.datastore.CapturaDataSourceImpl
 import com.pingo.core.datastore.ContadoresDoMes
 import com.pingo.core.datastore.EstadoListener
 import com.pingo.core.datastore.MotivoParada
+import com.pingo.core.model.Conta
 import com.pingo.core.model.InstituicaoFinanceira
+import com.pingo.core.model.Instrumento
+import com.pingo.core.model.Lancamento
+import com.pingo.core.model.OrigemLancamento
+import com.pingo.core.model.TipoCategoria
+import com.pingo.core.model.TipoConta
+import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.notifications.AcessoNotificacoesDoSistema
 import com.pingo.core.notifications.CapturaController
 import com.pingo.core.notifications.CapturaControllerImpl
@@ -20,6 +28,7 @@ import com.pingo.core.notifications.ConexaoDoListener
 import com.pingo.core.notifications.NotificacoesDeCaptura
 import com.pingo.core.notifications.RebindDeListenerDoSistema
 import com.pingo.core.notifications.ServicoDeCapturaDoAndroid
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -34,6 +43,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.time.Clock
+import java.time.Duration
 import java.time.Instant
 import java.time.YearMonth
 import java.time.ZoneId
@@ -43,6 +53,7 @@ class CapturaListenerTest {
     private val contexto: Context = ApplicationProvider.getApplicationContext()
     private val dataSource: CapturaDataSource = CapturaDataSourceImpl(contexto)
     private val acesso = AcessoNotificacoesDoSistema(contexto)
+    private val captura: CapturaEntryPoint = EntryPointAccessors.fromApplication(contexto, CapturaEntryPoint::class.java)
     private val controller: CapturaController = CapturaControllerImpl(
         capturaDataSource = dataSource,
         acessoNotificacoes = acesso,
@@ -55,6 +66,7 @@ class CapturaListenerTest {
 
     @Before
     fun concedeAcessoEConectaOListener() {
+        semearInstrumentoECategoria()
         shell("pm grant $PACOTE android.permission.POST_NOTIFICATIONS")
         shell("cmd notification allow_listener $COMPONENTE")
         runBlocking { controller.reconectar() }
@@ -120,19 +132,92 @@ class CapturaListenerTest {
     }
 
     @Test
-    fun compraReconhecidaNaoIncrementaContadoresDaCaptura() {
+    fun compraReconhecidaIncrementaReconhecidasECriaLancamento() {
         val mes = mesAtual()
         val antes = contadores(mes)
+        val valor = valorUnico()
         val inicio = Instant.now()
 
-        postar("Sua compra foi aprovada", "pingo-teste-ITAU", TEXTO_COMPRA_ITAU)
+        postar("Sua compra foi aprovada", "pingo-teste-ITAU-$valor", textoCompra(valor))
 
-        aguardarLeituraApos(InstituicaoFinanceira.ITAU, inicio)
-        Thread.sleep(INTERVALO_ESTABILIZACAO)
-
-        val depois = contadores(mes)
+        val depois = aguardarContadores(mes) { atuais -> atuais.reconhecidas == antes.reconhecidas + 1 }
+        assertEquals(antes.pendentes, depois.pendentes)
         assertEquals(antes.ignoradas, depois.ignoradas)
         assertEquals(antes.naoEntendidas, depois.naoEntendidas)
+        aguardarLancamento(valor, inicio)
+    }
+
+    @Test
+    fun notificacaoDeCompraViraLancamentoNoRoomEmAte2Segundos() {
+        val valor = valorUnico()
+        val inicio = System.nanoTime()
+
+        postar("Sua compra foi aprovada", "pingo-teste-ITAU-$valor", textoCompra(valor))
+
+        val lancamento = runBlocking {
+            withTimeoutOrNull(TEMPO_ESPERA) {
+                captura.lancamentoRepository().observeLancamentos()
+                    .first { lista -> lista.any { it.valorCentavos == valor && it.origem == OrigemLancamento.NOTIFICACAO } }
+                    .first { it.valorCentavos == valor }
+            }
+        }
+        val decorrido = Duration.ofNanos(System.nanoTime() - inicio)
+
+        assertNotNull("lançamento da notificação não apareceu no Room", lancamento)
+        assertTrue("captura notificação→lançamento levou ${decorrido.toMillis()}ms", decorrido <= Duration.ofSeconds(2))
+    }
+
+    private fun semearInstrumentoECategoria() = runBlocking {
+        val agora = Instant.now()
+        if (captura.contaRepository().buscar(CONTA_PUBLIC_ID) == null) {
+            captura.contaRepository().salvar(
+                Conta(
+                    publicId = CONTA_PUBLIC_ID,
+                    instituicao = InstituicaoFinanceira.ITAU,
+                    apelido = "Itaú",
+                    tipo = TipoConta.CORRENTE,
+                    criadoEm = agora,
+                    atualizadoEm = agora,
+                ),
+            )
+        }
+        if (captura.instrumentoRepository().buscar(INSTRUMENTO_PUBLIC_ID) == null) {
+            captura.instrumentoRepository().salvar(
+                Instrumento(
+                    publicId = INSTRUMENTO_PUBLIC_ID,
+                    contaPublicId = CONTA_PUBLIC_ID,
+                    tipo = TipoInstrumento.CREDITO,
+                    apelido = "Cartão Itaú",
+                    ultimosDigitos = ULTIMOS_DIGITOS,
+                    criadoEm = agora,
+                    atualizadoEm = agora,
+                ),
+            )
+        }
+        captura.categoriaRepository().criar(NOME_CATEGORIA_PADRAO, TipoCategoria.DESPESA, agora)
+    }
+
+    private fun aguardarLancamento(valorCentavos: Long, inicio: Instant): Lancamento = runBlocking {
+        withTimeout(TEMPO_ESPERA) {
+            captura.lancamentoRepository().observeLancamentos()
+                .first { lista ->
+                    lista.any {
+                        it.valorCentavos == valorCentavos &&
+                            it.origem == OrigemLancamento.NOTIFICACAO &&
+                            it.criadoEm.isAfter(inicio.minusSeconds(2))
+                    }
+                }
+                .first { it.valorCentavos == valorCentavos }
+        }
+    }
+
+    private fun valorUnico(): Long = 1000L + Math.floorMod(System.nanoTime(), 90000L)
+
+    private fun textoCompra(valorCentavos: Long): String {
+        val reais = valorCentavos / 100
+        val centavos = (valorCentavos % 100).toString().padStart(2, '0')
+        return "Ola! Compra aprovada de R$ $reais,$centavos em CLARO *31987905690 " +
+            "no dia 10/11 às 00:55 no cartão final $ULTIMOS_DIGITOS. Boas compras."
     }
 
     private fun postar(titulo: String, tag: String, texto: String) {
@@ -239,6 +324,10 @@ class CapturaListenerTest {
     private companion object {
         const val PACOTE = "com.pingo"
         const val COMPONENTE = "$PACOTE/com.pingo.core.notifications.PingoNotificationListenerService"
+        const val CONTA_PUBLIC_ID = "captura-conta-itau"
+        const val INSTRUMENTO_PUBLIC_ID = "captura-instrumento-itau"
+        const val ULTIMOS_DIGITOS = "1234"
+        const val NOME_CATEGORIA_PADRAO = "Outros"
         const val TEMPO_ESPERA = 20_000L
         const val INTERVALO_CONSULTA = 100L
         const val INTERVALO_ESTABILIZACAO = 2_000L
@@ -246,7 +335,5 @@ class CapturaListenerTest {
         const val TEXTO_SONDA_CAJU = "Wellhub"
         const val TEXTO_RUIDO_ITAU = "Mais controle para gerenciar seu limite"
         const val TEXTO_DESCONHECIDO = "Seu extrato esta disponivel no aplicativo"
-        const val TEXTO_COMPRA_ITAU =
-            "Ola! Compra aprovada de R$ 37,90 em CLARO *31987905690 no dia 10/11 às 00:55 no seu cartão Itau. Boas compras."
     }
 }

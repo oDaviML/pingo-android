@@ -1,7 +1,9 @@
 package com.pingo.core.notifications
 
+import com.pingo.core.data.captura.ResultadoProcessamento
 import com.pingo.core.datastore.ContadorCaptura
 import com.pingo.core.model.InstituicaoFinanceira
+import com.pingo.core.model.StatusLancamento
 import com.pingo.core.parser.DefaultParserEngine
 import com.pingo.core.testing.FakeAppDispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -24,6 +26,7 @@ class PipelineDeCapturaTest {
     private val clock = Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneId.of("America/Sao_Paulo"))
     private val capturaDataSource = FakeCapturaDataSource()
     private val regraParserRepository = FakeRegraParserRepository()
+    private val processador = FakeProcessadorDeCaptura()
 
     @Test
     fun extraiCompraEEntregaNoCanalEmMemoria() = runTest {
@@ -46,15 +49,74 @@ class PipelineDeCapturaTest {
     }
 
     @Test
-    fun transacaoNaoIncrementaContadoresDaCaptura() = runTest {
+    fun compraReconhecidaIncrementaReconhecidasEAlimentaOCanal() = runTest {
+        val pipeline = pipeline()
+        val recebidas = mutableListOf<TransacaoCapturada>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            pipeline.transacoes.collect { transacao -> recebidas += transacao }
+        }
+
+        val resultado = pipeline.processar(
+            notificacao(pacote = "com.itau", titulo = "Sua compra foi aprovada", texto = RegrasDeTeste.TEXTO_COMPRA_ITAU),
+        )
+
+        val capturada = (resultado as ResultadoCaptura.Transacao).capturada
+        assertEquals(listOf(capturada), recebidas)
+        assertEquals(1, capturaDataSource.valorDoContador(YearMonth.of(2026, 11), ContadorCaptura.RECONHECIDAS))
+        assertEquals(0, capturaDataSource.valorDoContador(YearMonth.of(2026, 11), ContadorCaptura.PENDENTES))
+        assertEquals(0, capturaDataSource.valorDoContador(YearMonth.of(2026, 11), ContadorCaptura.IGNORADAS))
+        assertEquals(0, capturaDataSource.valorDoContador(YearMonth.of(2026, 11), ContadorCaptura.NAO_ENTENDIDAS))
+    }
+
+    @Test
+    fun compraPendenteIncrementaPendentes() = runTest {
+        processador.status = StatusLancamento.PENDENTE
         val pipeline = pipeline()
 
         pipeline.processar(notificacao(pacote = "com.itau", texto = RegrasDeTeste.TEXTO_COMPRA_ITAU))
 
-        val mes = YearMonth.of(2026, 11)
-        assertEquals(0, capturaDataSource.valorDoContador(mes, ContadorCaptura.IGNORADAS))
-        assertEquals(0, capturaDataSource.valorDoContador(mes, ContadorCaptura.NAO_ENTENDIDAS))
-        assertEquals(0, capturaDataSource.valorDoContador(mes, ContadorCaptura.RECONHECIDAS))
+        assertEquals(1, capturaDataSource.valorDoContador(YearMonth.of(2026, 11), ContadorCaptura.PENDENTES))
+        assertEquals(0, capturaDataSource.valorDoContador(YearMonth.of(2026, 11), ContadorCaptura.RECONHECIDAS))
+    }
+
+    @Test
+    fun duplicataNaoIncrementaContadoresNemAlimentaOCanal() = runTest {
+        processador.resultado = ResultadoProcessamento.Duplicada
+        val pipeline = pipeline()
+        val recebidas = mutableListOf<TransacaoCapturada>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            pipeline.transacoes.collect { transacao -> recebidas += transacao }
+        }
+
+        val resultado = pipeline.processar(notificacao(pacote = "com.itau", texto = RegrasDeTeste.TEXTO_COMPRA_ITAU))
+
+        assertEquals(ResultadoCaptura.Duplicada, resultado)
+        assertTrue(recebidas.isEmpty())
+        assertEquals(0, capturaDataSource.valorDoContador(YearMonth.of(2026, 11), ContadorCaptura.RECONHECIDAS))
+        assertEquals(0, capturaDataSource.valorDoContador(YearMonth.of(2026, 11), ContadorCaptura.PENDENTES))
+    }
+
+    @Test
+    fun semInstrumentoNaoIncrementaContadores() = runTest {
+        processador.resultado = ResultadoProcessamento.SemInstrumento
+        val pipeline = pipeline()
+
+        val resultado = pipeline.processar(notificacao(pacote = "com.itau", texto = RegrasDeTeste.TEXTO_COMPRA_ITAU))
+
+        assertEquals(ResultadoCaptura.SemInstrumento, resultado)
+        assertEquals(0, capturaDataSource.valorDoContador(YearMonth.of(2026, 11), ContadorCaptura.RECONHECIDAS))
+        assertEquals(0, capturaDataSource.valorDoContador(YearMonth.of(2026, 11), ContadorCaptura.PENDENTES))
+    }
+
+    @Test
+    fun textoInterpretadoLocalSegueParaOProcessamento() = runTest {
+        val pipeline = pipeline()
+
+        pipeline.processar(notificacao(pacote = "com.itau", titulo = "Sua compra foi aprovada", texto = RegrasDeTeste.TEXTO_COMPRA_ITAU))
+
+        val captura = processador.capturas.single()
+        assertTrue(captura.textoBruto!!.contains("Sua compra foi aprovada"))
+        assertTrue(captura.textoBruto!!.contains("CLARO *31987905690"))
     }
 
     @Test
@@ -140,6 +202,7 @@ class PipelineDeCapturaTest {
         parserEngine = DefaultParserEngine(),
         regrasParaCaptura = RegrasParaCaptura(regraParserRepository),
         capturaDataSource = capturaDataSource,
+        processadorDeCaptura = processador,
         clock = clock,
         dispatchers = FakeAppDispatchers(StandardTestDispatcher(testScheduler)),
     )

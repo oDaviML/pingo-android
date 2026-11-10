@@ -5,6 +5,7 @@ import com.pingo.core.database.dao.ContaDao
 import com.pingo.core.database.dao.InstrumentoDao
 import com.pingo.core.database.entity.ContaEntity
 import com.pingo.core.database.entity.InstrumentoEntity
+import com.pingo.core.model.InstituicaoFinanceira
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
@@ -60,6 +61,9 @@ internal class FakeInstrumentoDao : InstrumentoDao {
         observeAtivos().map { instrumentos -> instrumentos.filter { it.contaPublicId == contaPublicId } }
 
     override suspend fun buscar(publicId: String): InstrumentoEntity? = tabela.value.firstOrNull { it.publicId == publicId }
+
+    override suspend fun ativosDaInstituicao(instituicao: InstituicaoFinanceira): List<InstrumentoEntity> =
+        tabela.value.filter { it.excluidoEm == null && !it.arquivado }.sortedBy { it.apelido }
 
     override suspend fun atualizadosDesde(desde: Instant): List<InstrumentoEntity> = tabela.value.filter { it.atualizadoEm >= desde }
 

@@ -4,6 +4,7 @@ import com.pingo.core.data.InstrumentoRepository
 import com.pingo.core.data.mapper.toEntity
 import com.pingo.core.data.mapper.toModel
 import com.pingo.core.database.dao.InstrumentoDao
+import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.Instrumento
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -18,6 +19,9 @@ class InstrumentoRepositoryImpl @Inject constructor(private val instrumentoDao: 
         instrumentoDao.observePorConta(contaPublicId).map { instrumentos -> instrumentos.map { it.toModel() } }
 
     override suspend fun buscar(publicId: String): Instrumento? = instrumentoDao.buscar(publicId)?.toModel()
+
+    override suspend fun ativosDaInstituicao(instituicao: InstituicaoFinanceira): List<Instrumento> =
+        instrumentoDao.ativosDaInstituicao(instituicao).map { it.toModel() }
 
     override suspend fun salvar(instrumento: Instrumento) {
         instrumentoDao.upsert(instrumento.toEntity())

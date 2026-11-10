@@ -1,5 +1,6 @@
 package com.pingo.core.data
 
+import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.Instrumento
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
@@ -10,6 +11,8 @@ interface InstrumentoRepository {
     fun observePorConta(contaPublicId: String): Flow<List<Instrumento>>
 
     suspend fun buscar(publicId: String): Instrumento?
+
+    suspend fun ativosDaInstituicao(instituicao: InstituicaoFinanceira): List<Instrumento>
 
     suspend fun salvar(instrumento: Instrumento)
 

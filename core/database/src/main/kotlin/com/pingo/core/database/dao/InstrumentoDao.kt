@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Upsert
 import com.pingo.core.database.entity.InstrumentoEntity
+import com.pingo.core.model.InstituicaoFinanceira
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
 
@@ -17,6 +18,19 @@ interface InstrumentoDao {
 
     @Query("SELECT * FROM instrumentos WHERE contaPublicId = :contaPublicId AND excluidoEm IS NULL ORDER BY apelido")
     fun observePorConta(contaPublicId: String): Flow<List<InstrumentoEntity>>
+
+    @Query(
+        """
+        SELECT instrumentos.* FROM instrumentos
+        INNER JOIN contas ON contas.publicId = instrumentos.contaPublicId
+        WHERE contas.instituicao = :instituicao
+        AND contas.excluidoEm IS NULL
+        AND instrumentos.excluidoEm IS NULL
+        AND instrumentos.arquivado = 0
+        ORDER BY instrumentos.apelido
+        """,
+    )
+    suspend fun ativosDaInstituicao(instituicao: InstituicaoFinanceira): List<InstrumentoEntity>
 
     @Query("SELECT * FROM instrumentos WHERE atualizadoEm >= :desde")
     suspend fun atualizadosDesde(desde: Instant): List<InstrumentoEntity>

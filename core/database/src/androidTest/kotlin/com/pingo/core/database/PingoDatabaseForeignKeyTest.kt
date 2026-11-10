@@ -140,6 +140,7 @@ class PingoDatabaseForeignKeyTest {
         criadoEm = INSTANTE,
         atualizadoEm = INSTANTE,
         excluidoEm = null,
+        textoBruto = null,
     )
 
     private companion object {

@@ -19,6 +19,7 @@ dependencies {
     implementation(libs.room.ktx)
     add("ksp", libs.hilt.androidx.compiler)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.kotlinx.serialization.json)
     testImplementation(libs.androidx.work.testing)
     androidTestImplementation(libs.androidx.work.testing)
     androidTestImplementation(libs.androidx.test.core)

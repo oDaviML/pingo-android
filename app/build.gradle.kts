@@ -72,6 +72,7 @@ dependencies {
     implementation(libs.hilt.androidx.work)
     implementation(libs.androidx.work.runtime.ktx)
     testImplementation(libs.junit)
+    androidTestImplementation(project(":core:data"))
     androidTestImplementation(project(":core:datastore"))
     androidTestImplementation(project(":core:model"))
     androidTestImplementation(project(":core:notifications"))

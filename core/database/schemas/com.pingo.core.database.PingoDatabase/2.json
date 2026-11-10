@@ -1,0 +1,1125 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "1effb4de62cf13bb03a342f2bea25a32",
+    "entities": [
+      {
+        "tableName": "usuarios",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`publicId` TEXT NOT NULL, `sub` TEXT, `email` TEXT NOT NULL, `nome` TEXT, `consentimentoLgpdEm` INTEGER, `consentimentoLgpdVersao` TEXT, `telemetriaOptIn` INTEGER NOT NULL, `telemetriaOptInEm` INTEGER, `aparelhoAtivoId` TEXT, `aparelhoAtivoNome` TEXT, `aparelhoAtivoEm` INTEGER, `criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, `excluidoEm` INTEGER, PRIMARY KEY(`publicId`))",
+        "fields": [
+          {
+            "fieldPath": "publicId",
+            "columnName": "publicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sub",
+            "columnName": "sub",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nome",
+            "columnName": "nome",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "consentimentoLgpdEm",
+            "columnName": "consentimentoLgpdEm",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "consentimentoLgpdVersao",
+            "columnName": "consentimentoLgpdVersao",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "telemetriaOptIn",
+            "columnName": "telemetriaOptIn",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "telemetriaOptInEm",
+            "columnName": "telemetriaOptInEm",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "aparelhoAtivoId",
+            "columnName": "aparelhoAtivoId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "aparelhoAtivoNome",
+            "columnName": "aparelhoAtivoNome",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "aparelhoAtivoEm",
+            "columnName": "aparelhoAtivoEm",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "criadoEm",
+            "columnName": "criadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "atualizadoEm",
+            "columnName": "atualizadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "excluidoEm",
+            "columnName": "excluidoEm",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "publicId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_usuarios_sub",
+            "unique": false,
+            "columnNames": [
+              "sub"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_usuarios_sub` ON `${TABLE_NAME}` (`sub`)"
+          }
+        ]
+      },
+      {
+        "tableName": "contas",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`publicId` TEXT NOT NULL, `instituicao` TEXT NOT NULL, `apelido` TEXT NOT NULL, `tipo` TEXT NOT NULL, `arquivada` INTEGER NOT NULL, `criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, `excluidoEm` INTEGER, PRIMARY KEY(`publicId`))",
+        "fields": [
+          {
+            "fieldPath": "publicId",
+            "columnName": "publicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "instituicao",
+            "columnName": "instituicao",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "apelido",
+            "columnName": "apelido",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "arquivada",
+            "columnName": "arquivada",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "criadoEm",
+            "columnName": "criadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "atualizadoEm",
+            "columnName": "atualizadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "excluidoEm",
+            "columnName": "excluidoEm",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "publicId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_contas_atualizadoEm",
+            "unique": false,
+            "columnNames": [
+              "atualizadoEm"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_contas_atualizadoEm` ON `${TABLE_NAME}` (`atualizadoEm`)"
+          },
+          {
+            "name": "index_contas_excluidoEm",
+            "unique": false,
+            "columnNames": [
+              "excluidoEm"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_contas_excluidoEm` ON `${TABLE_NAME}` (`excluidoEm`)"
+          }
+        ]
+      },
+      {
+        "tableName": "instrumentos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`publicId` TEXT NOT NULL, `contaPublicId` TEXT NOT NULL, `tipo` TEXT NOT NULL, `apelido` TEXT NOT NULL, `ultimosDigitos` TEXT, `arquivado` INTEGER NOT NULL, `fechamentoDia` INTEGER, `vencimentoDia` INTEGER, `beneficio` TEXT, `saldoCentavos` INTEGER, `diaRecarga` INTEGER, `valorRecargaCentavos` INTEGER, `limiteCreditoCentavos` INTEGER, `criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, `excluidoEm` INTEGER, PRIMARY KEY(`publicId`), FOREIGN KEY(`contaPublicId`) REFERENCES `contas`(`publicId`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "publicId",
+            "columnName": "publicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contaPublicId",
+            "columnName": "contaPublicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "apelido",
+            "columnName": "apelido",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ultimosDigitos",
+            "columnName": "ultimosDigitos",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "arquivado",
+            "columnName": "arquivado",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechamentoDia",
+            "columnName": "fechamentoDia",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "vencimentoDia",
+            "columnName": "vencimentoDia",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "beneficio",
+            "columnName": "beneficio",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "saldoCentavos",
+            "columnName": "saldoCentavos",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "diaRecarga",
+            "columnName": "diaRecarga",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "valorRecargaCentavos",
+            "columnName": "valorRecargaCentavos",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "limiteCreditoCentavos",
+            "columnName": "limiteCreditoCentavos",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "criadoEm",
+            "columnName": "criadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "atualizadoEm",
+            "columnName": "atualizadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "excluidoEm",
+            "columnName": "excluidoEm",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "publicId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_instrumentos_contaPublicId",
+            "unique": false,
+            "columnNames": [
+              "contaPublicId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_instrumentos_contaPublicId` ON `${TABLE_NAME}` (`contaPublicId`)"
+          },
+          {
+            "name": "index_instrumentos_atualizadoEm",
+            "unique": false,
+            "columnNames": [
+              "atualizadoEm"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_instrumentos_atualizadoEm` ON `${TABLE_NAME}` (`atualizadoEm`)"
+          },
+          {
+            "name": "index_instrumentos_excluidoEm",
+            "unique": false,
+            "columnNames": [
+              "excluidoEm"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_instrumentos_excluidoEm` ON `${TABLE_NAME}` (`excluidoEm`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "contas",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "contaPublicId"
+            ],
+            "referencedColumns": [
+              "publicId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "lancamentos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`publicId` TEXT NOT NULL, `instrumentoPublicId` TEXT NOT NULL, `categoriaPublicId` TEXT, `faturaPublicId` TEXT, `assinaturaPublicId` TEXT, `compraPaiPublicId` TEXT, `estornoDePublicId` TEXT, `transferenciaId` TEXT, `valorCentavos` INTEGER NOT NULL, `dataHora` INTEGER NOT NULL, `tipo` TEXT NOT NULL, `estabelecimento` TEXT, `status` TEXT NOT NULL, `origem` TEXT NOT NULL, `confianca` REAL NOT NULL, `motivoPendencia` TEXT, `hashDuplicata` TEXT, `observacao` TEXT, `parcelaNumero` INTEGER NOT NULL, `totalParcelas` INTEGER NOT NULL, `valorTotalCompraCentavos` INTEGER, `criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, `excluidoEm` INTEGER, `textoBruto` TEXT, PRIMARY KEY(`publicId`), FOREIGN KEY(`instrumentoPublicId`) REFERENCES `instrumentos`(`publicId`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`categoriaPublicId`) REFERENCES `categorias`(`publicId`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`faturaPublicId`) REFERENCES `faturas`(`publicId`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`assinaturaPublicId`) REFERENCES `assinaturas`(`publicId`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`compraPaiPublicId`) REFERENCES `lancamentos`(`publicId`) ON UPDATE NO ACTION ON DELETE NO ACTION , FOREIGN KEY(`estornoDePublicId`) REFERENCES `lancamentos`(`publicId`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "publicId",
+            "columnName": "publicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "instrumentoPublicId",
+            "columnName": "instrumentoPublicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "categoriaPublicId",
+            "columnName": "categoriaPublicId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "faturaPublicId",
+            "columnName": "faturaPublicId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "assinaturaPublicId",
+            "columnName": "assinaturaPublicId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "compraPaiPublicId",
+            "columnName": "compraPaiPublicId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "estornoDePublicId",
+            "columnName": "estornoDePublicId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "transferenciaId",
+            "columnName": "transferenciaId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "valorCentavos",
+            "columnName": "valorCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dataHora",
+            "columnName": "dataHora",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estabelecimento",
+            "columnName": "estabelecimento",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "origem",
+            "columnName": "origem",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "confianca",
+            "columnName": "confianca",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "motivoPendencia",
+            "columnName": "motivoPendencia",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "hashDuplicata",
+            "columnName": "hashDuplicata",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "observacao",
+            "columnName": "observacao",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "parcelaNumero",
+            "columnName": "parcelaNumero",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalParcelas",
+            "columnName": "totalParcelas",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "valorTotalCompraCentavos",
+            "columnName": "valorTotalCompraCentavos",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "criadoEm",
+            "columnName": "criadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "atualizadoEm",
+            "columnName": "atualizadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "excluidoEm",
+            "columnName": "excluidoEm",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "textoBruto",
+            "columnName": "textoBruto",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "publicId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_lancamentos_instrumentoPublicId",
+            "unique": false,
+            "columnNames": [
+              "instrumentoPublicId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_lancamentos_instrumentoPublicId` ON `${TABLE_NAME}` (`instrumentoPublicId`)"
+          },
+          {
+            "name": "index_lancamentos_categoriaPublicId",
+            "unique": false,
+            "columnNames": [
+              "categoriaPublicId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_lancamentos_categoriaPublicId` ON `${TABLE_NAME}` (`categoriaPublicId`)"
+          },
+          {
+            "name": "index_lancamentos_faturaPublicId",
+            "unique": false,
+            "columnNames": [
+              "faturaPublicId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_lancamentos_faturaPublicId` ON `${TABLE_NAME}` (`faturaPublicId`)"
+          },
+          {
+            "name": "index_lancamentos_assinaturaPublicId",
+            "unique": false,
+            "columnNames": [
+              "assinaturaPublicId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_lancamentos_assinaturaPublicId` ON `${TABLE_NAME}` (`assinaturaPublicId`)"
+          },
+          {
+            "name": "index_lancamentos_compraPaiPublicId",
+            "unique": false,
+            "columnNames": [
+              "compraPaiPublicId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_lancamentos_compraPaiPublicId` ON `${TABLE_NAME}` (`compraPaiPublicId`)"
+          },
+          {
+            "name": "index_lancamentos_estornoDePublicId",
+            "unique": false,
+            "columnNames": [
+              "estornoDePublicId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_lancamentos_estornoDePublicId` ON `${TABLE_NAME}` (`estornoDePublicId`)"
+          },
+          {
+            "name": "index_lancamentos_dataHora",
+            "unique": false,
+            "columnNames": [
+              "dataHora"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_lancamentos_dataHora` ON `${TABLE_NAME}` (`dataHora`)"
+          },
+          {
+            "name": "index_lancamentos_atualizadoEm",
+            "unique": false,
+            "columnNames": [
+              "atualizadoEm"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_lancamentos_atualizadoEm` ON `${TABLE_NAME}` (`atualizadoEm`)"
+          },
+          {
+            "name": "index_lancamentos_excluidoEm",
+            "unique": false,
+            "columnNames": [
+              "excluidoEm"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_lancamentos_excluidoEm` ON `${TABLE_NAME}` (`excluidoEm`)"
+          },
+          {
+            "name": "index_lancamentos_hashDuplicata",
+            "unique": false,
+            "columnNames": [
+              "hashDuplicata"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_lancamentos_hashDuplicata` ON `${TABLE_NAME}` (`hashDuplicata`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "instrumentos",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "instrumentoPublicId"
+            ],
+            "referencedColumns": [
+              "publicId"
+            ]
+          },
+          {
+            "table": "categorias",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "categoriaPublicId"
+            ],
+            "referencedColumns": [
+              "publicId"
+            ]
+          },
+          {
+            "table": "faturas",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "faturaPublicId"
+            ],
+            "referencedColumns": [
+              "publicId"
+            ]
+          },
+          {
+            "table": "assinaturas",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "assinaturaPublicId"
+            ],
+            "referencedColumns": [
+              "publicId"
+            ]
+          },
+          {
+            "table": "lancamentos",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "compraPaiPublicId"
+            ],
+            "referencedColumns": [
+              "publicId"
+            ]
+          },
+          {
+            "table": "lancamentos",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "estornoDePublicId"
+            ],
+            "referencedColumns": [
+              "publicId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "categorias",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`publicId` TEXT NOT NULL, `nome` TEXT NOT NULL, `tipo` TEXT NOT NULL, `padrao` INTEGER NOT NULL, `arquivada` INTEGER NOT NULL, `criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, `excluidoEm` INTEGER, PRIMARY KEY(`publicId`))",
+        "fields": [
+          {
+            "fieldPath": "publicId",
+            "columnName": "publicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nome",
+            "columnName": "nome",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "padrao",
+            "columnName": "padrao",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "arquivada",
+            "columnName": "arquivada",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "criadoEm",
+            "columnName": "criadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "atualizadoEm",
+            "columnName": "atualizadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "excluidoEm",
+            "columnName": "excluidoEm",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "publicId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_categorias_atualizadoEm",
+            "unique": false,
+            "columnNames": [
+              "atualizadoEm"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_categorias_atualizadoEm` ON `${TABLE_NAME}` (`atualizadoEm`)"
+          },
+          {
+            "name": "index_categorias_excluidoEm",
+            "unique": false,
+            "columnNames": [
+              "excluidoEm"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_categorias_excluidoEm` ON `${TABLE_NAME}` (`excluidoEm`)"
+          }
+        ]
+      },
+      {
+        "tableName": "regras_categoria",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`publicId` TEXT NOT NULL, `categoriaPublicId` TEXT NOT NULL, `estabelecimentoNormalizado` TEXT NOT NULL, `criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, `excluidoEm` INTEGER, PRIMARY KEY(`publicId`), FOREIGN KEY(`categoriaPublicId`) REFERENCES `categorias`(`publicId`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "publicId",
+            "columnName": "publicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "categoriaPublicId",
+            "columnName": "categoriaPublicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estabelecimentoNormalizado",
+            "columnName": "estabelecimentoNormalizado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "criadoEm",
+            "columnName": "criadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "atualizadoEm",
+            "columnName": "atualizadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "excluidoEm",
+            "columnName": "excluidoEm",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "publicId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_regras_categoria_categoriaPublicId",
+            "unique": false,
+            "columnNames": [
+              "categoriaPublicId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_regras_categoria_categoriaPublicId` ON `${TABLE_NAME}` (`categoriaPublicId`)"
+          },
+          {
+            "name": "index_regras_categoria_atualizadoEm",
+            "unique": false,
+            "columnNames": [
+              "atualizadoEm"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_regras_categoria_atualizadoEm` ON `${TABLE_NAME}` (`atualizadoEm`)"
+          },
+          {
+            "name": "index_regras_categoria_excluidoEm",
+            "unique": false,
+            "columnNames": [
+              "excluidoEm"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_regras_categoria_excluidoEm` ON `${TABLE_NAME}` (`excluidoEm`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "categorias",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "categoriaPublicId"
+            ],
+            "referencedColumns": [
+              "publicId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "faturas",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`publicId` TEXT NOT NULL, `instrumentoPublicId` TEXT NOT NULL, `competencia` INTEGER NOT NULL, `dataFechamento` INTEGER NOT NULL, `dataVencimento` INTEGER NOT NULL, `totalCentavos` INTEGER NOT NULL, `totalPagoCentavos` INTEGER NOT NULL, `status` TEXT NOT NULL, `dataPagamento` INTEGER, `pagamentoLancamentoPublicId` TEXT, `criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, `excluidoEm` INTEGER, PRIMARY KEY(`publicId`), FOREIGN KEY(`instrumentoPublicId`) REFERENCES `instrumentos`(`publicId`) ON UPDATE NO ACTION ON DELETE NO ACTION )",
+        "fields": [
+          {
+            "fieldPath": "publicId",
+            "columnName": "publicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "instrumentoPublicId",
+            "columnName": "instrumentoPublicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "competencia",
+            "columnName": "competencia",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dataFechamento",
+            "columnName": "dataFechamento",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dataVencimento",
+            "columnName": "dataVencimento",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalCentavos",
+            "columnName": "totalCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalPagoCentavos",
+            "columnName": "totalPagoCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dataPagamento",
+            "columnName": "dataPagamento",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "pagamentoLancamentoPublicId",
+            "columnName": "pagamentoLancamentoPublicId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "criadoEm",
+            "columnName": "criadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "atualizadoEm",
+            "columnName": "atualizadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "excluidoEm",
+            "columnName": "excluidoEm",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "publicId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_faturas_instrumentoPublicId",
+            "unique": false,
+            "columnNames": [
+              "instrumentoPublicId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_faturas_instrumentoPublicId` ON `${TABLE_NAME}` (`instrumentoPublicId`)"
+          },
+          {
+            "name": "index_faturas_pagamentoLancamentoPublicId",
+            "unique": false,
+            "columnNames": [
+              "pagamentoLancamentoPublicId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_faturas_pagamentoLancamentoPublicId` ON `${TABLE_NAME}` (`pagamentoLancamentoPublicId`)"
+          },
+          {
+            "name": "index_faturas_competencia",
+            "unique": false,
+            "columnNames": [
+              "competencia"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_faturas_competencia` ON `${TABLE_NAME}` (`competencia`)"
+          },
+          {
+            "name": "index_faturas_atualizadoEm",
+            "unique": false,
+            "columnNames": [
+              "atualizadoEm"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_faturas_atualizadoEm` ON `${TABLE_NAME}` (`atualizadoEm`)"
+          },
+          {
+            "name": "index_faturas_excluidoEm",
+            "unique": false,
+            "columnNames": [
+              "excluidoEm"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_faturas_excluidoEm` ON `${TABLE_NAME}` (`excluidoEm`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "instrumentos",
+            "onDelete": "NO ACTION",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "instrumentoPublicId"
+            ],
+            "referencedColumns": [
+              "publicId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "assinaturas",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`publicId` TEXT NOT NULL, `estabelecimento` TEXT NOT NULL, `estabelecimentoNormalizado` TEXT NOT NULL, `valorReferenciaCentavos` INTEGER NOT NULL, `ultimaCobranca` INTEGER, `proximaCobrancaEstimada` INTEGER, `status` TEXT NOT NULL, `criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, `excluidoEm` INTEGER, PRIMARY KEY(`publicId`))",
+        "fields": [
+          {
+            "fieldPath": "publicId",
+            "columnName": "publicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estabelecimento",
+            "columnName": "estabelecimento",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estabelecimentoNormalizado",
+            "columnName": "estabelecimentoNormalizado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "valorReferenciaCentavos",
+            "columnName": "valorReferenciaCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ultimaCobranca",
+            "columnName": "ultimaCobranca",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "proximaCobrancaEstimada",
+            "columnName": "proximaCobrancaEstimada",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "criadoEm",
+            "columnName": "criadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "atualizadoEm",
+            "columnName": "atualizadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "excluidoEm",
+            "columnName": "excluidoEm",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "publicId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_assinaturas_atualizadoEm",
+            "unique": false,
+            "columnNames": [
+              "atualizadoEm"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_assinaturas_atualizadoEm` ON `${TABLE_NAME}` (`atualizadoEm`)"
+          },
+          {
+            "name": "index_assinaturas_excluidoEm",
+            "unique": false,
+            "columnNames": [
+              "excluidoEm"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_assinaturas_excluidoEm` ON `${TABLE_NAME}` (`excluidoEm`)"
+          }
+        ]
+      },
+      {
+        "tableName": "regras_parser",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`publicId` TEXT NOT NULL, `instituicao` TEXT NOT NULL, `versao` INTEGER NOT NULL, `padroes` TEXT NOT NULL, `ativa` INTEGER NOT NULL, `publicadaEm` INTEGER NOT NULL, `criadoEm` INTEGER NOT NULL, `atualizadoEm` INTEGER NOT NULL, PRIMARY KEY(`publicId`))",
+        "fields": [
+          {
+            "fieldPath": "publicId",
+            "columnName": "publicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "instituicao",
+            "columnName": "instituicao",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "versao",
+            "columnName": "versao",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "padroes",
+            "columnName": "padroes",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ativa",
+            "columnName": "ativa",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicadaEm",
+            "columnName": "publicadaEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "criadoEm",
+            "columnName": "criadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "atualizadoEm",
+            "columnName": "atualizadoEm",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "publicId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_regras_parser_instituicao_versao",
+            "unique": false,
+            "columnNames": [
+              "instituicao",
+              "versao"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_regras_parser_instituicao_versao` ON `${TABLE_NAME}` (`instituicao`, `versao`)"
+          },
+          {
+            "name": "index_regras_parser_atualizadoEm",
+            "unique": false,
+            "columnNames": [
+              "atualizadoEm"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_regras_parser_atualizadoEm` ON `${TABLE_NAME}` (`atualizadoEm`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '1effb4de62cf13bb03a342f2bea25a32')"
+    ]
+  }
+}

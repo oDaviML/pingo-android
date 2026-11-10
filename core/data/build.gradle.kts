@@ -18,5 +18,6 @@ dependencies {
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     implementation(libs.kotlinx.coroutines.android)
+    testImplementation(project(":core:testing"))
     androidTestImplementation(libs.androidx.test.runner)
 }
