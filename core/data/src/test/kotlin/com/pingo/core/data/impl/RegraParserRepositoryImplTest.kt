@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
 
@@ -43,6 +45,33 @@ class RegraParserRepositoryImplTest {
         assertEquals(listOf(doServidor), repositorio.observeRegrasAtivas().first())
     }
 
+    @Test
+    fun `versao vigente do seed e a versao 1 quando o cache esta vazio`() = runBlocking {
+        assertEquals(1, repositorioComCache(emptyList()).observeVersaoVigente().first())
+    }
+
+    @Test
+    fun `versao em cache e vazia antes do primeiro download`() = runBlocking {
+        assertTrue(repositorioComCache(emptyList()).versoesEmCache().isEmpty())
+    }
+
+    @Test
+    fun `substituir vigentes grava as cinco instituicoes e desativa a versao anterior`() = runBlocking {
+        val anterior = regra(publicId = "seed-nubank-v1", instituicao = InstituicaoFinanceira.NUBANK, versao = 1)
+        val repositorio = repositorioComCache(listOf(anterior))
+        val novas = InstituicaoFinanceira.entries
+            .filter { instituicao -> instituicao != InstituicaoFinanceira.OUTRA }
+            .map { instituicao -> regra(publicId = "servidor-${instituicao.name.lowercase()}-v2", instituicao = instituicao, versao = 2) }
+
+        repositorio.substituirVigentes(novas)
+
+        assertEquals(novas.map { it.publicId }.toSet(), repositorio.observeRegrasAtivas().first().map { it.publicId }.toSet())
+        assertEquals(2, repositorio.versoesEmCache().values.maxOrNull())
+        assertEquals(5, repositorio.versoesEmCache().size)
+        assertEquals(2, repositorio.observeVersaoVigente().first())
+        assertFalse(repositorio.buscar(anterior.publicId)!!.ativa)
+    }
+
     private fun repositorioComCache(regras: List<RegraParser>): RegraParserRepositoryImpl {
         val cache = MutableStateFlow(regras.map { it.toEntity() })
         return RegraParserRepositoryImpl(FakeRegraParserDao(cache))
@@ -60,7 +89,7 @@ class RegraParserRepositoryImplTest {
     )
 }
 
-private class FakeRegraParserDao(private val cache: MutableStateFlow<List<RegraParserEntity>>) : RegraParserDao {
+private class FakeRegraParserDao(private val cache: MutableStateFlow<List<RegraParserEntity>>) : RegraParserDao() {
     override fun observeAtivas(): Flow<List<RegraParserEntity>> = cache.map { regras -> regras.filter { it.ativa } }
 
     override suspend fun buscar(publicId: String): RegraParserEntity? = cache.value.firstOrNull { it.publicId == publicId }
@@ -69,6 +98,16 @@ private class FakeRegraParserDao(private val cache: MutableStateFlow<List<RegraP
         cache.value.filter { it.instituicao == instituicao && it.ativa }.maxByOrNull { it.versao }
 
     override suspend fun atualizadasDesde(desde: Instant): List<RegraParserEntity> = cache.value.filter { it.atualizadoEm >= desde }
+
+    override suspend fun versaoAtivaMaxima(): Int? = cache.value.filter { it.ativa }.maxOfOrNull { it.versao }
+
+    override suspend fun ativas(): List<RegraParserEntity> = cache.value.filter { it.ativa }
+
+    override suspend fun desativarDas(instituicoes: List<InstituicaoFinanceira>) {
+        cache.value = cache.value.map { regra ->
+            if (regra.ativa && regra.instituicao in instituicoes) regra.copy(ativa = false) else regra
+        }
+    }
 
     override suspend fun upsert(regra: RegraParserEntity) {
         upsertAll(listOf(regra))

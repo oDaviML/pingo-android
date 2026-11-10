@@ -3,6 +3,7 @@ package com.pingo.core.notifications
 import com.pingo.core.datastore.CapturaDataSource
 import com.pingo.core.datastore.ContadorCaptura
 import com.pingo.core.datastore.ContadoresDoMes
+import com.pingo.core.datastore.EstadoAtualizacaoRegras
 import com.pingo.core.datastore.EstadoListener
 import com.pingo.core.datastore.EstadoListenerPersistido
 import com.pingo.core.datastore.MotivoParada
@@ -18,12 +19,17 @@ internal class FakeCapturaDataSource : CapturaDataSource {
     private val estado = MutableStateFlow(EstadoListenerPersistido(EstadoListener.PARADO))
     private val leituras = MutableStateFlow<Map<InstituicaoFinanceira, Instant>>(emptyMap())
     private val contadores = MutableStateFlow<Map<Pair<YearMonth, ContadorCaptura>, Int>>(emptyMap())
+    private val estadoRegras = MutableStateFlow(EstadoAtualizacaoRegras())
 
     override val estadoListener: Flow<EstadoListenerPersistido> = estado.asStateFlow()
 
     override val ultimaLeituraPorApp: Flow<Map<InstituicaoFinanceira, Instant>> = leituras.asStateFlow()
 
+    override val estadoAtualizacaoRegras: Flow<EstadoAtualizacaoRegras> = estadoRegras.asStateFlow()
+
     fun ultimaLeitura(instituicao: InstituicaoFinanceira): Instant? = leituras.value[instituicao]
+
+    fun estadoDasRegras(): EstadoAtualizacaoRegras = estadoRegras.value
 
     fun valorDoContador(mes: YearMonth, contador: ContadorCaptura): Int = contadores.value[mes to contador] ?: 0
 
@@ -53,9 +59,18 @@ internal class FakeCapturaDataSource : CapturaDataSource {
         contadores.value = contadores.value + ((mes to contador) to (valorDoContador(mes, contador) + 1))
     }
 
+    override suspend fun registrarRegrasAtualizadas(em: Instant) {
+        estadoRegras.value = EstadoAtualizacaoRegras(atualizadoEm = em)
+    }
+
+    override suspend fun registrarFalhaAoAtualizarRegras(motivo: String, em: Instant) {
+        estadoRegras.value = estadoRegras.value.copy(falhaEm = em, motivoFalha = motivo)
+    }
+
     override suspend fun clear() {
         estado.value = EstadoListenerPersistido(EstadoListener.PARADO)
         leituras.value = emptyMap()
         contadores.value = emptyMap()
+        estadoRegras.value = EstadoAtualizacaoRegras()
     }
 }

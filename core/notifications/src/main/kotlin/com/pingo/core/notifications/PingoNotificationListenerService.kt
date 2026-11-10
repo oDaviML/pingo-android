@@ -20,6 +20,8 @@ class PingoNotificationListenerService : NotificationListenerService() {
 
     @Inject lateinit var conexaoDoListener: ConexaoDoListener
 
+    @Inject lateinit var atualizadorDeRegras: AtualizadorDeRegras
+
     @Inject lateinit var dispatchers: AppDispatchers
 
     private var escopo: CoroutineScope? = null
@@ -33,6 +35,7 @@ class PingoNotificationListenerService : NotificationListenerService() {
         super.onListenerConnected()
         conexaoDoListener.marcarConectado()
         executar { capturaController.registrarConectado() }
+        executar { atualizadorDeRegras.atualizar() }
     }
 
     override fun onListenerDisconnected() {

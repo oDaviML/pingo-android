@@ -32,10 +32,14 @@ data class ContadoresDoMes(
     val naoEntendidas: Int = 0,
 )
 
+data class EstadoAtualizacaoRegras(val atualizadoEm: Instant? = null, val falhaEm: Instant? = null, val motivoFalha: String? = null)
+
 interface CapturaDataSource {
     val estadoListener: Flow<EstadoListenerPersistido>
 
     val ultimaLeituraPorApp: Flow<Map<InstituicaoFinanceira, Instant>>
+
+    val estadoAtualizacaoRegras: Flow<EstadoAtualizacaoRegras>
 
     fun contadoresDoMes(mes: YearMonth): Flow<ContadoresDoMes>
 
@@ -46,6 +50,10 @@ interface CapturaDataSource {
     suspend fun registrarLeitura(instituicao: InstituicaoFinanceira, em: Instant)
 
     suspend fun incrementarContador(mes: YearMonth, contador: ContadorCaptura)
+
+    suspend fun registrarRegrasAtualizadas(em: Instant)
+
+    suspend fun registrarFalhaAoAtualizarRegras(motivo: String, em: Instant)
 
     suspend fun clear()
 }

@@ -80,10 +80,12 @@ dependencies {
     androidTestImplementation(project(":core:model"))
     androidTestImplementation(project(":core:network"))
     androidTestImplementation(project(":core:notifications"))
+    androidTestImplementation(project(":core:parser"))
     androidTestImplementation(project(":sync"))
     androidTestImplementation(libs.room.ktx)
     androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.kotlinx.serialization.json)
 }

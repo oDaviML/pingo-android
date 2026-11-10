@@ -1,5 +1,6 @@
 package com.pingo.core.network
 
+import com.pingo.core.network.rules.ParserRulesResponse
 import com.pingo.core.network.sync.PullChangesResult
 import com.pingo.core.network.sync.PushChangesPayload
 import com.pingo.core.network.sync.PushChangesResult
@@ -14,6 +15,8 @@ interface PingoApiClient {
     suspend fun pushChanges(payload: PushChangesPayload): PushChangesResult
 
     suspend fun pullChanges(cursor: String?): PullChangesResult
+
+    suspend fun getParserRules(): ParserRulesResponse
 
     suspend fun activateDevice(deviceId: String, deviceName: String?): ApiDevice
 

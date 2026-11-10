@@ -2,6 +2,7 @@ package com.pingo.core.network
 
 import com.pingo.core.auth.AuthRepository
 import com.pingo.core.common.AppDispatchers
+import com.pingo.core.network.rules.ParserRulesResponse
 import com.pingo.core.network.sync.PullChangesRequest
 import com.pingo.core.network.sync.PullChangesResult
 import com.pingo.core.network.sync.PushChangesPayload
@@ -73,6 +74,18 @@ class HttpPingoApiClient @Inject constructor(
         }
 
         json.decodeFromString(PullChangesResult.serializer(), body)
+    }
+
+    override suspend fun getParserRules(): ParserRulesResponse = withContext(dispatchers.io) {
+        val body = executeAuthenticated { token ->
+            Request.Builder()
+                .url("$baseUrl/parser-rules/latest")
+                .header(AUTHORIZATION_HEADER, "Bearer $token")
+                .get()
+                .build()
+        }
+
+        json.decodeFromString(ParserRulesResponse.serializer(), body)
     }
 
     override suspend fun activateDevice(deviceId: String, deviceName: String?): ApiDevice = withContext(dispatchers.io) {

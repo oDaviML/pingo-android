@@ -25,6 +25,9 @@ class CapturaDataSourceImpl @Inject constructor(@param:ApplicationContext privat
     override val ultimaLeituraPorApp: Flow<Map<InstituicaoFinanceira, Instant>> =
         context.capturaPreferencesDataStore.data.map(::leiturasDe)
 
+    override val estadoAtualizacaoRegras: Flow<EstadoAtualizacaoRegras> =
+        context.capturaPreferencesDataStore.data.map(::estadoDasRegrasDe)
+
     override fun contadoresDoMes(mes: YearMonth): Flow<ContadoresDoMes> = context.capturaPreferencesDataStore.data.map { preferences ->
         ContadoresDoMes(
             mes = mes,
@@ -64,6 +67,21 @@ class CapturaDataSourceImpl @Inject constructor(@param:ApplicationContext privat
         }
     }
 
+    override suspend fun registrarFalhaAoAtualizarRegras(motivo: String, em: Instant) {
+        context.capturaPreferencesDataStore.edit { preferences ->
+            preferences[Keys.REGRAS_FALHA_EM] = em.toString()
+            preferences[Keys.REGRAS_FALHA_MOTIVO] = motivo
+        }
+    }
+
+    override suspend fun registrarRegrasAtualizadas(em: Instant) {
+        context.capturaPreferencesDataStore.edit { preferences ->
+            preferences[Keys.REGRAS_ATUALIZADAS_EM] = em.toString()
+            preferences.remove(Keys.REGRAS_FALHA_EM)
+            preferences.remove(Keys.REGRAS_FALHA_MOTIVO)
+        }
+    }
+
     override suspend fun clear() {
         context.capturaPreferencesDataStore.edit { preferences -> preferences.clear() }
     }
@@ -89,11 +107,22 @@ class CapturaDataSourceImpl @Inject constructor(@param:ApplicationContext privat
 
     private fun Preferences.contador(mes: YearMonth, contador: ContadorCaptura): Int = this[Keys.contador(mes, contador)] ?: 0
 
+    private fun estadoDasRegrasDe(preferences: Preferences): EstadoAtualizacaoRegras = EstadoAtualizacaoRegras(
+        atualizadoEm = preferences[Keys.REGRAS_ATUALIZADAS_EM]?.let(::instanteOuNulo),
+        falhaEm = preferences[Keys.REGRAS_FALHA_EM]?.let(::instanteOuNulo),
+        motivoFalha = preferences[Keys.REGRAS_FALHA_MOTIVO],
+    )
+
+    private fun instanteOuNulo(valor: String): Instant? = runCatching { Instant.parse(valor) }.getOrNull()
+
     private companion object {
         object Keys {
             val ESTADO_LISTENER = stringPreferencesKey("estado_listener")
             val MOTIVO_PARADA = stringPreferencesKey("motivo_parada")
             val ATUALIZADO_EM = stringPreferencesKey("estado_atualizado_em")
+            val REGRAS_ATUALIZADAS_EM = stringPreferencesKey("regras_atualizadas_em")
+            val REGRAS_FALHA_EM = stringPreferencesKey("regras_falha_em")
+            val REGRAS_FALHA_MOTIVO = stringPreferencesKey("regras_falha_motivo")
 
             fun ultimaLeitura(instituicao: InstituicaoFinanceira) = stringPreferencesKey("ultima_leitura_${instituicao.name}")
 

@@ -32,7 +32,7 @@ class RegrasParaCapturaTest {
 
     @Test
     fun instituicaoSemRegraNaoTemVersao() = runTest {
-        val regras = RegrasParaCaptura(FakeRegraParserRepository())
+        val regras = RegrasParaCaptura(FakeRegraParserRepository(RegrasDeTeste.todas()))
 
         assertEquals(null, regras.versaoDe(InstituicaoFinanceira.CAJU))
     }
