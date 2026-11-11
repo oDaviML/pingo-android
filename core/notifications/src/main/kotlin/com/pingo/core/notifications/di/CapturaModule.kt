@@ -5,9 +5,13 @@ import com.pingo.core.notifications.AcessoNotificacoesDoSistema
 import com.pingo.core.notifications.AndroidNotificationHealthCheck
 import com.pingo.core.notifications.CapturaController
 import com.pingo.core.notifications.CapturaControllerImpl
+import com.pingo.core.notifications.NotificacoesDoSistema
+import com.pingo.core.notifications.NotificacoesDoSistemaDoAndroid
 import com.pingo.core.notifications.NotificationHealthCheck
 import com.pingo.core.notifications.RebindDeListener
 import com.pingo.core.notifications.RebindDeListenerDoSistema
+import com.pingo.core.notifications.RevisaoPorNotificacao
+import com.pingo.core.notifications.RevisaoPorNotificacaoConfigurada
 import com.pingo.core.notifications.ServicoDeCaptura
 import com.pingo.core.notifications.ServicoDeCapturaDoAndroid
 import dagger.Binds
@@ -38,4 +42,12 @@ abstract class CapturaModule {
     @Binds
     @Singleton
     abstract fun bindNotificationHealthCheck(implementation: AndroidNotificationHealthCheck): NotificationHealthCheck
+
+    @Binds
+    @Singleton
+    abstract fun bindNotificacoesDoSistema(implementation: NotificacoesDoSistemaDoAndroid): NotificacoesDoSistema
+
+    @Binds
+    @Singleton
+    abstract fun bindRevisaoPorNotificacao(implementation: RevisaoPorNotificacaoConfigurada): RevisaoPorNotificacao
 }

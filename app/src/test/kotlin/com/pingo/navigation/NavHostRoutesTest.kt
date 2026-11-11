@@ -4,6 +4,7 @@ import com.pingo.feature.accounts.api.AccountsRoute
 import com.pingo.feature.capturestatus.api.CaptureStatusRoute
 import com.pingo.feature.home.api.HomeRoute
 import com.pingo.feature.onboarding.api.OnboardingContasRoute
+import com.pingo.feature.onboarding.api.OnboardingPermissoesRoute
 import com.pingo.feature.onboarding.api.OnboardingRoute
 import com.pingo.feature.reports.api.ReportsRoute
 import com.pingo.feature.review.api.ReviewRoute
@@ -17,6 +18,7 @@ class NavHostRoutesTest {
     fun featureRoutesAreUnique() {
         val routes = listOf(
             OnboardingRoute.ROUTE,
+            OnboardingPermissoesRoute.ROUTE,
             OnboardingContasRoute.ROUTE,
             HomeRoute.ROUTE,
             TransactionsRoute.ROUTE,

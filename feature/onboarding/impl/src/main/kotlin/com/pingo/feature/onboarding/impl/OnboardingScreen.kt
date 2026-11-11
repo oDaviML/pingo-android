@@ -8,7 +8,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,7 +25,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -356,62 +354,21 @@ private fun ConsentActions(state: OnboardingUiState, onAcceptConsent: () -> Unit
 @Composable
 private fun ConsentInfoCard() {
     PingoCard {
-        PrivacyInfoRow(
+        InformacaoComIcone(
             icon = PingoIcons.ShieldCheck,
-            title = "O que o Pingo lê",
-            description = "Só notificações de Nubank, Inter, Itaú, Mercado Pago e Caju. Nada de mensagens, fotos ou contatos.",
+            titulo = "O que o Pingo lê",
+            descricao = "Só notificações de Nubank, Inter, Itaú, Mercado Pago e Caju. Nada de mensagens, fotos ou contatos.",
         )
-        PrivacyInfoRow(
+        InformacaoComIcone(
             icon = PingoIcons.Smartphone,
-            title = "O texto fica no seu celular",
-            description = "A leitura acontece no aparelho. Só dados estruturados são sincronizados, e só com seu consentimento.",
+            titulo = "O texto fica no seu celular",
+            descricao = "A leitura acontece no aparelho. Só dados estruturados são sincronizados, e só com seu consentimento.",
         )
-        PrivacyInfoRow(
+        InformacaoComIcone(
             icon = PingoIcons.Trash2,
-            title = "Você manda nos seus dados",
-            description = "Exclua tudo, no aparelho e na nuvem, quando quiser.",
+            titulo = "Você manda nos seus dados",
+            descricao = "Exclua tudo, no aparelho e na nuvem, quando quiser.",
         )
-    }
-}
-
-@Composable
-private fun PrivacyInfoRow(icon: ImageVector, title: String, description: String) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-        verticalAlignment = Alignment.Top,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .background(
-                    color = PingoTheme.colors.primaryContainer,
-                    shape = RoundedCornerShape(PingoRadius.md),
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            PingoIcon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = PingoTheme.colors.onPrimaryContainer,
-            )
-        }
-
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            PingoText(
-                text = title,
-                style = PingoTheme.typography.bodyStrong,
-                color = PingoTheme.colors.onBackground,
-            )
-            PingoText(
-                text = description,
-                style = PingoTheme.typography.bodySmall,
-                color = PingoTheme.colors.onSurfaceVariant,
-            )
-        }
     }
 }
 

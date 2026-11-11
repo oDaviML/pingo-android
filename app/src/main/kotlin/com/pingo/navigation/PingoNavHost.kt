@@ -50,7 +50,10 @@ fun PingoNavHost(session: SessionState, destinoInicial: DestinoInicial?, onConse
     ) {
         onboardingGraph(navController = navController, onConsentAccepted = onConsentAccepted)
         composable(HomeRoute.ROUTE) {
-            HomeScreen(onOpenSettings = { navController.navigate(SettingsRoute.ROUTE) })
+            HomeScreen(
+                onOpenSettings = { navController.navigate(SettingsRoute.ROUTE) },
+                onOpenCaptura = { navController.navigate(CaptureStatusRoute.ROUTE) },
+            )
         }
         composable(TransactionsRoute.ROUTE) { TransactionsScreen() }
         composable(AccountsRoute.ROUTE) { AccountsScreen() }

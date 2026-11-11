@@ -5,6 +5,7 @@ import com.pingo.core.common.AppDispatchers
 import com.pingo.core.data.AccountRepository
 import com.pingo.core.database.PingoDatabase
 import com.pingo.core.datastore.CapturaDataSource
+import com.pingo.core.datastore.PermissoesDataSource
 import com.pingo.core.datastore.UserPreferencesDataSource
 import com.pingo.core.network.PingoApiClient
 import com.pingo.core.network.PingoApiException
@@ -19,6 +20,7 @@ class AccountRepositoryImpl @Inject constructor(
     private val database: PingoDatabase,
     private val preferences: UserPreferencesDataSource,
     private val capturaDataSource: CapturaDataSource,
+    private val permissoesDataSource: PermissoesDataSource,
     private val dispatchers: AppDispatchers,
 ) : AccountRepository {
     override suspend fun recordConsent(version: String) = withContext(dispatchers.io) {
@@ -42,6 +44,7 @@ class AccountRepositoryImpl @Inject constructor(
         database.clearAllTables()
         preferences.clear()
         capturaDataSource.clear()
+        permissoesDataSource.clear()
         authRepository.logout()
     }
 

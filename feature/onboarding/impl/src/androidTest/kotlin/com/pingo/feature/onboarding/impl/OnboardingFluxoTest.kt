@@ -16,6 +16,8 @@ import com.pingo.core.auth.LoginResult
 import com.pingo.core.auth.SessionState
 import com.pingo.core.data.AccountRepository
 import com.pingo.core.data.ContaRepository
+import com.pingo.core.datastore.PermissaoDoPingo
+import com.pingo.core.datastore.PermissoesDataSource
 import com.pingo.core.datastore.SyncStatus
 import com.pingo.core.datastore.UserPreferencesDataSource
 import com.pingo.core.designsystem.component.PingoText
@@ -24,12 +26,15 @@ import com.pingo.core.model.Conta
 import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.NovaConta
 import com.pingo.core.model.TipoInstrumento
+import com.pingo.core.notifications.AcessoNotificacoes
+import com.pingo.core.notifications.NotificacoesDoSistema
 import com.pingo.core.ui.PRIVACY_TERM_VERSION
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -44,9 +49,10 @@ class OnboardingFluxoTest {
     private val contaRepository = FakeContaRepository()
     private val preferencias = FakeUserPreferences()
     private val accountRepository = FakeAccountRepository()
+    private val permissoes = FakePermissoesDataSource()
 
     @Test
-    fun fluxoDoPasso1AoPasso7TerminaNaHomeComAContaCriada() {
+    fun fluxoDoPasso1AoPasso7PassaPelasPermissoesETerminaNaHome() {
         mostrarFluxo(FakeAuthRepository(SessionState.LoggedOut))
 
         composeRule.onNodeWithText("Passo 1 de 8").assertIsDisplayed()
@@ -55,12 +61,26 @@ class OnboardingFluxoTest {
         composeRule.onNodeWithText("Passo 3 de 8").assertIsDisplayed()
         composeRule.onNodeWithText("Li e aceito o termo de privacidade (LGPD)").performClick()
         composeRule.onNodeWithText("Aceitar e continuar").performClick()
+
+        composeRule.onNodeWithText("Passo 4 de 8").assertIsDisplayed()
+        composeRule.onNodeWithText("Agora não").performClick()
+        composeRule.onNodeWithText("Tudo bem, você decide").assertIsDisplayed()
+        composeRule.onNodeWithText("Continuar só no manual").performClick()
+
+        composeRule.onNodeWithText("Passo 5 de 8").assertIsDisplayed()
+        composeRule.onNodeWithText("Permitir notificações").performClick()
+
+        composeRule.onNodeWithText("Passo 6 de 8").assertIsDisplayed()
+        composeRule.onNodeWithText("Pular por enquanto").performClick()
+
         composeRule.onNodeWithText("Passo 7 de 8").assertIsDisplayed()
         composeRule.onNodeWithText("Nubank").performClick()
         composeRule.onNodeWithText("Continuar").performClick()
         composeRule.onNodeWithText("Home").assertIsDisplayed()
 
         assertEquals(PRIVACY_TERM_VERSION, accountRepository.consentimento)
+        assertEquals(PermissaoDoPingo.NEGADA, permissoes.acesso.value)
+        assertEquals(PermissaoDoPingo.NEGADA, permissoes.notificacoes.value)
         val conta = contaRepository.criadas.single().single()
         assertEquals(InstituicaoFinanceira.NUBANK, conta.instituicao)
         assertEquals(listOf(TipoInstrumento.CREDITO), conta.instrumentos.map { it.tipo })
@@ -68,23 +88,39 @@ class OnboardingFluxoTest {
     }
 
     @Test
-    fun comSessaoAtivaPularOPasso7VaiParaAHomeSemCriarContas() {
+    fun comSessaoAtivaPularOsPassosDePermissaoVaiParaAHomeSemCriarContas() {
         mostrarFluxo(FakeAuthRepository(SessionState.LoggedIn))
 
         composeRule.onNodeWithText("Passo 3 de 8").assertIsDisplayed()
         composeRule.onNodeWithText("Li e aceito o termo de privacidade (LGPD)").performClick()
         composeRule.onNodeWithText("Aceitar e continuar").performClick()
+
+        composeRule.onNodeWithText("Passo 4 de 8").assertIsDisplayed()
+        composeRule.onNodeWithText("Pular").performClick()
+        composeRule.onNodeWithText("Passo 5 de 8").assertIsDisplayed()
+        composeRule.onNodeWithText("Pular").performClick()
+        composeRule.onNodeWithText("Passo 6 de 8").assertIsDisplayed()
+        composeRule.onNodeWithText("Pular").performClick()
+
         composeRule.onNodeWithText("Passo 7 de 8").assertIsDisplayed()
         composeRule.onNodeWithText("Pular").performClick()
         composeRule.onNodeWithText("Home").assertIsDisplayed()
 
-        assertTrue(contaRepository.criadas.isEmpty())
         assertTrue(preferencias.configuradas)
+        assertEquals(PermissaoDoPingo.NAO_PERGUNTADA, permissoes.notificacoes.value)
+        assertTrue(contaRepository.criadas.isEmpty())
     }
 
     private fun mostrarFluxo(autenticacao: AuthRepository) {
         val onboarding = OnboardingViewModel(autenticacao, accountRepository)
         val contas = OnboardingContasViewModel(contaRepository, preferencias)
+        val permissoesViewModel = OnboardingPermissoesViewModel(
+            acessoNotificacoes = FakeAcessoNotificacoes(concedido = false),
+            notificacoesDoSistema = FakeNotificacoesDoSistema(habilitadas = false),
+            permissoes = permissoes,
+            fabricanteDoAparelho = FakeFabricanteDoAparelho(FabricanteDoSistema.SAMSUNG),
+            bateriaDoAparelho = FakeBateriaDoAparelho(semRestricao = false),
+        )
 
         composeRule.setContent {
             PingoTheme {
@@ -92,8 +128,14 @@ class OnboardingFluxoTest {
 
                 when (tela) {
                     Tela.ONBOARDING -> OnboardingScreen(
-                        onContinue = { tela = Tela.CONTAS },
+                        onContinue = { tela = Tela.PERMISSOES },
                         viewModel = onboarding,
+                    )
+
+                    Tela.PERMISSOES -> OnboardingPermissoesScreen(
+                        onConcluir = { tela = Tela.CONTAS },
+                        viewModel = permissoesViewModel,
+                        permissaoDeNotificacao = FakePermissaoDeNotificacao(concedida = false),
                     )
 
                     Tela.CONTAS -> OnboardingContasScreen(
@@ -109,6 +151,7 @@ class OnboardingFluxoTest {
 
     private enum class Tela {
         ONBOARDING,
+        PERMISSOES,
         CONTAS,
         HOME,
     }
@@ -189,5 +232,45 @@ class OnboardingFluxoTest {
         }
 
         override suspend fun clear() = Unit
+    }
+
+    private class FakePermissoesDataSource : PermissoesDataSource {
+        val acesso = MutableStateFlow(PermissaoDoPingo.NAO_PERGUNTADA)
+        val notificacoes = MutableStateFlow(PermissaoDoPingo.NAO_PERGUNTADA)
+
+        override val acessoAsNotificacoes: Flow<PermissaoDoPingo> = acesso
+        override val notificacoesDoPingo: Flow<PermissaoDoPingo> = notificacoes
+
+        override suspend fun registrarAcessoAsNotificacoes(permissao: PermissaoDoPingo) {
+            acesso.value = permissao
+        }
+
+        override suspend fun registrarNotificacoesDoPingo(permissao: PermissaoDoPingo) {
+            notificacoes.value = permissao
+        }
+
+        override suspend fun clear() = Unit
+    }
+
+    private class FakeAcessoNotificacoes(private val concedido: Boolean) : AcessoNotificacoes {
+        override fun concedido(): Boolean = concedido
+    }
+
+    private class FakeNotificacoesDoSistema(private val habilitadas: Boolean) : NotificacoesDoSistema {
+        override fun habilitadas(): Boolean = habilitadas
+    }
+
+    private class FakeFabricanteDoAparelho(private val fabricante: FabricanteDoSistema) : FabricanteDoAparelho {
+        override fun fabricante(): FabricanteDoSistema = fabricante
+    }
+
+    private class FakeBateriaDoAparelho(private val semRestricao: Boolean) : BateriaDoAparelho {
+        override fun semRestricaoDeBateria(): Boolean = semRestricao
+    }
+
+    private class FakePermissaoDeNotificacao(private val concedida: Boolean) : PermissaoDeNotificacao {
+        override fun concedida(): Boolean = concedida
+
+        override fun solicitar(aoResultado: (Boolean) -> Unit) = aoResultado(concedida)
     }
 }

@@ -16,4 +16,8 @@ abstract class DataStoreModule {
     @Binds
     @Singleton
     abstract fun bindCapturaDataSource(implementation: CapturaDataSourceImpl): CapturaDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindPermissoesDataSource(implementation: PermissoesDataSourceImpl): PermissoesDataSource
 }
