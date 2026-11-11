@@ -51,7 +51,11 @@ fun NovoLancamentoContent(
         Column(modifier = Modifier.fillMaxSize()) {
             CabecalhoDoNovoLancamento(state = state, onEvent = onEvent, onFechar = onFechar)
             ColunaDeCampos(state = state, onEvent = onEvent, modifier = Modifier.weight(1f))
-            TecladoNumerico(habilitado = !state.salvando && !state.salvo, onEvent = onEvent)
+            TecladoNumerico(
+                habilitado = !state.salvando && !state.salvo,
+                onDigito = { digito -> onEvent(NovoLancamentoEvent.DigitoPressionado(digito)) },
+                onApagar = { onEvent(NovoLancamentoEvent.ApagarPressionado) },
+            )
         }
 
         state.painel?.let { painel ->
@@ -59,7 +63,12 @@ fun NovoLancamentoContent(
         }
 
         if (state.calendarioVisivel) {
-            CalendarioDoLancamento(data = state.data, hoje = state.hoje, onEvent = onEvent)
+            CalendarioDoLancamento(
+                data = state.data,
+                hoje = state.hoje,
+                onSelecionar = { data -> onEvent(NovoLancamentoEvent.SelecionarData(data)) },
+                onFechar = { onEvent(NovoLancamentoEvent.FecharCalendario) },
+            )
         }
     }
 }

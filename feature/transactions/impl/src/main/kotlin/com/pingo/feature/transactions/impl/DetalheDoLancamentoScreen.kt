@@ -1,31 +1,30 @@
 package com.pingo.feature.transactions.impl
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import com.pingo.core.designsystem.component.PingoText
-import com.pingo.core.designsystem.component.PingoTopBar
-import com.pingo.core.designsystem.theme.PingoSpacing
-import com.pingo.core.designsystem.theme.PingoTheme
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
-fun DetalheDoLancamentoScreen(publicId: String, onBack: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .testTag("detalhe-$publicId")
-            .background(PingoTheme.colors.background),
-    ) {
-        PingoTopBar(title = "Detalhe do lançamento", onBack = onBack)
-        PingoText(
-            text = "Editar, excluir e ver a origem do lançamento.",
-            style = PingoTheme.typography.body,
-            color = PingoTheme.colors.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = PingoSpacing.lg),
+fun DetalheDoLancamentoScreen(publicId: String, onBack: () -> Unit, viewModel: DetalheDoLancamentoViewModel = hiltViewModel()) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(state.salvo, state.excluido) {
+        if (state.salvo || state.excluido) {
+            onBack()
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize().testTag("detalhe-$publicId")) {
+        DetalheDoLancamentoContent(
+            state = state,
+            onEvent = viewModel::onEvent,
+            onVoltar = onBack,
         )
     }
 }

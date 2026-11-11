@@ -40,45 +40,40 @@ import java.time.LocalDate
 import java.time.YearMonth
 
 @Composable
-internal fun CalendarioDoLancamento(data: LocalDate, hoje: LocalDate, onEvent: (NovoLancamentoEvent) -> Unit) {
+internal fun CalendarioDoLancamento(data: LocalDate, hoje: LocalDate, onSelecionar: (LocalDate) -> Unit, onFechar: () -> Unit) {
     var mesVisivel by remember { mutableStateOf(YearMonth.from(data)) }
     var selecionada by remember { mutableStateOf(data) }
     val interacao = remember { MutableInteractionSource() }
 
     Dialog(
-        onDismissRequest = { onEvent(NovoLancamentoEvent.FecharCalendario) },
+        onDismissRequest = onFechar,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(PingoTheme.colors.scrim)
-                .clickable(interactionSource = interacao, indication = null) { onEvent(NovoLancamentoEvent.FecharCalendario) },
+                .clickable(interactionSource = interacao, indication = null) { onFechar() },
             contentAlignment = Alignment.Center,
         ) {
             CorpoDoCalendario(
                 mes = mesVisivel,
                 selecionada = selecionada,
                 hoje = hoje,
-                onMesAnterior = { mesVisivel = mesVisivel.minusMonths(1) },
-                onMesSeguinte = { mesVisivel = mesVisivel.plusMonths(1) },
-                onSelecionar = { selecionada = it },
-                onEvent = onEvent,
+                gestos = GestosDoCalendario(
+                    onMesAnterior = { mesVisivel = mesVisivel.minusMonths(1) },
+                    onMesSeguinte = { mesVisivel = mesVisivel.plusMonths(1) },
+                    onSelecionarDia = { selecionada = it },
+                    onConfirmar = { onSelecionar(selecionada) },
+                    onFechar = onFechar,
+                ),
             )
         }
     }
 }
 
 @Composable
-private fun CorpoDoCalendario(
-    mes: YearMonth,
-    selecionada: LocalDate,
-    hoje: LocalDate,
-    onMesAnterior: () -> Unit,
-    onMesSeguinte: () -> Unit,
-    onSelecionar: (LocalDate) -> Unit,
-    onEvent: (NovoLancamentoEvent) -> Unit,
-) {
+private fun CorpoDoCalendario(mes: YearMonth, selecionada: LocalDate, hoje: LocalDate, gestos: GestosDoCalendario) {
     val interacao = remember { MutableInteractionSource() }
 
     Column(
@@ -100,15 +95,20 @@ private fun CorpoDoCalendario(
             text = RotulosDoNovoLancamento.dataDoCalendario(selecionada),
             style = PingoTheme.typography.headline,
         )
-        CabecalhoDoMes(mes = mes, onAnterior = onMesAnterior, onSeguinte = onMesSeguinte)
+        CabecalhoDoMes(mes = mes, onAnterior = gestos.onMesAnterior, onSeguinte = gestos.onMesSeguinte)
         DiasDaSemana()
-        GradeDeDias(mes = mes, selecionada = selecionada, hoje = hoje, onSelecionar = onSelecionar)
-        AcoesDoCalendario(
-            onCancelar = { onEvent(NovoLancamentoEvent.FecharCalendario) },
-            onConfirmar = { onEvent(NovoLancamentoEvent.SelecionarData(selecionada)) },
-        )
+        GradeDeDias(mes = mes, selecionada = selecionada, hoje = hoje, onSelecionar = gestos.onSelecionarDia)
+        AcoesDoCalendario(onCancelar = gestos.onFechar, onConfirmar = gestos.onConfirmar)
     }
 }
+
+private data class GestosDoCalendario(
+    val onMesAnterior: () -> Unit,
+    val onMesSeguinte: () -> Unit,
+    val onSelecionarDia: (LocalDate) -> Unit,
+    val onConfirmar: () -> Unit,
+    val onFechar: () -> Unit,
+)
 
 @Composable
 private fun CabecalhoDoMes(mes: YearMonth, onAnterior: () -> Unit, onSeguinte: () -> Unit) {

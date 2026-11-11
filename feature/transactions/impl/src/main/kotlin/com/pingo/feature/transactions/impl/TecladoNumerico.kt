@@ -48,7 +48,7 @@ private val LINHAS_DO_TECLADO: List<List<TeclaDoTeclado>> = listOf(
 )
 
 @Composable
-internal fun TecladoNumerico(habilitado: Boolean, onEvent: (NovoLancamentoEvent) -> Unit) {
+internal fun TecladoNumerico(habilitado: Boolean, onDigito: (Int) -> Unit, onApagar: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -61,19 +61,25 @@ internal fun TecladoNumerico(habilitado: Boolean, onEvent: (NovoLancamentoEvent)
         verticalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
     ) {
         LINHAS_DO_TECLADO.forEach { linha ->
-            LinhaDoTeclado(teclas = linha, habilitado = habilitado, onEvent = onEvent)
+            LinhaDoTeclado(teclas = linha, habilitado = habilitado, onDigito = onDigito, onApagar = onApagar)
         }
     }
 }
 
 @Composable
-private fun LinhaDoTeclado(teclas: List<TeclaDoTeclado>, habilitado: Boolean, onEvent: (NovoLancamentoEvent) -> Unit) {
+private fun LinhaDoTeclado(teclas: List<TeclaDoTeclado>, habilitado: Boolean, onDigito: (Int) -> Unit, onApagar: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
     ) {
         teclas.forEach { tecla ->
-            TeclaNumerica(tecla = tecla, habilitado = habilitado, onEvent = onEvent, modifier = Modifier.weight(1f))
+            TeclaNumerica(
+                tecla = tecla,
+                habilitado = habilitado,
+                onDigito = onDigito,
+                onApagar = onApagar,
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 }
@@ -82,7 +88,8 @@ private fun LinhaDoTeclado(teclas: List<TeclaDoTeclado>, habilitado: Boolean, on
 private fun TeclaNumerica(
     tecla: TeclaDoTeclado,
     habilitado: Boolean,
-    onEvent: (NovoLancamentoEvent) -> Unit,
+    onDigito: (Int) -> Unit,
+    onApagar: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val ativa = habilitado && tecla != TeclaDoTeclado.Virgula
@@ -96,7 +103,7 @@ private fun TeclaNumerica(
             .clickable(
                 enabled = ativa,
                 role = Role.Button,
-                onClick = { acionarTecla(tecla, onEvent) },
+                onClick = { acionarTecla(tecla, onDigito, onApagar) },
             ),
         contentAlignment = Alignment.Center,
     ) {
@@ -130,10 +137,10 @@ private fun ConteudoDaTecla(tecla: TeclaDoTeclado, ativa: Boolean) {
     }
 }
 
-private fun acionarTecla(tecla: TeclaDoTeclado, onEvent: (NovoLancamentoEvent) -> Unit) {
+private fun acionarTecla(tecla: TeclaDoTeclado, onDigito: (Int) -> Unit, onApagar: () -> Unit) {
     when (tecla) {
-        is TeclaDoTeclado.Numero -> onEvent(NovoLancamentoEvent.DigitoPressionado(tecla.digito))
-        TeclaDoTeclado.Apagar -> onEvent(NovoLancamentoEvent.ApagarPressionado)
+        is TeclaDoTeclado.Numero -> onDigito(tecla.digito)
+        TeclaDoTeclado.Apagar -> onApagar()
         TeclaDoTeclado.Virgula -> Unit
     }
 }

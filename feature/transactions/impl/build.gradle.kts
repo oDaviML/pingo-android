@@ -9,9 +9,11 @@ android {
 dependencies {
     implementation(project(":feature:transactions:api"))
     implementation(project(":core:data"))
+    testImplementation(project(":core:auth"))
     testImplementation(project(":core:testing"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(project(":core:auth"))
     androidTestImplementation(project(":core:common"))
     androidTestImplementation(project(":core:data"))
     androidTestImplementation(project(":core:database"))
