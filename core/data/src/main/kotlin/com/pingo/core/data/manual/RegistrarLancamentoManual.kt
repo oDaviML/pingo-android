@@ -73,12 +73,7 @@ class RegistrarLancamentoManual @Inject constructor(
 
     private suspend fun registrarLancamento(novo: NovoLancamentoManual): ResultadoLancamentoManual {
         val instrumento = requireNotNull(novo.instrumentoPublicId)
-        val duplicata = lancamentoRepository.capturadosSemelhantes(
-            instrumentoPublicId = instrumento,
-            valorCentavos = novo.valorCentavos,
-            inicio = novo.dataHora.minus(JANELA_DE_DUPLICATA),
-            fim = novo.dataHora.plus(JANELA_DE_DUPLICATA),
-        ).isNotEmpty()
+        val duplicata = temCapturadoSemelhante(instrumento, novo)
         val lancamento = montar(novo, instrumento, duplicata = duplicata, transferenciaId = null)
         lancamentoRepository.salvar(lancamento)
 
@@ -89,8 +84,10 @@ class RegistrarLancamentoManual @Inject constructor(
         val origem = requireNotNull(novo.instrumentoPublicId)
         val destino = requireNotNull(novo.destinoPublicId)
         val transferenciaId = UUID.randomUUID().toString()
-        val saida = montar(novo, origem, duplicata = false, transferenciaId = transferenciaId)
-        val entrada = saida.copy(publicId = UUID.randomUUID().toString(), instrumentoPublicId = destino)
+        val saida = montar(novo, origem, duplicata = temCapturadoSemelhante(origem, novo), transferenciaId = transferenciaId)
+        val entrada = saida
+            .copy(publicId = UUID.randomUUID().toString(), instrumentoPublicId = destino)
+            .comDuplicata(temCapturadoSemelhante(destino, novo))
 
         transacaoLocal.executar {
             lancamentoRepository.salvar(saida)
@@ -99,6 +96,14 @@ class RegistrarLancamentoManual @Inject constructor(
 
         return ResultadoLancamentoManual.Salvo(listOf(saida, entrada))
     }
+
+    private suspend fun temCapturadoSemelhante(instrumentoPublicId: String, novo: NovoLancamentoManual): Boolean =
+        lancamentoRepository.capturadosSemelhantes(
+            instrumentoPublicId = instrumentoPublicId,
+            valorCentavos = novo.valorCentavos,
+            inicio = novo.dataHora.minus(JANELA_DE_DUPLICATA),
+            fim = novo.dataHora.plus(JANELA_DE_DUPLICATA),
+        ).isNotEmpty()
 
     private fun montar(novo: NovoLancamentoManual, instrumentoPublicId: String, duplicata: Boolean, transferenciaId: String?): Lancamento {
         val agora = clock.instant()
@@ -113,14 +118,24 @@ class RegistrarLancamentoManual @Inject constructor(
             dataHora = novo.dataHora,
             tipo = novo.tipo,
             estabelecimento = novo.estabelecimento?.trim()?.takeIf { it.isNotEmpty() },
-            status = if (duplicata) StatusLancamento.PENDENTE else StatusLancamento.CONFIRMADO,
+            status = statusDaDuplicata(duplicata),
             origem = OrigemLancamento.MANUAL,
             confianca = 1.0,
-            motivoPendencia = if (duplicata) MotivoPendencia.POSSIVEL_DUPLICATA.name else null,
+            motivoPendencia = motivoDaDuplicata(duplicata),
             criadoEm = agora,
             atualizadoEm = agora,
         )
     }
+
+    private fun Lancamento.comDuplicata(duplicata: Boolean): Lancamento = copy(
+        status = statusDaDuplicata(duplicata),
+        motivoPendencia = motivoDaDuplicata(duplicata),
+    )
+
+    private fun statusDaDuplicata(duplicata: Boolean): StatusLancamento =
+        if (duplicata) StatusLancamento.PENDENTE else StatusLancamento.CONFIRMADO
+
+    private fun motivoDaDuplicata(duplicata: Boolean): String? = if (duplicata) MotivoPendencia.POSSIVEL_DUPLICATA.name else null
 
     private companion object {
         val JANELA_DE_DUPLICATA: Duration = Duration.ofHours(24)

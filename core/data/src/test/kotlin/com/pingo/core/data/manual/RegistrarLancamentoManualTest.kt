@@ -192,6 +192,90 @@ class RegistrarLancamentoManualTest {
     }
 
     @Test
+    fun `transferencia com capturado so na origem grava apenas a saida pendente`() = runBlocking {
+        val ambiente = AmbienteManual()
+        val origem = ambiente.instrumentos.criar("Inter conta", contaPublicId = "conta-inter")
+        val destino = ambiente.instrumentos.criar("Mercado Pago conta", contaPublicId = "conta-mp")
+        ambiente.lancamentos.salvar(
+            capturado(origem.publicId, valorCentavos = 50000, dataHora = AGORA_MANUAL.minus(Duration.ofHours(1))),
+        )
+
+        val resultado = ambiente.registrar.registrar(transferencia(origem.publicId, destino.publicId, valorCentavos = 50000))
+
+        val par = (resultado as ResultadoLancamentoManual.Salvo).lancamentos.associateBy { it.instrumentoPublicId }
+        assertEquals(StatusLancamento.PENDENTE, par.getValue(origem.publicId).status)
+        assertEquals(MotivoPendencia.POSSIVEL_DUPLICATA.name, par.getValue(origem.publicId).motivoPendencia)
+        assertEquals(StatusLancamento.CONFIRMADO, par.getValue(destino.publicId).status)
+        assertNull(par.getValue(destino.publicId).motivoPendencia)
+    }
+
+    @Test
+    fun `transferencia com capturado so no destino grava apenas a entrada pendente`() = runBlocking {
+        val ambiente = AmbienteManual()
+        val origem = ambiente.instrumentos.criar("Inter conta", contaPublicId = "conta-inter")
+        val destino = ambiente.instrumentos.criar("Mercado Pago conta", contaPublicId = "conta-mp")
+        ambiente.lancamentos.salvar(
+            capturado(destino.publicId, valorCentavos = 50000, dataHora = AGORA_MANUAL.plus(Duration.ofHours(2))),
+        )
+
+        val resultado = ambiente.registrar.registrar(transferencia(origem.publicId, destino.publicId, valorCentavos = 50000))
+
+        val par = (resultado as ResultadoLancamentoManual.Salvo).lancamentos.associateBy { it.instrumentoPublicId }
+        assertEquals(StatusLancamento.CONFIRMADO, par.getValue(origem.publicId).status)
+        assertNull(par.getValue(origem.publicId).motivoPendencia)
+        assertEquals(StatusLancamento.PENDENTE, par.getValue(destino.publicId).status)
+        assertEquals(MotivoPendencia.POSSIVEL_DUPLICATA.name, par.getValue(destino.publicId).motivoPendencia)
+    }
+
+    @Test
+    fun `transferencia com capturado na origem e no destino grava as duas linhas pendentes`() = runBlocking {
+        val ambiente = AmbienteManual()
+        val origem = ambiente.instrumentos.criar("Inter conta", contaPublicId = "conta-inter")
+        val destino = ambiente.instrumentos.criar("Mercado Pago conta", contaPublicId = "conta-mp")
+        val capturadoNaOrigem = capturado(origem.publicId, valorCentavos = 50000, dataHora = AGORA_MANUAL.minus(Duration.ofHours(1)))
+        val capturadoNoDestino = capturado(destino.publicId, valorCentavos = 50000, dataHora = AGORA_MANUAL.minus(Duration.ofHours(2)))
+        ambiente.lancamentos.salvar(capturadoNaOrigem)
+        ambiente.lancamentos.salvar(capturadoNoDestino)
+
+        val resultado = ambiente.registrar.registrar(transferencia(origem.publicId, destino.publicId, valorCentavos = 50000))
+
+        val par = (resultado as ResultadoLancamentoManual.Salvo).lancamentos
+        assertEquals(2, par.size)
+        assertEquals(1, par.map { it.transferenciaId }.distinct().size)
+        assertNotEquals(null, par.first().transferenciaId)
+        assertEquals(2, par.map { it.publicId }.distinct().size)
+        par.forEach { lancamento ->
+            assertEquals(TipoLancamento.TRANSFERENCIA, lancamento.tipo)
+            assertNull(lancamento.categoriaPublicId)
+            assertEquals(StatusLancamento.PENDENTE, lancamento.status)
+            assertEquals(MotivoPendencia.POSSIVEL_DUPLICATA.name, lancamento.motivoPendencia)
+        }
+        assertEquals(setOf(origem.publicId, destino.publicId), par.map { it.instrumentoPublicId }.toSet())
+        assertEquals(capturadoNaOrigem, ambiente.lancamentos.buscar(capturadoNaOrigem.publicId))
+        assertEquals(capturadoNoDestino, ambiente.lancamentos.buscar(capturadoNoDestino.publicId))
+    }
+
+    @Test
+    fun `transferencia sem capturado nos instrumentos do par grava o par confirmado`() = runBlocking {
+        val ambiente = AmbienteManual()
+        val origem = ambiente.instrumentos.criar("Inter conta", contaPublicId = "conta-inter")
+        val destino = ambiente.instrumentos.criar("Mercado Pago conta", contaPublicId = "conta-mp")
+        val terceiro = ambiente.instrumentos.criar("Nubank cartão", contaPublicId = "conta-nu")
+        ambiente.lancamentos.salvar(
+            capturado(terceiro.publicId, valorCentavos = 50000, dataHora = AGORA_MANUAL.minus(Duration.ofHours(1))),
+        )
+
+        val resultado = ambiente.registrar.registrar(transferencia(origem.publicId, destino.publicId, valorCentavos = 50000))
+
+        val par = (resultado as ResultadoLancamentoManual.Salvo).lancamentos
+        par.forEach { lancamento ->
+            assertEquals(StatusLancamento.CONFIRMADO, lancamento.status)
+            assertNull(lancamento.motivoPendencia)
+        }
+        assertEquals(1, ambiente.transacao.execucoes)
+    }
+
+    @Test
     fun `manual parecido com capturado em menos de vinte e quatro horas grava pendente possivel duplicata`() = runBlocking {
         val ambiente = AmbienteManual()
         val instrumento = ambiente.instrumentos.criar()
@@ -219,6 +303,60 @@ class RegistrarLancamentoManualTest {
         val resultado = ambiente.registrar.registrar(entrada(valorCentavos = 4290, instrumentoPublicId = instrumento.publicId))
 
         val lancamento = (resultado as ResultadoLancamentoManual.Salvo).lancamentos.single()
+        assertEquals(StatusLancamento.CONFIRMADO, lancamento.status)
+        assertNull(lancamento.motivoPendencia)
+    }
+
+    @Test
+    fun `capturado exatamente vinte e quatro horas antes marca duplicata`() = runBlocking {
+        val ambiente = AmbienteManual()
+        val instrumento = ambiente.instrumentos.criar()
+        ambiente.lancamentos.salvar(
+            capturado(instrumento.publicId, valorCentavos = 4290, dataHora = AGORA_MANUAL.minus(Duration.ofHours(24))),
+        )
+
+        val lancamento = salvoUnico(ambiente, entrada(valorCentavos = 4290, instrumentoPublicId = instrumento.publicId))
+
+        assertEquals(StatusLancamento.PENDENTE, lancamento.status)
+        assertEquals(MotivoPendencia.POSSIVEL_DUPLICATA.name, lancamento.motivoPendencia)
+    }
+
+    @Test
+    fun `capturado exatamente vinte e quatro horas depois marca duplicata`() = runBlocking {
+        val ambiente = AmbienteManual()
+        val instrumento = ambiente.instrumentos.criar()
+        ambiente.lancamentos.salvar(
+            capturado(instrumento.publicId, valorCentavos = 4290, dataHora = AGORA_MANUAL.plus(Duration.ofHours(24))),
+        )
+
+        val lancamento = salvoUnico(ambiente, entrada(valorCentavos = 4290, instrumentoPublicId = instrumento.publicId))
+
+        assertEquals(StatusLancamento.PENDENTE, lancamento.status)
+        assertEquals(MotivoPendencia.POSSIVEL_DUPLICATA.name, lancamento.motivoPendencia)
+    }
+
+    @Test
+    fun `capturado um milissegundo antes do limite nao marca duplicata`() = runBlocking {
+        val ambiente = AmbienteManual()
+        val instrumento = ambiente.instrumentos.criar()
+        val foraDaJanela = AGORA_MANUAL.minus(Duration.ofHours(24)).minusMillis(1)
+        ambiente.lancamentos.salvar(capturado(instrumento.publicId, valorCentavos = 4290, dataHora = foraDaJanela))
+
+        val lancamento = salvoUnico(ambiente, entrada(valorCentavos = 4290, instrumentoPublicId = instrumento.publicId))
+
+        assertEquals(StatusLancamento.CONFIRMADO, lancamento.status)
+        assertNull(lancamento.motivoPendencia)
+    }
+
+    @Test
+    fun `capturado um milissegundo depois do limite nao marca duplicata`() = runBlocking {
+        val ambiente = AmbienteManual()
+        val instrumento = ambiente.instrumentos.criar()
+        val foraDaJanela = AGORA_MANUAL.plus(Duration.ofHours(24)).plusMillis(1)
+        ambiente.lancamentos.salvar(capturado(instrumento.publicId, valorCentavos = 4290, dataHora = foraDaJanela))
+
+        val lancamento = salvoUnico(ambiente, entrada(valorCentavos = 4290, instrumentoPublicId = instrumento.publicId))
+
         assertEquals(StatusLancamento.CONFIRMADO, lancamento.status)
         assertNull(lancamento.motivoPendencia)
     }
@@ -306,6 +444,17 @@ class RegistrarLancamentoManualTest {
 
         assertNull(ambiente.registrar.ultimoInstrumentoUsado())
     }
+
+    private fun transferencia(origemPublicId: String, destinoPublicId: String, valorCentavos: Long): NovoLancamentoManual = entrada(
+        tipo = TipoLancamento.TRANSFERENCIA,
+        valorCentavos = valorCentavos,
+        instrumentoPublicId = origemPublicId,
+        destinoPublicId = destinoPublicId,
+        estabelecimento = "Apartamento",
+    )
+
+    private suspend fun salvoUnico(ambiente: AmbienteManual, novo: NovoLancamentoManual): Lancamento =
+        (ambiente.registrar.registrar(novo) as ResultadoLancamentoManual.Salvo).lancamentos.single()
 
     private fun entrada(
         tipo: TipoLancamento = TipoLancamento.DESPESA,

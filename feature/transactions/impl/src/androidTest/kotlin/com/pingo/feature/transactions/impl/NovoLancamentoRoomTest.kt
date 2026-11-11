@@ -148,6 +148,66 @@ class NovoLancamentoRoomTest {
     }
 
     @Test
+    fun transferenciaComCapturadoNaOrigemMarcaSoASaidaPendenteNaFronteiraDeVinteEQuatroHoras() {
+        val cenario = runBlocking {
+            prepararCenarioDeTransferencia(
+                publicIdNaOrigem = "capturado-na-origem",
+                dataHoraNaOrigem = agora.minus(Duration.ofHours(24)),
+                publicIdNoDestino = "capturado-fora-no-destino",
+                dataHoraNoDestino = agora.minus(Duration.ofHours(24)).minusMillis(1),
+                valorCentavos = 50000,
+            )
+        }
+
+        salvarTransferencia(cenario, "tecla-5", "tecla-0", "tecla-0", "tecla-0", "tecla-0")
+
+        val par = runBlocking { lancamentos.observeLancamentos().first() }.filter { it.origem == OrigemLancamento.MANUAL }
+        assertEquals(2, par.size)
+        assertEquals(1, par.map { it.transferenciaId }.distinct().size)
+        assertNotEquals(null, par.first().transferenciaId)
+        assertEquals(2, par.map { it.publicId }.distinct().size)
+        val porInstrumento = par.associateBy { it.instrumentoPublicId }
+        val saida = porInstrumento.getValue(cenario.origem.publicId)
+        val entrada = porInstrumento.getValue(cenario.destino.publicId)
+        assertEquals(TipoLancamento.TRANSFERENCIA, saida.tipo)
+        assertEquals(TipoLancamento.TRANSFERENCIA, entrada.tipo)
+        assertNull(saida.categoriaPublicId)
+        assertNull(entrada.categoriaPublicId)
+        assertEquals(StatusLancamento.PENDENTE, saida.status)
+        assertEquals(MotivoPendencia.POSSIVEL_DUPLICATA.name, saida.motivoPendencia)
+        assertEquals(StatusLancamento.CONFIRMADO, entrada.status)
+        assertNull(entrada.motivoPendencia)
+        assertEquals(cenario.capturadoNaOrigem, runBlocking { lancamentos.buscar(cenario.capturadoNaOrigem.publicId) })
+        assertEquals(cenario.capturadoNoDestino, runBlocking { lancamentos.buscar(cenario.capturadoNoDestino.publicId) })
+    }
+
+    @Test
+    fun transferenciaComCapturadoNoDestinoMarcaSoAEntradaPendenteNaFronteiraDeVinteEQuatroHoras() {
+        val cenario = runBlocking {
+            prepararCenarioDeTransferencia(
+                publicIdNaOrigem = "capturado-fora-na-origem",
+                dataHoraNaOrigem = agora.plus(Duration.ofHours(24)).plusMillis(1),
+                publicIdNoDestino = "capturado-no-destino",
+                dataHoraNoDestino = agora.plus(Duration.ofHours(24)),
+                valorCentavos = 75000,
+            )
+        }
+
+        salvarTransferencia(cenario, "tecla-7", "tecla-5", "tecla-0", "tecla-0", "tecla-0")
+
+        val par = runBlocking { lancamentos.observeLancamentos().first() }.filter { it.origem == OrigemLancamento.MANUAL }
+        val porInstrumento = par.associateBy { it.instrumentoPublicId }
+        val saida = porInstrumento.getValue(cenario.origem.publicId)
+        val entrada = porInstrumento.getValue(cenario.destino.publicId)
+        assertEquals(StatusLancamento.CONFIRMADO, saida.status)
+        assertNull(saida.motivoPendencia)
+        assertEquals(StatusLancamento.PENDENTE, entrada.status)
+        assertEquals(MotivoPendencia.POSSIVEL_DUPLICATA.name, entrada.motivoPendencia)
+        assertEquals(cenario.capturadoNaOrigem, runBlocking { lancamentos.buscar(cenario.capturadoNaOrigem.publicId) })
+        assertEquals(cenario.capturadoNoDestino, runBlocking { lancamentos.buscar(cenario.capturadoNoDestino.publicId) })
+    }
+
+    @Test
     fun duplicataDeCapturadoGravaPendenteEMantemOCapturado() {
         val instrumento = runBlocking {
             val criado = criarContaComInstrumento()
@@ -308,6 +368,64 @@ class NovoLancamentoRoomTest {
             agora,
         )
     }
+
+    private suspend fun prepararCenarioDeTransferencia(
+        publicIdNaOrigem: String,
+        dataHoraNaOrigem: Instant,
+        publicIdNoDestino: String,
+        dataHoraNoDestino: Instant,
+        valorCentavos: Long,
+    ): CenarioDeTransferencia {
+        criarDuasContas()
+        val ativos = instrumentos.observeInstrumentos().first()
+        val capturadoNaOrigem = capturado(publicIdNaOrigem, ativos[0].publicId, valorCentavos, dataHoraNaOrigem)
+        val capturadoNoDestino = capturado(publicIdNoDestino, ativos[1].publicId, valorCentavos, dataHoraNoDestino)
+        lancamentos.salvar(capturadoNaOrigem)
+        lancamentos.salvar(capturadoNoDestino)
+
+        return CenarioDeTransferencia(ativos[0], ativos[1], capturadoNaOrigem, capturadoNoDestino)
+    }
+
+    private fun capturado(publicId: String, instrumentoPublicId: String, valorCentavos: Long, dataHora: Instant): Lancamento = Lancamento(
+        publicId = publicId,
+        instrumentoPublicId = instrumentoPublicId,
+        valorCentavos = valorCentavos,
+        dataHora = dataHora,
+        tipo = TipoLancamento.DESPESA,
+        estabelecimento = "Padaria do Zé",
+        status = StatusLancamento.CONFIRMADO,
+        origem = OrigemLancamento.NOTIFICACAO,
+        confianca = 1.0,
+        criadoEm = dataHora,
+        atualizadoEm = dataHora,
+    )
+
+    private fun salvarTransferencia(cenario: CenarioDeTransferencia, vararg teclas: String) {
+        val viewModel = criarViewModel()
+
+        mostrar(viewModel)
+        aguardarCarregamento(viewModel)
+        composeRule.onNodeWithTag("tipo-TRANSFERENCIA").performClick()
+        composeRule.waitUntil(TEMPO_ESPERA) { viewModel.uiState.value.tipo == TipoDoLancamentoManual.TRANSFERENCIA }
+        composeRule.onNodeWithTag("campo-origem").performClick()
+        composeRule.waitUntil(TEMPO_ESPERA) { viewModel.uiState.value.painel == PainelDoNovoLancamento.INSTRUMENTO }
+        composeRule.onNodeWithTag("instrumento-opcao-${cenario.origem.publicId}").performClick()
+        composeRule.waitUntil(TEMPO_ESPERA) { viewModel.uiState.value.instrumento?.publicId == cenario.origem.publicId }
+        composeRule.onNodeWithTag("campo-destino").performClick()
+        composeRule.waitUntil(TEMPO_ESPERA) { viewModel.uiState.value.painel == PainelDoNovoLancamento.DESTINO }
+        composeRule.onNodeWithTag("instrumento-opcao-${cenario.destino.publicId}").performClick()
+        composeRule.waitUntil(TEMPO_ESPERA) { viewModel.uiState.value.destino?.publicId == cenario.destino.publicId }
+        digitar(*teclas)
+        composeRule.onNodeWithTag("salvar-lancamento").performClick()
+        composeRule.waitUntil(TEMPO_ESPERA) { viewModel.uiState.value.salvo }
+    }
+
+    private data class CenarioDeTransferencia(
+        val origem: Instrumento,
+        val destino: Instrumento,
+        val capturadoNaOrigem: Lancamento,
+        val capturadoNoDestino: Lancamento,
+    )
 
     private companion object {
         const val TEMPO_ESPERA = 7000L
