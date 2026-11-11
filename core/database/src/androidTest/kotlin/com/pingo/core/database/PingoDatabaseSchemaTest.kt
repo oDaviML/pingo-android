@@ -63,6 +63,10 @@ class PingoDatabaseSchemaTest {
             "instituicaoOrigem deveria existir e aceitar nulo",
             colunas.single { coluna -> coluna.nome == "instituicaoOrigem" }.aceitaNulo,
         )
+        assertTrue(
+            "tipoSemTransferencia deveria existir e aceitar nulo",
+            colunas.single { coluna -> coluna.nome == "tipoSemTransferencia" }.aceitaNulo,
+        )
 
         val colunasDaFatura = colunasDe(database, "faturas")
         assertTrue(

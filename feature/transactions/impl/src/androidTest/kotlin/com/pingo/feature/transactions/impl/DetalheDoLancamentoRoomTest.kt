@@ -60,6 +60,7 @@ import org.junit.runner.RunWith
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.time.YearMonth
 import java.time.ZoneOffset
 import java.util.Base64
 
@@ -312,6 +313,99 @@ class DetalheDoLancamentoRoomTest {
     }
 
     @Test
+    fun desfazerPeloDestinoSemCategoriasPreservaDirecoesESaldoEmMesesDistintos() {
+        runBlocking {
+            val instrumentos = criarDuasContas()
+            lancamentos.salvar(
+                lancamento(
+                    publicId = "saida",
+                    instrumentoPublicId = instrumentos[0].publicId,
+                    categoriaPublicId = null,
+                    instituicaoOrigem = InstituicaoFinanceira.NUBANK,
+                    textoBruto = null,
+                    dataHora = Instant.parse("2026-12-31T23:55:00Z"),
+                    tipo = TipoLancamento.DESPESA,
+                    valorCentavos = 5000,
+                ),
+            )
+            lancamentos.salvar(
+                lancamento(
+                    publicId = "entrada",
+                    instrumentoPublicId = instrumentos[1].publicId,
+                    categoriaPublicId = null,
+                    instituicaoOrigem = InstituicaoFinanceira.INTER,
+                    textoBruto = null,
+                    dataHora = Instant.parse("2027-01-01T00:05:00Z"),
+                    tipo = TipoLancamento.RECEITA,
+                    valorCentavos = 5000,
+                ),
+            )
+            transferirPara("saida", instrumentos[1].publicId)
+        }
+
+        val viewModel = criarViewModel("entrada")
+        mostrar(viewModel)
+        aguardarCarregamento(viewModel)
+
+        composeRule.onNodeWithTag("desfazer-transferencia").performScrollTo().performClick()
+        composeRule.waitUntil(TEMPO_ESPERA) { !viewModel.uiState.value.ehTransferencia }
+
+        assertEquals(TipoLancamento.DESPESA, runBlocking { lancamentos.buscar("saida") }?.tipo)
+        assertEquals(TipoLancamento.RECEITA, runBlocking { lancamentos.buscar("entrada") }?.tipo)
+        assertNull(runBlocking { lancamentos.buscar("saida") }?.tipoSemTransferencia)
+        assertNull(runBlocking { lancamentos.buscar("entrada") }?.tipoSemTransferencia)
+        assertEquals(-5000L, saldoDoMes("2026-12"))
+        assertEquals(5000L, saldoDoMes("2027-01"))
+    }
+
+    @Test
+    fun desfazerParLegadoSemDirecaoRecusaComAvisoESemEscritaParcial() {
+        runBlocking {
+            val instrumentos = criarDuasContas()
+            lancamentos.salvar(
+                lancamento(
+                    publicId = "saida",
+                    instrumentoPublicId = instrumentos[0].publicId,
+                    categoriaPublicId = null,
+                    instituicaoOrigem = null,
+                    textoBruto = null,
+                    tipo = TipoLancamento.TRANSFERENCIA,
+                    transferenciaId = "transferencia-legada",
+                ),
+            )
+            lancamentos.salvar(
+                lancamento(
+                    publicId = "entrada",
+                    instrumentoPublicId = instrumentos[1].publicId,
+                    categoriaPublicId = null,
+                    instituicaoOrigem = null,
+                    textoBruto = null,
+                    tipo = TipoLancamento.TRANSFERENCIA,
+                    transferenciaId = "transferencia-legada",
+                ),
+            )
+        }
+        val atualizadoAntes = runBlocking { lancamentos.buscar("saida") }?.atualizadoEm
+
+        val viewModel = criarViewModel("entrada")
+        mostrar(viewModel)
+        aguardarCarregamento(viewModel)
+
+        composeRule.onNodeWithTag("desfazer-transferencia").performScrollTo().performClick()
+        composeRule.waitUntil(TEMPO_ESPERA) { viewModel.uiState.value.mensagem != null }
+
+        assertEquals(MensagemDoDetalhe.DIRECAO_DESCONHECIDA, viewModel.uiState.value.mensagem)
+        composeRule.onNodeWithText(
+            "Este par antigo não tem a direção registrada. Desfazer poderia inverter despesas e receitas.",
+        ).assertIsDisplayed()
+        assertTrue(viewModel.uiState.value.ehTransferencia)
+        assertEquals(TipoLancamento.TRANSFERENCIA, runBlocking { lancamentos.buscar("saida") }?.tipo)
+        assertEquals(TipoLancamento.TRANSFERENCIA, runBlocking { lancamentos.buscar("entrada") }?.tipo)
+        assertEquals(atualizadoAntes, runBlocking { lancamentos.buscar("saida") }?.atualizadoEm)
+        assertEquals("transferencia-legada", runBlocking { lancamentos.buscar("entrada") }?.transferenciaId)
+    }
+
+    @Test
     fun marcarSemInstrumentoResolvidoNaoCriaParEAvisa() {
         val publicId = runBlocking {
             criarDuasContas()
@@ -401,7 +495,6 @@ class DetalheDoLancamentoRoomTest {
             marcarTransferencia = MarcarTransferencia(
                 lancamentoRepository = lancamentos,
                 instrumentoRepository = instrumentos,
-                categoriaRepository = categorias,
                 transacaoLocal = transacao,
                 clock = clock,
             ),
@@ -486,13 +579,19 @@ class DetalheDoLancamentoRoomTest {
         status: StatusLancamento = StatusLancamento.CONFIRMADO,
         motivoPendencia: String? = null,
         dataHora: Instant = agora.minus(Duration.ofMinutes(30)),
+        tipo: TipoLancamento = TipoLancamento.DESPESA,
+        valorCentavos: Long = 4290,
+        transferenciaId: String? = null,
+        tipoSemTransferencia: TipoLancamento? = null,
     ): Lancamento = Lancamento(
         publicId = publicId,
         instrumentoPublicId = instrumentoPublicId,
         categoriaPublicId = categoriaPublicId,
-        valorCentavos = 4290,
+        transferenciaId = transferenciaId,
+        valorCentavos = valorCentavos,
         dataHora = dataHora,
-        tipo = TipoLancamento.DESPESA,
+        tipo = tipo,
+        tipoSemTransferencia = tipoSemTransferencia,
         estabelecimento = "Padaria do Zé",
         status = status,
         origem = OrigemLancamento.NOTIFICACAO,
@@ -503,6 +602,29 @@ class DetalheDoLancamentoRoomTest {
         atualizadoEm = dataHora,
         textoBruto = textoBruto,
     )
+
+    private fun saldoDoMes(competencia: String): Long = runBlocking {
+        val mes = YearMonth.parse(competencia)
+
+        lancamentos.observeLancamentos().first()
+            .filter { it.transferenciaId == null && YearMonth.from(it.dataHora.atZone(ZoneOffset.UTC)) == mes }
+            .sumOf { lancamento ->
+                when (lancamento.tipo) {
+                    TipoLancamento.RECEITA -> lancamento.valorCentavos
+                    TipoLancamento.DESPESA -> -lancamento.valorCentavos
+                    TipoLancamento.TRANSFERENCIA, TipoLancamento.AJUSTE -> 0L
+                }
+            }
+    }
+
+    private fun transferirPara(publicId: String, destinoPublicId: String) = runBlocking {
+        MarcarTransferencia(
+            lancamentoRepository = lancamentos,
+            instrumentoRepository = instrumentos,
+            transacaoLocal = RoomTransacaoLocal(database),
+            clock = clock,
+        ).marcar(publicId, destinoPublicId)
+    }
 
     private data class Cenario(val lancamento: Lancamento, val instrumentos: List<Instrumento>)
 

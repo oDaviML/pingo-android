@@ -11,6 +11,7 @@ import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
 
@@ -104,6 +105,50 @@ class SyncMapperTest {
 
         assertNull(lancamento.textoBruto)
     }
+
+    @Test
+    fun `push de transferencia serializa a direcao conhecida e omite a desconhecida`() {
+        val entidade = lancamentoEntity(textoBruto = null).copy(
+            tipo = TipoLancamento.TRANSFERENCIA,
+            transferenciaId = "transferencia-1",
+            tipoSemTransferencia = TipoLancamento.RECEITA,
+        )
+
+        val json = Json.encodeToString(LancamentoChangeDto.serializer(), entidade.toChangeDto())
+        val legado = Json.encodeToString(
+            LancamentoChangeDto.serializer(),
+            entidade.copy(tipoSemTransferencia = null).toChangeDto(),
+        )
+
+        assertTrue(json.contains("\"tipoSemTransferencia\":\"Receita\""))
+        assertFalse(legado.contains("tipoSemTransferencia"))
+    }
+
+    @Test
+    fun `pull interpreta direcao valida e trata valor desconhecido ou ausente como desconhecido`() {
+        val valida = snapshot(tipo = "Transferencia", tipoSemTransferencia = "Despesa").toEntity()
+        val invalida = snapshot(tipo = "Transferencia", tipoSemTransferencia = "Transferencia").toEntity()
+        val ausente = snapshot(tipo = "Transferencia", tipoSemTransferencia = null).toEntity()
+
+        assertEquals(TipoLancamento.DESPESA, valida.tipoSemTransferencia)
+        assertNull(invalida.tipoSemTransferencia)
+        assertNull(ausente.tipoSemTransferencia)
+    }
+
+    private fun snapshot(tipo: String, tipoSemTransferencia: String?): LancamentoSnapshotDto = LancamentoSnapshotDto(
+        publicId = "lancamento-1",
+        instrumentoPublicId = "instrumento-1",
+        valor = 50.0,
+        dataHora = "2026-11-10T12:00:00Z",
+        tipo = tipo,
+        tipoSemTransferencia = tipoSemTransferencia,
+        transferenciaId = "transferencia-1",
+        status = "Confirmado",
+        origem = "Manual",
+        confianca = 1.0,
+        criadoEm = "2026-11-10T12:00:00Z",
+        atualizadoEm = "2026-11-10T12:00:00Z",
+    )
 
     private fun lancamentoEntity(
         textoBruto: String?,

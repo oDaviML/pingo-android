@@ -116,6 +116,8 @@ internal fun parDe(registro: Lancamento?, base: BaseDoDetalhe): ParDaTransferenc
 }
 
 internal fun entradaDe(irmao: Lancamento, categoria: Categoria?): Boolean? = when {
+    irmao.tipoSemTransferencia == TipoLancamento.RECEITA -> true
+    irmao.tipoSemTransferencia == TipoLancamento.DESPESA -> false
     categoria?.tipo == TipoCategoria.RECEITA || irmao.tipo == TipoLancamento.RECEITA -> true
     categoria?.tipo == TipoCategoria.DESPESA || irmao.tipo == TipoLancamento.DESPESA -> false
     else -> null
@@ -131,6 +133,8 @@ internal fun mensagemDaRecusa(motivo: MotivoDaRecusa): MensagemDoDetalhe = when 
     MotivoDaRecusa.PAR_AMBIGUO -> MensagemDoDetalhe.PAR_AMBIGUO
     MotivoDaRecusa.PAR_NAO_RESOLVIDO -> MensagemDoDetalhe.PAR_NAO_RESOLVIDO
     MotivoDaRecusa.JA_E_TRANSFERENCIA -> MensagemDoDetalhe.PAR_AMBIGUO
+    MotivoDaRecusa.DIRECAO_DESCONHECIDA -> MensagemDoDetalhe.DIRECAO_DESCONHECIDA
+    MotivoDaRecusa.PAR_INCONSISTENTE -> MensagemDoDetalhe.PAR_INCONSISTENTE
 }
 
 internal fun tipoDaTela(tipo: TipoLancamento): TipoDoLancamentoManual = when (tipo) {

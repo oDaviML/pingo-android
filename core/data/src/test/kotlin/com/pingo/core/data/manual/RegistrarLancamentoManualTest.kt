@@ -188,6 +188,8 @@ class RegistrarLancamentoManualTest {
             assertEquals(StatusLancamento.CONFIRMADO, lancamento.status)
             assertEquals("Apartamento", lancamento.estabelecimento)
         }
+        assertEquals(TipoLancamento.DESPESA, par[0].tipoSemTransferencia)
+        assertEquals(TipoLancamento.RECEITA, par[1].tipoSemTransferencia)
         assertNotEquals(par[0].publicId, par[1].publicId)
     }
 

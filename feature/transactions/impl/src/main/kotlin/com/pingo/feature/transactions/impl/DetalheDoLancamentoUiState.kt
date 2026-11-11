@@ -19,6 +19,8 @@ enum class MensagemDoDetalhe {
     MESMA_CONTA,
     PAR_AMBIGUO,
     PAR_NAO_RESOLVIDO,
+    DIRECAO_DESCONHECIDA,
+    PAR_INCONSISTENTE,
     FALHA_AO_SALVAR,
 }
 

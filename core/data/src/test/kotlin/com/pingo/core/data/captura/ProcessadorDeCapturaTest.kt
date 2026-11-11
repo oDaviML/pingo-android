@@ -299,6 +299,54 @@ class ProcessadorDeCapturaTest {
         assertNotNull(lancamentos.first().transferenciaId)
         assertTrue(lancamentos.all { it.tipo == TipoLancamento.TRANSFERENCIA })
         assertTrue(lancamentos.all { it.status == StatusLancamento.CONFIRMADO })
+        assertEquals(
+            TipoLancamento.RECEITA,
+            lancamentos.first { it.instituicaoOrigem == InstituicaoFinanceira.NUBANK }.tipoSemTransferencia,
+        )
+        assertEquals(
+            TipoLancamento.DESPESA,
+            lancamentos.first { it.instituicaoOrigem == InstituicaoFinanceira.ITAU }.tipoSemTransferencia,
+        )
+    }
+
+    @Test
+    fun `despesa chegando antes da receita tambem preserva as direcoes do par`() = runTest {
+        val categorias = AmbienteCategorias().comPadroes()
+        val contaDoPix = ambiente.contas.criar(InstituicaoFinanceira.ITAU, "Itaú")
+        ambiente.instrumentos.criarNaConta(contaDoPix)
+        ambiente.instrumentos.criar(InstituicaoFinanceira.NUBANK)
+        val processador = processador(categorias)
+
+        processador.processar(
+            captura(
+                direcao = DirecaoPadrao.DESPESA,
+                tipo = TipoLancamentoPadrao.PIX_ENVIADO,
+                valorCentavos = 15000,
+                estabelecimento = "DAVI",
+            ),
+        )
+        processador.processar(
+            captura(
+                instituicao = InstituicaoFinanceira.NUBANK,
+                direcao = DirecaoPadrao.RECEITA,
+                tipo = TipoLancamentoPadrao.TRANSFERENCIA_RECEBIDA,
+                valorCentavos = 15000,
+                estabelecimento = "DAVI",
+                postTime = AGORA_DA_CAPTURA.plus(Duration.ofMinutes(3)),
+            ),
+        )
+
+        val lancamentos = ambiente.lancamentos.todos()
+        assertEquals(2, lancamentos.size)
+        assertTrue(lancamentos.all { it.transferenciaId != null })
+        assertEquals(
+            TipoLancamento.DESPESA,
+            lancamentos.first { it.instituicaoOrigem == InstituicaoFinanceira.ITAU }.tipoSemTransferencia,
+        )
+        assertEquals(
+            TipoLancamento.RECEITA,
+            lancamentos.first { it.instituicaoOrigem == InstituicaoFinanceira.NUBANK }.tipoSemTransferencia,
+        )
     }
 
     @Test

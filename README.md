@@ -38,6 +38,8 @@ O `build` roda compilação, testes unitários, detekt e ktlint (Spotless).
 
 O banco fica em `core:database`: Room sobre SQLCipher, com as entidades do modelo, soft delete (`excluidoEm`) e marcadores de sincronização (`criadoEm`/`atualizadoEm`). A passphrase do SQLCipher é aleatória e protegida por uma chave AES-256 do Android Keystore. Se a chave não puder ser recuperada, o banco local é apagado e recriado; a restauração vem do servidor. O schema exportado fica em `core/database/schemas/` e é versionado junto com as migrations.
 
+Transferências guardam a direção financeira de cada linha em `tipoSemTransferencia` (`DESPESA`, `RECEITA` ou nulo quando desconhecida), inclusive depois que as duas linhas passam a `TRANSFERENCIA`. O schema 4 adiciona a coluna nullable pela migration 3→4, sem backfill: registros antigos continuam nulos e o Desfazer desses pares é recusado com aviso, em vez de inferir a direção por categoria, lado aberto, horário ou UUID. O campo é opcional no push/pull; ausência ou `null` na mesma `transferenciaId` preserva o valor local conhecido, enquanto outra transferência ou uma linha que deixou de ser transferência não herda a direção.
+
 ## Design system
 
 O `core:designsystem` traduz o design system do FigCraft (`design/design-system.md` e `design/pingo.figcraft`) para Compose, sem Material 3: tema próprio (`PingoTheme`) com tokens de cor, tipografia Nunito, raios, espaçamento, elevação e movimento, além dos componentes `Pingo*` e do stepper do onboarding.

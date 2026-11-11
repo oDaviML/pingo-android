@@ -1,16 +1,16 @@
 package com.pingo.core.data.detalhe
 
-import com.pingo.core.data.CategoriaRepository
 import com.pingo.core.data.InstrumentoRepository
 import com.pingo.core.data.LancamentoRepository
 import com.pingo.core.data.TransacaoLocal
-import com.pingo.core.model.Categoria
 import com.pingo.core.model.Instrumento
 import com.pingo.core.model.Lancamento
 import com.pingo.core.model.MotivoPendencia
+import com.pingo.core.model.OrigemLancamento
 import com.pingo.core.model.StatusLancamento
-import com.pingo.core.model.TipoCategoria
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.direcaoDaTransferencia
+import com.pingo.core.model.direcaoOposta
 import kotlinx.coroutines.flow.first
 import java.time.Clock
 import java.time.Duration
@@ -25,6 +25,8 @@ enum class MotivoDaRecusa {
     PAR_AMBIGUO,
     PAR_NAO_RESOLVIDO,
     JA_E_TRANSFERENCIA,
+    DIRECAO_DESCONHECIDA,
+    PAR_INCONSISTENTE,
 }
 
 sealed interface ResultadoDaTransferencia {
@@ -40,7 +42,6 @@ sealed interface ResultadoDaTransferencia {
 class MarcarTransferencia @Inject constructor(
     private val lancamentoRepository: LancamentoRepository,
     private val instrumentoRepository: InstrumentoRepository,
-    private val categoriaRepository: CategoriaRepository,
     private val transacaoLocal: TransacaoLocal,
     private val clock: Clock,
 ) {
@@ -57,7 +58,8 @@ class MarcarTransferencia @Inject constructor(
         val agora = clock.instant()
         val transferenciaId = UUID.randomUUID().toString()
         val lancamento = original.comoTransferencia(transferenciaId, agora)
-        val par = candidatos(original, destino, todos).singleOrNull()?.comoTransferencia(transferenciaId, agora)
+        val candidato = candidatosReais(original, destino, todos).singleOrNull()?.first
+        val par = candidato?.comoTransferencia(transferenciaId, agora)
             ?: novoPar(original, destino, transferenciaId, agora)
 
         transacaoLocal.executar {
@@ -79,29 +81,45 @@ class MarcarTransferencia @Inject constructor(
             return MotivoDaRecusa.DESTINO_NAO_ENCONTRADO
         }
 
+        val reais = candidatosReais(original, destino, todos)
+
         return when {
             destino.contaPublicId == origem.contaPublicId -> MotivoDaRecusa.MESMA_CONTA
             parNaoResolvido(original, todos) -> MotivoDaRecusa.PAR_NAO_RESOLVIDO
-            candidatos(original, destino, todos).size > 1 -> MotivoDaRecusa.PAR_AMBIGUO
+            reais.any { !it.second.ativo() } -> MotivoDaRecusa.INSTRUMENTO_NAO_RESOLVIDO
+            reais.size > 1 -> MotivoDaRecusa.PAR_AMBIGUO
             else -> null
         }
     }
 
     suspend fun desfazer(publicId: String): ResultadoDaTransferencia {
         val original = lancamentoRepository.buscar(publicId)?.takeIf { it.excluidoEm == null }
-            ?: return ResultadoDaTransferencia.NaoEncontrado
-        val transferenciaId = original.transferenciaId
-            ?: return ResultadoDaTransferencia.Desfeita(listOf(original))
+
+        return when {
+            original == null -> ResultadoDaTransferencia.NaoEncontrado
+            original.transferenciaId == null -> ResultadoDaTransferencia.Desfeita(listOf(original))
+            else -> desfazerGrupo(original)
+        }
+    }
+
+    private suspend fun desfazerGrupo(original: Lancamento): ResultadoDaTransferencia {
+        val transferenciaId = original.transferenciaId ?: return ResultadoDaTransferencia.Desfeita(listOf(original))
+        val grupo = lancamentoRepository.observeLancamentos().first()
+            .filter { it.transferenciaId == transferenciaId }
+            .sortedBy { it.publicId }
+        val direcoes = grupo.map { it.direcaoParaRestaurar() }
+        val recusa = when {
+            direcoes.any { it == null } -> MotivoDaRecusa.DIRECAO_DESCONHECIDA
+            !direcoesConsistentes(direcoes.filterNotNull()) -> MotivoDaRecusa.PAR_INCONSISTENTE
+            else -> null
+        }
+
+        if (recusa != null) {
+            return ResultadoDaTransferencia.Recusada(recusa)
+        }
 
         val agora = clock.instant()
-        val irmaos = lancamentoRepository.observeLancamentos().first()
-            .filter { it.transferenciaId == transferenciaId && it.publicId != publicId }
-        val doOriginal = tipoDaCategoria(original.categoriaPublicId)
-        val doIrmao = irmaos.firstOrNull()?.let { tipoDaCategoria(it.categoriaPublicId) }
-        val lancamento = original.desfazendo(doOriginal ?: doIrmao?.oposto() ?: TipoLancamento.DESPESA, agora)
-        val desfeitos = listOf(lancamento) + irmaos.map { irmao ->
-            irmao.desfazendo(doIrmao ?: doOriginal?.oposto() ?: TipoLancamento.RECEITA, agora)
-        }
+        val desfeitos = grupo.map { lancamento -> lancamento.desfazendo(lancamento.direcaoParaRestaurar()!!, agora) }
 
         transacaoLocal.executar {
             desfeitos.forEach { lancamentoRepository.salvar(it) }
@@ -110,32 +128,41 @@ class MarcarTransferencia @Inject constructor(
         return ResultadoDaTransferencia.Desfeita(desfeitos)
     }
 
+    private fun direcoesConsistentes(direcoes: List<TipoLancamento>): Boolean = when (direcoes.size) {
+        0, 1 -> true
+        2 -> direcoes[0] != direcoes[1]
+        else -> false
+    }
+
     private suspend fun instrumentoAtivo(publicId: String?): Instrumento? = publicId
         ?.let { instrumentoRepository.buscar(it) }
         ?.takeIf { it.excluidoEm == null && !it.arquivado }
 
-    private fun parNaoResolvido(original: Lancamento, todos: List<Lancamento>): Boolean = todos.any { candidato ->
+    private suspend fun parNaoResolvido(original: Lancamento, todos: List<Lancamento>): Boolean = todos.any { candidato ->
+        val instrumentoPublicId = candidato.instrumentoPublicId
         candidato.publicId != original.publicId &&
             candidato.transferenciaId == null &&
-            candidato.instrumentoPublicId == null &&
+            (instrumentoPublicId == null || instrumentoNaoExiste(instrumentoPublicId)) &&
             candidato.tipo == original.tipo.oposto() &&
             candidato.naJanelaDe(original)
     }
 
-    private suspend fun candidatos(original: Lancamento, destino: Instrumento, todos: List<Lancamento>): List<Lancamento> {
-        val contasPorInstrumento = todos.mapNotNull { candidato ->
-            candidato.instrumentoPublicId?.let { publicId -> publicId to instrumentoAtivo(publicId)?.contaPublicId }
-        }.toMap()
-
-        return todos.filter { candidato ->
-            candidato.publicId != original.publicId &&
-                candidato.transferenciaId == null &&
-                candidato.tipo == original.tipo.oposto() &&
-                candidato.naJanelaDe(original) &&
-                candidato.instrumentoPublicId != null &&
-                contasPorInstrumento[candidato.instrumentoPublicId] == destino.contaPublicId
-        }
+    private suspend fun candidatosReais(
+        original: Lancamento,
+        destino: Instrumento,
+        todos: List<Lancamento>,
+    ): List<Pair<Lancamento, Instrumento>> = todos.mapNotNull { candidato ->
+        val elegivel = candidato.publicId != original.publicId &&
+            candidato.transferenciaId == null &&
+            candidato.tipo == original.tipo.oposto() &&
+            candidato.naJanelaDe(original)
+        val instrumento = candidato.instrumentoPublicId?.let { instrumentoRepository.buscar(it) }
+        if (elegivel && instrumento?.contaPublicId == destino.contaPublicId) candidato to instrumento else null
     }
+
+    private suspend fun instrumentoNaoExiste(publicId: String): Boolean = instrumentoRepository.buscar(publicId) == null
+
+    private fun Instrumento.ativo(): Boolean = excluidoEm == null && !arquivado
 
     private fun novoPar(original: Lancamento, destino: Instrumento, transferenciaId: String, agora: Instant): Lancamento = Lancamento(
         publicId = UUID.randomUUID().toString(),
@@ -144,21 +171,23 @@ class MarcarTransferencia @Inject constructor(
         valorCentavos = original.valorCentavos,
         dataHora = original.dataHora,
         tipo = TipoLancamento.TRANSFERENCIA,
+        tipoSemTransferencia = original.direcaoParaRestaurar()?.direcaoOposta,
         status = StatusLancamento.CONFIRMADO,
-        origem = com.pingo.core.model.OrigemLancamento.MANUAL,
+        origem = OrigemLancamento.MANUAL,
         confianca = 1.0,
         criadoEm = agora,
         atualizadoEm = agora,
     )
 
     private fun Lancamento.comoTransferencia(transferenciaId: String, agora: Instant): Lancamento {
-        val pendente = status == StatusLancamento.PENDENTE && motivoPendencia == MotivoPendencia.TRANSFERENCIA_AMBIGUA.name
+        val confirmada = status == StatusLancamento.PENDENTE
 
         return copy(
             tipo = TipoLancamento.TRANSFERENCIA,
+            tipoSemTransferencia = direcaoParaRestaurar(),
             transferenciaId = transferenciaId,
-            status = if (pendente) StatusLancamento.CONFIRMADO else status,
-            motivoPendencia = if (pendente) null else motivoPendencia,
+            status = if (confirmada) StatusLancamento.CONFIRMADO else status,
+            motivoPendencia = if (confirmada) null else motivoPendencia,
             atualizadoEm = agora,
         )
     }
@@ -168,6 +197,7 @@ class MarcarTransferencia @Inject constructor(
 
         return copy(
             tipo = tipoRestaurado,
+            tipoSemTransferencia = null,
             transferenciaId = null,
             status = if (confirma) StatusLancamento.CONFIRMADO else status,
             motivoPendencia = if (confirma) null else motivoPendencia,
@@ -175,18 +205,11 @@ class MarcarTransferencia @Inject constructor(
         )
     }
 
+    private fun Lancamento.direcaoParaRestaurar(): TipoLancamento? = tipoSemTransferencia ?: tipo.direcaoDaTransferencia
+
     private fun Lancamento.naJanelaDe(original: Lancamento): Boolean =
         valorCentavos == original.valorCentavos && !dataHora.isBefore(original.dataHora.minus(JANELA)) &&
             !dataHora.isAfter(original.dataHora.plus(JANELA))
-
-    private suspend fun tipoDaCategoria(publicId: String?): TipoLancamento? = publicId
-        ?.let { categoriaRepository.buscar(it) }
-        ?.paraTipo()
-
-    private fun Categoria.paraTipo(): TipoLancamento = when (tipo) {
-        TipoCategoria.DESPESA -> TipoLancamento.DESPESA
-        TipoCategoria.RECEITA -> TipoLancamento.RECEITA
-    }
 
     private fun TipoLancamento.oposto(): TipoLancamento = when (this) {
         TipoLancamento.DESPESA -> TipoLancamento.RECEITA

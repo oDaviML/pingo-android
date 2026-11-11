@@ -17,7 +17,7 @@ object PingoDatabaseFactory {
 
         return Room.databaseBuilder(context, PingoDatabase::class.java, name)
             .openHelperFactory(SupportOpenHelperFactory(passphrase))
-            .addMigrations(PingoMigrations.MIGRACAO_1_2, PingoMigrations.MIGRACAO_2_3)
+            .addMigrations(PingoMigrations.MIGRACAO_1_2, PingoMigrations.MIGRACAO_2_3, PingoMigrations.MIGRACAO_3_4)
             .addCallback(ForeignKeysCallback)
             .build()
     }

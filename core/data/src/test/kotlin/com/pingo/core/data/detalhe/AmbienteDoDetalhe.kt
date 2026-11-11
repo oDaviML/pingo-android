@@ -39,7 +39,7 @@ internal class AmbienteDoDetalhe {
     private val usuario = UsuarioAutenticado(FakeTokenStore(tokensDoUsuario("auth0|lucas")))
     val aprendida = CategoriaAprendida(categorias, regras, usuario)
     val editar = EditarLancamento(lancamentos, instrumentos, categorias, aprendida, transacoes, clock)
-    val transferir = MarcarTransferencia(lancamentos, instrumentos, categorias, transacoes, clock)
+    val transferir = MarcarTransferencia(lancamentos, instrumentos, transacoes, clock)
 
     suspend fun categoria(nome: String, tipo: TipoCategoria = TipoCategoria.DESPESA): Categoria =
         when (val resultado = categorias.criar(nome, tipo, agora)) {
@@ -86,6 +86,7 @@ internal fun lancamentoDeTeste(
     instituicaoOrigem: InstituicaoFinanceira? = InstituicaoFinanceira.NUBANK,
     textoBruto: String? = null,
     transferenciaId: String? = null,
+    tipoSemTransferencia: TipoLancamento? = null,
 ): Lancamento = Lancamento(
     publicId = publicId,
     instrumentoPublicId = instrumentoPublicId,
@@ -94,6 +95,7 @@ internal fun lancamentoDeTeste(
     valorCentavos = valorCentavos,
     dataHora = dataHora,
     tipo = tipo,
+    tipoSemTransferencia = tipoSemTransferencia,
     estabelecimento = estabelecimento,
     status = status,
     origem = origem,

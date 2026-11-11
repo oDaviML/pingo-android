@@ -114,6 +114,12 @@ internal fun tipoLancamentoFromApi(value: String): TipoLancamento = when (value)
     else -> TipoLancamento.DESPESA
 }
 
+internal fun direcaoDaTransferenciaFromApi(value: String): TipoLancamento? = when (value) {
+    "Despesa" -> TipoLancamento.DESPESA
+    "Receita" -> TipoLancamento.RECEITA
+    else -> null
+}
+
 internal fun StatusLancamento.toApiValue(): String = when (this) {
     StatusLancamento.CONFIRMADO -> "Confirmado"
     StatusLancamento.PENDENTE -> "Pendente"

@@ -14,6 +14,8 @@ import com.pingo.core.model.OrigemLancamento
 import com.pingo.core.model.StatusLancamento
 import com.pingo.core.model.TipoCategoria
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.direcaoDaTransferencia
+import com.pingo.core.model.direcaoOposta
 import kotlinx.coroutines.flow.first
 import java.time.Clock
 import java.time.Instant
@@ -131,6 +133,7 @@ class EditarLancamento @Inject constructor(
             motivoPendencia = motivo?.name,
             confianca = confiancaDe(original, edicao.valorCentavos, estabelecimento, categoria),
             transferenciaId = null,
+            tipoSemTransferencia = null,
             atualizadoEm = agora,
         )
 
@@ -152,6 +155,7 @@ class EditarLancamento @Inject constructor(
             .firstOrNull { it.transferenciaId == transferenciaId && it.publicId != original.publicId }
         val lancamento = original.copy(
             tipo = TipoLancamento.TRANSFERENCIA,
+            tipoSemTransferencia = original.direcaoDaTransferencia(),
             valorCentavos = edicao.valorCentavos,
             dataHora = edicao.dataHora,
             instrumentoPublicId = instrumento?.publicId,
@@ -162,6 +166,7 @@ class EditarLancamento @Inject constructor(
         )
         val par = parceiro?.copy(
             tipo = TipoLancamento.TRANSFERENCIA,
+            tipoSemTransferencia = parceiro.direcaoDaTransferencia(),
             valorCentavos = edicao.valorCentavos,
             dataHora = edicao.dataHora,
             instrumentoPublicId = destino?.publicId,
@@ -169,7 +174,7 @@ class EditarLancamento @Inject constructor(
             status = transferenciaResolvida(parceiro.status, parceiro.motivoPendencia),
             motivoPendencia = motivoDaTransferencia(parceiro.status, parceiro.motivoPendencia),
             atualizadoEm = agora,
-        ) ?: novoPar(edicao, destino, transferenciaId, agora)
+        ) ?: novoPar(edicao, destino, transferenciaId, original.direcaoDaTransferencia()?.direcaoOposta, agora)
 
         transacaoLocal.executar {
             lancamentoRepository.salvar(lancamento)
@@ -179,20 +184,28 @@ class EditarLancamento @Inject constructor(
         return ResultadoDaEdicao.Salvo(lancamento = lancamento, par = par)
     }
 
-    private fun novoPar(edicao: EdicaoDoLancamento, destino: Instrumento?, transferenciaId: String, agora: Instant): Lancamento =
-        Lancamento(
-            publicId = UUID.randomUUID().toString(),
-            instrumentoPublicId = destino?.publicId,
-            transferenciaId = transferenciaId,
-            valorCentavos = edicao.valorCentavos,
-            dataHora = edicao.dataHora,
-            tipo = TipoLancamento.TRANSFERENCIA,
-            status = StatusLancamento.CONFIRMADO,
-            origem = OrigemLancamento.MANUAL,
-            confianca = 1.0,
-            criadoEm = agora,
-            atualizadoEm = agora,
-        )
+    private fun novoPar(
+        edicao: EdicaoDoLancamento,
+        destino: Instrumento?,
+        transferenciaId: String,
+        direcao: TipoLancamento?,
+        agora: Instant,
+    ): Lancamento = Lancamento(
+        publicId = UUID.randomUUID().toString(),
+        instrumentoPublicId = destino?.publicId,
+        transferenciaId = transferenciaId,
+        valorCentavos = edicao.valorCentavos,
+        dataHora = edicao.dataHora,
+        tipo = TipoLancamento.TRANSFERENCIA,
+        tipoSemTransferencia = direcao,
+        status = StatusLancamento.CONFIRMADO,
+        origem = OrigemLancamento.MANUAL,
+        confianca = 1.0,
+        criadoEm = agora,
+        atualizadoEm = agora,
+    )
+
+    private fun Lancamento.direcaoDaTransferencia(): TipoLancamento? = tipoSemTransferencia ?: tipo.direcaoDaTransferencia
 
     private fun transferenciaResolvida(status: StatusLancamento, motivo: String?): StatusLancamento =
         if (status == StatusLancamento.PENDENTE && motivo == MotivoPendencia.TRANSFERENCIA_AMBIGUA.name) {

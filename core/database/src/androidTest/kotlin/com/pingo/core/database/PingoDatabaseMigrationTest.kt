@@ -63,7 +63,7 @@ class PingoDatabaseMigrationTest {
             database.execSQL(INSERCAO_NA_VERSAO_2_FILHO)
         }
 
-        val migrado = helper.runMigrationsAndValidate(DATABASE_NAME, PingoDatabase.VERSION, true, PingoMigrations.MIGRACAO_2_3)
+        val migrado = helper.runMigrationsAndValidate(DATABASE_NAME, 3, true, PingoMigrations.MIGRACAO_2_3)
 
         migrado
             .query(
@@ -100,7 +100,35 @@ class PingoDatabaseMigrationTest {
     }
 
     @Test
-    fun cadeiaDaVersao1Para3PreservaDadosEVinculos() {
+    fun migracaoDaVersao3Para4PreservaTransferenciasELegadosSemInventarDirecao() {
+        helper.createDatabase(DATABASE_NAME, 3).use { database ->
+            database.execSQL(INSERCAO_NA_VERSAO_3_TRANSFERENCIA)
+            database.execSQL(INSERCAO_NA_VERSAO_3_LEGADO)
+        }
+
+        val migrado = helper.runMigrationsAndValidate(DATABASE_NAME, 4, true, PingoMigrations.MIGRACAO_3_4)
+
+        migrado
+            .query("SELECT publicId, tipo, transferenciaId, tipoSemTransferencia FROM lancamentos ORDER BY publicId")
+            .use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals("lancamento-legado", cursor.getString(0))
+                assertEquals("DESPESA", cursor.getString(1))
+                assertTrue(cursor.isNull(2))
+                assertTrue(cursor.isNull(3))
+
+                assertTrue(cursor.moveToNext())
+                assertEquals("lancamento-transferencia", cursor.getString(0))
+                assertEquals("TRANSFERENCIA", cursor.getString(1))
+                assertEquals("transferencia-1", cursor.getString(2))
+                assertTrue(cursor.isNull(3))
+            }
+
+        migrado.close()
+    }
+
+    @Test
+    fun cadeiaDaVersao1Para4PreservaDadosEVinculos() {
         helper.createDatabase(DATABASE_NAME, 1).use { database ->
             database.execSQL(INSERCAO_NA_VERSAO_1)
             database.execSQL(INSERCAO_NA_VERSAO_1_FILHO)
@@ -112,20 +140,26 @@ class PingoDatabaseMigrationTest {
             true,
             PingoMigrations.MIGRACAO_1_2,
             PingoMigrations.MIGRACAO_2_3,
+            PingoMigrations.MIGRACAO_3_4,
         )
 
         migrado
-            .query("SELECT publicId, instrumentoPublicId, compraPaiPublicId, textoBruto FROM lancamentos ORDER BY publicId")
+            .query(
+                "SELECT publicId, instrumentoPublicId, compraPaiPublicId, textoBruto, tipoSemTransferencia " +
+                    "FROM lancamentos ORDER BY publicId",
+            )
             .use { cursor ->
                 assertTrue(cursor.moveToFirst())
                 assertEquals("lancamento-1", cursor.getString(0))
                 assertEquals("instrumento-1", cursor.getString(1))
                 assertTrue(cursor.isNull(2))
                 assertTrue(cursor.isNull(3))
+                assertTrue(cursor.isNull(4))
 
                 assertTrue(cursor.moveToNext())
                 assertEquals("lancamento-3", cursor.getString(0))
                 assertEquals("lancamento-1", cursor.getString(2))
+                assertTrue(cursor.isNull(4))
             }
 
         migrado.close()
@@ -188,6 +222,36 @@ class PingoDatabaseMigrationTest {
                 'LOJA', 'PENDENTE', 'NOTIFICACAO', 0.8, 'INSTRUMENTO_AMBIGUO', NULL, NULL,
                 2, 2, NULL, 1762788000000, 1762788000000, 1762788000000,
                 NULL
+            )
+        """
+        const val INSERCAO_NA_VERSAO_3_TRANSFERENCIA = """
+            INSERT INTO lancamentos (
+                publicId, instrumentoPublicId, categoriaPublicId, faturaPublicId, assinaturaPublicId,
+                compraPaiPublicId, estornoDePublicId, transferenciaId, valorCentavos, dataHora, tipo,
+                estabelecimento, status, origem, instituicaoOrigem, confianca, motivoPendencia, hashDuplicata,
+                observacao, parcelaNumero, totalParcelas, valorTotalCompraCentavos, criadoEm, atualizadoEm,
+                excluidoEm, textoBruto
+            ) VALUES (
+                'lancamento-transferencia', 'instrumento-1', NULL, NULL, NULL,
+                NULL, NULL, 'transferencia-1', 5000, 1762788000000, 'TRANSFERENCIA',
+                NULL, 'CONFIRMADO', 'MANUAL', NULL, 1.0, NULL, NULL,
+                NULL, 1, 1, NULL, 1762788000000, 1762788000000,
+                NULL, NULL
+            )
+        """
+        const val INSERCAO_NA_VERSAO_3_LEGADO = """
+            INSERT INTO lancamentos (
+                publicId, instrumentoPublicId, categoriaPublicId, faturaPublicId, assinaturaPublicId,
+                compraPaiPublicId, estornoDePublicId, transferenciaId, valorCentavos, dataHora, tipo,
+                estabelecimento, status, origem, instituicaoOrigem, confianca, motivoPendencia, hashDuplicata,
+                observacao, parcelaNumero, totalParcelas, valorTotalCompraCentavos, criadoEm, atualizadoEm,
+                excluidoEm, textoBruto
+            ) VALUES (
+                'lancamento-legado', 'instrumento-1', NULL, NULL, NULL,
+                NULL, NULL, NULL, 3790, 1762788000000, 'DESPESA',
+                'LOJA', 'CONFIRMADO', 'NOTIFICACAO', 'ITAU', 1.0, NULL, 'hash-legado',
+                NULL, 1, 1, NULL, 1762788000000, 1762788000000,
+                NULL, 'texto local'
             )
         """
         val INDICES_DE_LANCAMENTOS = listOf(

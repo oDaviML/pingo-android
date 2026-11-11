@@ -16,7 +16,9 @@ import com.pingo.core.auth.UsuarioAutenticado
 import com.pingo.core.common.AppDispatchers
 import com.pingo.core.common.DefaultAppDispatchers
 import com.pingo.core.data.categoria.CategoriaSeeder
+import com.pingo.core.data.detalhe.ResultadoDaTransferencia
 import com.pingo.core.data.di.CapturaEntryPoint
+import com.pingo.core.data.di.DetalheEntryPoint
 import com.pingo.core.database.PingoDatabase
 import com.pingo.core.datastore.CapturaDataSource
 import com.pingo.core.datastore.CapturaDataSourceImpl
@@ -205,6 +207,108 @@ class SyncHttpIntegrationTest {
             assertEquals(instrumento.publicId, localResolvido?.instrumentoPublicId)
             assertEquals(StatusLancamento.CONFIRMADO, localResolvido?.status)
             assertEquals(textoBruto, localResolvido?.textoBruto)
+        }
+    }
+
+    @Test
+    fun direcaoSemTransferenciaSincronizaRestauraERoundtripPreservaOsLados() = runBlocking {
+        assumeTrue("informe -e $ARG_HOST=<url do Pingo.Api.TestHost>", !host.isNullOrBlank())
+
+        withTimeout(TEMPO_TOTAL) {
+            val token = "auth0|direcao-${UUID.randomUUID()}"
+            val api = HttpPingoApiClient(PingoApiConfig(host!!), FixtureAuth(token), dispatchers)
+            assertTrue("host de teste inacessível em $host", api.healthCheck())
+
+            val fonte = captura.database()
+            fonte.clearAllTables()
+
+            captura.contaRepository().criarComInstrumentos(
+                listOf(
+                    NovaConta(
+                        instituicao = InstituicaoFinanceira.NUBANK,
+                        apelido = "Nubank",
+                        tipo = TipoConta.CORRENTE,
+                        instrumentos = listOf(NovoInstrumento(tipo = TipoInstrumento.DEBITO, apelido = "Débito Nubank")),
+                    ),
+                    NovaConta(
+                        instituicao = InstituicaoFinanceira.INTER,
+                        apelido = "Inter",
+                        tipo = TipoConta.CORRENTE,
+                        instrumentos = listOf(NovoInstrumento(tipo = TipoInstrumento.DEBITO, apelido = "Débito Inter")),
+                    ),
+                ),
+                Instant.now(),
+            )
+
+            val contas = captura.contaRepository().observeContas().first()
+            val nubank = contas.first { it.instituicao == InstituicaoFinanceira.NUBANK }
+            val inter = contas.first { it.instituicao == InstituicaoFinanceira.INTER }
+            val instrumentoNubank = captura.instrumentoRepository().observePorConta(nubank.publicId).first().single()
+            val instrumentoInter = captura.instrumentoRepository().observePorConta(inter.publicId).first().single()
+            val agora = Instant.now()
+            val saidaId = UUID.randomUUID().toString()
+            val entradaId = UUID.randomUUID().toString()
+            val textoLocal = "Pix enviado de R$ 50,00"
+
+            captura.lancamentoRepository().salvar(
+                Lancamento(
+                    publicId = saidaId,
+                    instrumentoPublicId = instrumentoNubank.publicId,
+                    valorCentavos = 5000,
+                    dataHora = agora,
+                    tipo = TipoLancamento.DESPESA,
+                    status = StatusLancamento.CONFIRMADO,
+                    origem = OrigemLancamento.MANUAL,
+                    confianca = 1.0,
+                    criadoEm = agora,
+                    atualizadoEm = agora,
+                    textoBruto = textoLocal,
+                ),
+            )
+            captura.lancamentoRepository().salvar(
+                Lancamento(
+                    publicId = entradaId,
+                    instrumentoPublicId = instrumentoInter.publicId,
+                    valorCentavos = 5000,
+                    dataHora = agora.plusSeconds(60),
+                    tipo = TipoLancamento.RECEITA,
+                    status = StatusLancamento.CONFIRMADO,
+                    origem = OrigemLancamento.MANUAL,
+                    confianca = 1.0,
+                    criadoEm = agora,
+                    atualizadoEm = agora,
+                ),
+            )
+
+            val detalhe = EntryPointAccessors.fromApplication(contexto, DetalheEntryPoint::class.java)
+            val marcada = detalhe.marcarTransferencia().marcar(saidaId, instrumentoInter.publicId)
+            assertTrue(marcada is ResultadoDaTransferencia.Marcada)
+            assertEquals(TipoLancamento.DESPESA, captura.lancamentoRepository().buscar(saidaId)?.tipoSemTransferencia)
+            assertEquals(TipoLancamento.RECEITA, captura.lancamentoRepository().buscar(entradaId)?.tipoSemTransferencia)
+
+            motor(api, fonte, FakePreferences(), token).run()
+
+            val remotos = api.pullChanges(null).lancamentos.filter { it.publicId == saidaId || it.publicId == entradaId }
+            assertEquals(2, remotos.size)
+            assertEquals("Despesa", remotos.single { it.publicId == saidaId }.tipoSemTransferencia)
+            assertEquals("Receita", remotos.single { it.publicId == entradaId }.tipoSemTransferencia)
+            assertEquals(textoLocal, captura.lancamentoRepository().buscar(saidaId)?.textoBruto)
+
+            val restauracao = bancoEmMemoria()
+            try {
+                motor(api, restauracao, FakePreferences(), token).run()
+
+                val saidaRestaurada = restauracao.lancamentoDao().buscar(saidaId)
+                val entradaRestaurada = restauracao.lancamentoDao().buscar(entradaId)
+                assertEquals(TipoLancamento.TRANSFERENCIA, saidaRestaurada?.tipo)
+                assertEquals(TipoLancamento.DESPESA, saidaRestaurada?.tipoSemTransferencia)
+                assertEquals(TipoLancamento.TRANSFERENCIA, entradaRestaurada?.tipo)
+                assertEquals(TipoLancamento.RECEITA, entradaRestaurada?.tipoSemTransferencia)
+                assertEquals(saidaRestaurada?.transferenciaId, entradaRestaurada?.transferenciaId)
+                assertNull(saidaRestaurada?.textoBruto)
+            } finally {
+                restauracao.close()
+            }
         }
     }
 

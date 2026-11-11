@@ -16,6 +16,7 @@ data class Lancamento(
     val valorCentavos: Long,
     val dataHora: Instant,
     val tipo: TipoLancamento,
+    val tipoSemTransferencia: TipoLancamento? = null,
     val estabelecimento: String? = null,
     val status: StatusLancamento,
     val origem: OrigemLancamento,

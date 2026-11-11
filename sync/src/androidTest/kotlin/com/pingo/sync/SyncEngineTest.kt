@@ -427,6 +427,188 @@ class SyncEngineTest {
     }
 
     @Test
+    fun pullLegadoSemDirecaoPreservaMetadadoDaMesmaTransferencia() = runTest {
+        semearInstrumento()
+        database.lancamentoDao().upsert(
+            lancamentoEntity(
+                "lancamento-1",
+                estornoDe = null,
+                tipo = TipoLancamento.TRANSFERENCIA,
+                transferenciaId = "transferencia-1",
+                tipoSemTransferencia = TipoLancamento.RECEITA,
+            ),
+        )
+        val maisNovo = init.plusSeconds(60)
+        api.pullResult = PullChangesResult(
+            servidorEm = maisNovo.toString(),
+            lancamentos = listOf(
+                lancamentoSnapshot(
+                    "lancamento-1",
+                    tipo = "Transferencia",
+                    transferenciaId = "transferencia-1",
+                    atualizadoEm = maisNovo,
+                ),
+            ),
+        )
+
+        engine.run()
+
+        assertEquals(TipoLancamento.RECEITA, database.lancamentoDao().buscar("lancamento-1")?.tipoSemTransferencia)
+    }
+
+    @Test
+    fun pullDeOutraTransferenciaNaoHerdaDirecaoLocal() = runTest {
+        semearInstrumento()
+        database.lancamentoDao().upsert(
+            lancamentoEntity(
+                "lancamento-1",
+                estornoDe = null,
+                tipo = TipoLancamento.TRANSFERENCIA,
+                transferenciaId = "transferencia-1",
+                tipoSemTransferencia = TipoLancamento.RECEITA,
+            ),
+        )
+        api.pullResult = PullChangesResult(
+            servidorEm = init.toString(),
+            lancamentos = listOf(
+                lancamentoSnapshot(
+                    "lancamento-1",
+                    tipo = "Transferencia",
+                    transferenciaId = "transferencia-2",
+                    atualizadoEm = init.plusSeconds(60),
+                ),
+            ),
+        )
+
+        engine.run()
+
+        val local = database.lancamentoDao().buscar("lancamento-1")
+        assertEquals("transferencia-2", local?.transferenciaId)
+        assertNull(local?.tipoSemTransferencia)
+    }
+
+    @Test
+    fun pullDeNaoTransferenciaLimpaDirecaoLocal() = runTest {
+        semearInstrumento()
+        database.lancamentoDao().upsert(
+            lancamentoEntity(
+                "lancamento-1",
+                estornoDe = null,
+                tipo = TipoLancamento.TRANSFERENCIA,
+                transferenciaId = "transferencia-1",
+                tipoSemTransferencia = TipoLancamento.RECEITA,
+            ),
+        )
+        api.pullResult = PullChangesResult(
+            servidorEm = init.toString(),
+            lancamentos = listOf(lancamentoSnapshot("lancamento-1", tipo = "Despesa", atualizadoEm = init.plusSeconds(60))),
+        )
+
+        engine.run()
+
+        val local = database.lancamentoDao().buscar("lancamento-1")
+        assertEquals(TipoLancamento.DESPESA, local?.tipo)
+        assertNull(local?.transferenciaId)
+        assertNull(local?.tipoSemTransferencia)
+    }
+
+    @Test
+    fun pullComDirecaoExplicitaAtualizaMetadadoDaTransferencia() = runTest {
+        semearInstrumento()
+        database.lancamentoDao().upsert(
+            lancamentoEntity(
+                "lancamento-1",
+                estornoDe = null,
+                tipo = TipoLancamento.TRANSFERENCIA,
+                transferenciaId = "transferencia-1",
+                tipoSemTransferencia = TipoLancamento.RECEITA,
+            ),
+        )
+        api.pullResult = PullChangesResult(
+            servidorEm = init.toString(),
+            lancamentos = listOf(
+                lancamentoSnapshot(
+                    "lancamento-1",
+                    tipo = "Transferencia",
+                    transferenciaId = "transferencia-1",
+                    tipoSemTransferencia = "Despesa",
+                    atualizadoEm = init.plusSeconds(60),
+                ),
+            ),
+        )
+
+        engine.run()
+
+        assertEquals(TipoLancamento.DESPESA, database.lancamentoDao().buscar("lancamento-1")?.tipoSemTransferencia)
+    }
+
+    @Test
+    fun restauracaoDeTransferenciaSemDirecaoFicaDesconhecida() = runTest {
+        semearInstrumento()
+        api.pullResult = PullChangesResult(
+            servidorEm = init.toString(),
+            lancamentos = listOf(lancamentoSnapshot("lancamento-1", tipo = "Transferencia", transferenciaId = "transferencia-1")),
+        )
+
+        engine.run()
+
+        val restaurado = database.lancamentoDao().buscar("lancamento-1")
+        assertEquals(TipoLancamento.TRANSFERENCIA, restaurado?.tipo)
+        assertNull(restaurado?.tipoSemTransferencia)
+    }
+
+    @Test
+    fun pullDeDirecaoInvalidaNaoInventaDespesaNemApagaMetadadoConhecido() = runTest {
+        semearInstrumento()
+        database.lancamentoDao().upsert(
+            lancamentoEntity(
+                "lancamento-1",
+                estornoDe = null,
+                tipo = TipoLancamento.TRANSFERENCIA,
+                transferenciaId = "transferencia-1",
+                tipoSemTransferencia = TipoLancamento.RECEITA,
+            ),
+        )
+        api.pullResult = PullChangesResult(
+            servidorEm = init.toString(),
+            lancamentos = listOf(
+                lancamentoSnapshot(
+                    "lancamento-1",
+                    tipo = "Transferencia",
+                    transferenciaId = "transferencia-1",
+                    tipoSemTransferencia = "Transferencia",
+                    atualizadoEm = init.plusSeconds(60),
+                ),
+            ),
+        )
+
+        engine.run()
+
+        assertEquals(TipoLancamento.RECEITA, database.lancamentoDao().buscar("lancamento-1")?.tipoSemTransferencia)
+    }
+
+    @Test
+    fun pushEnviaDirecaoConhecidaDaTransferencia() = runTest {
+        database.contaDao().upsert(contaEntity("conta-1"))
+        database.instrumentoDao().upsert(instrumentoEntity("instrumento-1", "conta-1"))
+        database.lancamentoDao().upsert(
+            lancamentoEntity(
+                "lancamento-1",
+                estornoDe = null,
+                tipo = TipoLancamento.TRANSFERENCIA,
+                transferenciaId = "transferencia-1",
+                tipoSemTransferencia = TipoLancamento.DESPESA,
+            ),
+        )
+
+        engine.run()
+
+        val enviado = api.pushed?.lancamentos?.single { it.publicId == "lancamento-1" }
+        assertEquals(TipoLancamento.TRANSFERENCIA.toApiValue(), enviado?.tipo)
+        assertEquals(TipoLancamento.DESPESA.toApiValue(), enviado?.tipoSemTransferencia)
+    }
+
+    @Test
     fun pullAntigoNaoSobrescreveLancamentoLocal() = runTest {
         semearInstrumento()
         val maisNovo = init.plusSeconds(60)
@@ -525,6 +707,9 @@ class SyncEngineTest {
         textoBruto: String? = null,
         atualizadoEm: Instant = init,
         instrumentoPublicId: String? = "instrumento-1",
+        tipo: TipoLancamento = TipoLancamento.DESPESA,
+        transferenciaId: String? = null,
+        tipoSemTransferencia: TipoLancamento? = null,
     ) = LancamentoEntity(
         publicId = publicId,
         instrumentoPublicId = instrumentoPublicId,
@@ -533,10 +718,11 @@ class SyncEngineTest {
         assinaturaPublicId = null,
         compraPaiPublicId = null,
         estornoDePublicId = estornoDe,
-        transferenciaId = null,
+        transferenciaId = transferenciaId,
         valorCentavos = 1000,
         dataHora = init,
-        tipo = TipoLancamento.DESPESA,
+        tipo = tipo,
+        tipoSemTransferencia = tipoSemTransferencia,
         estabelecimento = "Loja",
         status = StatusLancamento.CONFIRMADO,
         origem = OrigemLancamento.MANUAL,
@@ -559,12 +745,17 @@ class SyncEngineTest {
         instrumentoPublicId: String? = "instrumento-1",
         estabelecimento: String = "Loja",
         atualizadoEm: Instant = init,
+        tipo: String = "Despesa",
+        transferenciaId: String? = null,
+        tipoSemTransferencia: String? = null,
     ) = com.pingo.core.network.sync.LancamentoSnapshotDto(
         publicId = publicId,
         instrumentoPublicId = instrumentoPublicId,
         valor = 10.0,
         dataHora = init.toString(),
-        tipo = "Despesa",
+        tipo = tipo,
+        tipoSemTransferencia = tipoSemTransferencia,
+        transferenciaId = transferenciaId,
         estabelecimento = estabelecimento,
         status = "Pendente",
         origem = "Notificacao",

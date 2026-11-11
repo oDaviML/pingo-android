@@ -266,6 +266,138 @@ class EditarLancamentoTest {
         assertNotNull(ambiente.instrumentos.buscar(destino.publicId))
     }
 
+    @Test
+    fun `converter despesa em transferencia inicializa direcao e cria contraparte receita`() = runTest {
+        val origem = ambiente.instrumento(ambiente.conta("Nubank"))
+        val destino = ambiente.instrumento(ambiente.conta("Inter", InstituicaoFinanceira.INTER))
+        ambiente.lancamentos.salvar(
+            lancamentoDeTeste(
+                publicId = "lanc",
+                instrumentoPublicId = origem.publicId,
+                valorCentavos = 50000,
+                tipo = TipoLancamento.DESPESA,
+            ),
+        )
+
+        val resultado = ambiente.editar.editar(
+            edicao(
+                tipo = TipoLancamento.TRANSFERENCIA,
+                valorCentavos = 50000,
+                instrumento = origem.publicId,
+                destino = destino.publicId,
+            ),
+        )
+
+        val salvo = resultado as ResultadoDaEdicao.Salvo
+        assertEquals(TipoLancamento.DESPESA, salvo.lancamento.tipoSemTransferencia)
+        assertEquals(TipoLancamento.RECEITA, salvo.par?.tipoSemTransferencia)
+        assertEquals(destino.publicId, salvo.par?.instrumentoPublicId)
+    }
+
+    @Test
+    fun `editar transferencia aberta pelo destino preserva a direcao de cada publicId`() = runTest {
+        val origem = ambiente.instrumento(ambiente.conta("Nubank"))
+        val destino = ambiente.instrumento(ambiente.conta("Inter", InstituicaoFinanceira.INTER))
+        val saida = lancamentoDeTeste(
+            publicId = "saida",
+            instrumentoPublicId = origem.publicId,
+            valorCentavos = 50000,
+            tipo = TipoLancamento.TRANSFERENCIA,
+            transferenciaId = "transferencia-1",
+            tipoSemTransferencia = TipoLancamento.DESPESA,
+        )
+        val entrada = lancamentoDeTeste(
+            publicId = "entrada",
+            instrumentoPublicId = destino.publicId,
+            valorCentavos = 50000,
+            tipo = TipoLancamento.TRANSFERENCIA,
+            transferenciaId = "transferencia-1",
+            tipoSemTransferencia = TipoLancamento.RECEITA,
+        )
+        ambiente.lancamentos.salvarTodos(listOf(saida, entrada))
+
+        val resultado = ambiente.editar.editar(
+            edicao(
+                publicId = "entrada",
+                tipo = TipoLancamento.TRANSFERENCIA,
+                valorCentavos = 60000,
+                instrumento = destino.publicId,
+                destino = origem.publicId,
+            ),
+        )
+
+        val salvo = resultado as ResultadoDaEdicao.Salvo
+        assertEquals(TipoLancamento.RECEITA, salvo.lancamento.tipoSemTransferencia)
+        assertEquals(TipoLancamento.DESPESA, salvo.par?.tipoSemTransferencia)
+    }
+
+    @Test
+    fun `sair da classificacao de transferencia limpa vinculo e metadado`() = runTest {
+        val origem = ambiente.instrumento(ambiente.conta("Nubank"))
+        val categoria = ambiente.categoria("Salário", TipoCategoria.RECEITA)
+        ambiente.lancamentos.salvar(
+            lancamentoDeTeste(
+                publicId = "lanc",
+                instrumentoPublicId = origem.publicId,
+                valorCentavos = 50000,
+                tipo = TipoLancamento.TRANSFERENCIA,
+                transferenciaId = "transferencia-1",
+                tipoSemTransferencia = TipoLancamento.DESPESA,
+            ),
+        )
+
+        val resultado = ambiente.editar.editar(
+            edicao(
+                publicId = "lanc",
+                tipo = TipoLancamento.RECEITA,
+                valorCentavos = 50000,
+                instrumento = origem.publicId,
+                categoria = categoria.publicId,
+            ),
+        )
+
+        val salvo = (resultado as ResultadoDaEdicao.Salvo).lancamento
+        assertNull(salvo.transferenciaId)
+        assertNull(salvo.tipoSemTransferencia)
+        assertEquals(TipoLancamento.RECEITA, salvo.tipo)
+    }
+
+    @Test
+    fun `editar par legado nao inventa direcao`() = runTest {
+        val origem = ambiente.instrumento(ambiente.conta("Nubank"))
+        val destino = ambiente.instrumento(ambiente.conta("Inter", InstituicaoFinanceira.INTER))
+        val saida = lancamentoDeTeste(
+            publicId = "saida",
+            instrumentoPublicId = origem.publicId,
+            valorCentavos = 50000,
+            tipo = TipoLancamento.TRANSFERENCIA,
+            transferenciaId = "transferencia-legada",
+            tipoSemTransferencia = TipoLancamento.DESPESA,
+        )
+        val entrada = lancamentoDeTeste(
+            publicId = "entrada",
+            instrumentoPublicId = destino.publicId,
+            valorCentavos = 50000,
+            tipo = TipoLancamento.TRANSFERENCIA,
+            transferenciaId = "transferencia-legada",
+        )
+        ambiente.lancamentos.salvarTodos(listOf(saida, entrada))
+
+        val resultado = ambiente.editar.editar(
+            edicao(
+                publicId = "saida",
+                tipo = TipoLancamento.TRANSFERENCIA,
+                valorCentavos = 50000,
+                instrumento = origem.publicId,
+                destino = destino.publicId,
+            ),
+        )
+
+        val salvo = resultado as ResultadoDaEdicao.Salvo
+        assertEquals(TipoLancamento.DESPESA, salvo.lancamento.tipoSemTransferencia)
+        assertNull(salvo.par?.tipoSemTransferencia)
+    }
+
     private fun edicao(
         publicId: String = "lanc",
         tipo: TipoLancamento = TipoLancamento.DESPESA,

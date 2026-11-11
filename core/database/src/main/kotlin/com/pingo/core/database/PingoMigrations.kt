@@ -20,6 +20,12 @@ object PingoMigrations {
         }
     }
 
+    val MIGRACAO_3_4: Migration = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE lancamentos ADD COLUMN tipoSemTransferencia TEXT")
+        }
+    }
+
     private const val CREATE_LANCAMENTOS_V3 = """
         CREATE TABLE IF NOT EXISTS `lancamentos_novo` (
             `publicId` TEXT NOT NULL,

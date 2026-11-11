@@ -392,6 +392,7 @@ class DetalheDoLancamentoViewModelTest {
             categoriaPublicId = alimentacao.publicId,
             estabelecimento = null,
             transferenciaId = "tr-1",
+            tipoSemTransferencia = TipoLancamento.DESPESA,
         )
         val entrada = lancamentoDeTeste(
             publicId = "entrada",
@@ -401,6 +402,7 @@ class DetalheDoLancamentoViewModelTest {
             instrumentoPublicId = instrumentoInter.publicId,
             estabelecimento = null,
             transferenciaId = "tr-1",
+            tipoSemTransferencia = TipoLancamento.RECEITA,
         )
 
         val cenario = criarViewModel(publicId = saida.publicId, lancamentos = listOf(saida, entrada))
@@ -417,6 +419,36 @@ class DetalheDoLancamentoViewModelTest {
         assertFalse(cenario.viewModel.uiState.value.ehTransferencia)
         assertNull(cenario.viewModel.uiState.value.par)
         assertEquals(2, cenario.lancamentos.observeLancamentos().first().size)
+    }
+
+    @Test
+    fun `desfazer par legado sem direcao avisa e nao altera os lados`() = runTest {
+        val saida = lancamentoDeTeste(
+            publicId = "saida",
+            dataHora = capturado.dataHora,
+            valorCentavos = 5000,
+            tipo = TipoLancamento.TRANSFERENCIA,
+            instrumentoPublicId = instrumentoNubank.publicId,
+            transferenciaId = "tr-legada",
+        )
+        val entrada = lancamentoDeTeste(
+            publicId = "entrada",
+            dataHora = capturado.dataHora,
+            valorCentavos = 5000,
+            tipo = TipoLancamento.TRANSFERENCIA,
+            instrumentoPublicId = instrumentoInter.publicId,
+            transferenciaId = "tr-legada",
+        )
+        val cenario = criarViewModel(publicId = "entrada", lancamentos = listOf(saida, entrada))
+        advanceUntilIdle()
+
+        cenario.viewModel.onEvent(DetalheDoLancamentoEvent.DesfazerTransferencia)
+        advanceUntilIdle()
+
+        assertEquals(MensagemDoDetalhe.DIRECAO_DESCONHECIDA, cenario.viewModel.uiState.value.mensagem)
+        assertEquals("tr-legada", cenario.lancamentos.buscar(saida.publicId)?.transferenciaId)
+        assertEquals("tr-legada", cenario.lancamentos.buscar(entrada.publicId)?.transferenciaId)
+        assertTrue(cenario.viewModel.uiState.value.ehTransferencia)
     }
 
     @Test
@@ -462,7 +494,6 @@ class DetalheDoLancamentoViewModelTest {
             marcarTransferencia = MarcarTransferencia(
                 lancamentoRepository = repositorioLancamentos,
                 instrumentoRepository = repositorioInstrumentos,
-                categoriaRepository = repositorioCategorias,
                 transacaoLocal = transacao,
                 clock = clock,
             ),

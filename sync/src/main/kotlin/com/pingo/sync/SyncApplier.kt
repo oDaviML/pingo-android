@@ -3,6 +3,7 @@ package com.pingo.sync
 import androidx.room.withTransaction
 import com.pingo.core.database.PingoDatabase
 import com.pingo.core.database.entity.LancamentoEntity
+import com.pingo.core.model.TipoLancamento
 import com.pingo.core.network.sync.AssinaturaSnapshotDto
 import com.pingo.core.network.sync.CategoriaSnapshotDto
 import com.pingo.core.network.sync.ContaSnapshotDto
@@ -97,8 +98,24 @@ internal class SyncApplier(private val database: PingoDatabase) {
     }
 
     private suspend fun List<LancamentoSnapshotDto>.toEntitiesLocais(): List<LancamentoEntity> = map { snapshot ->
-        val textoBruto = database.lancamentoDao().buscar(snapshot.publicId)?.textoBruto
+        val local = database.lancamentoDao().buscar(snapshot.publicId)
 
-        snapshot.toEntity().copy(textoBruto = textoBruto)
+        snapshot.toEntity().copy(
+            textoBruto = local?.textoBruto,
+            tipoSemTransferencia = snapshot.direcaoPreservada(local),
+        )
     }
+
+    private fun LancamentoSnapshotDto.direcaoPreservada(local: LancamentoEntity?): TipoLancamento? {
+        if (tipoLancamentoFromApi(tipo) != TipoLancamento.TRANSFERENCIA) {
+            return null
+        }
+
+        return tipoSemTransferencia?.let(::direcaoDaTransferenciaFromApi) ?: local
+            ?.takeIf { it.mesmaTransferencia(this) }
+            ?.tipoSemTransferencia
+    }
+
+    private fun LancamentoEntity.mesmaTransferencia(snapshot: LancamentoSnapshotDto): Boolean =
+        tipo == TipoLancamento.TRANSFERENCIA && transferenciaId != null && transferenciaId == snapshot.transferenciaId
 }

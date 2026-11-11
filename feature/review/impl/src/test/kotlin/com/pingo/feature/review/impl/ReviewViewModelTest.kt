@@ -456,7 +456,6 @@ class ReviewViewModelTest {
             marcarTransferencia = MarcarTransferencia(
                 lancamentoRepository = repositorioLancamentos,
                 instrumentoRepository = repositorioInstrumentos,
-                categoriaRepository = repositorioCategorias,
                 transacaoLocal = transacao,
                 clock = clock,
             ),

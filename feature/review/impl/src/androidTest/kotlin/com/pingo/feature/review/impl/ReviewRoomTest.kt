@@ -268,6 +268,39 @@ class ReviewRoomTest {
     }
 
     @Test
+    fun marcarTransferenciaResolvePendenciaDeBaixaConfianca() {
+        val destino = runBlocking {
+            val contasDeTeste = criarDuasContas()
+            lancamentos.salvar(
+                lancamento(
+                    publicId = "baixa-confianca",
+                    instrumentoPublicId = contasDeTeste.nubank.publicId,
+                    motivo = MotivoPendencia.BAIXA_CONFIANCA,
+                    valorCentavos = 15000,
+                    tipo = TipoLancamento.DESPESA,
+                ),
+            )
+
+            contasDeTeste.inter
+        }
+
+        val viewModel = criarViewModel()
+        mostrar(viewModel)
+        aguardarCarregamento(viewModel)
+
+        composeRule.onNodeWithTag("marcar-transferencia-baixa-confianca").performClick()
+        composeRule.waitUntil(TEMPO_ESPERA) { viewModel.uiState.value.painelDeTransferencia != null }
+        composeRule.onNodeWithTag("destino-revisao-${destino.publicId}").performClick()
+        composeRule.waitUntil(TEMPO_ESPERA) { viewModel.uiState.value.pendentes.isEmpty() }
+
+        val marcado = runBlocking { lancamentos.buscar("baixa-confianca") }
+        assertEquals(StatusLancamento.CONFIRMADO, marcado?.status)
+        assertNull(marcado?.motivoPendencia)
+        assertEquals(0.62, marcado?.confianca ?: 0.0, 0.0001)
+        composeRule.onNodeWithTag("revisao-vazia").assertIsDisplayed()
+    }
+
+    @Test
     fun descartarRemoveOPendenteNuloSemAfetarOsDemais() {
         runBlocking {
             val contasDeTeste = criarDuasContas()
@@ -419,7 +452,6 @@ class ReviewRoomTest {
             marcarTransferencia = MarcarTransferencia(
                 lancamentoRepository = lancamentos,
                 instrumentoRepository = instrumentos,
-                categoriaRepository = categorias,
                 transacaoLocal = transacao,
                 clock = clock,
             ),
@@ -493,7 +525,7 @@ class ReviewRoomTest {
         publicId: String,
         instrumentoPublicId: String?,
         motivo: MotivoPendencia,
-        textoBruto: String?,
+        textoBruto: String? = null,
         categoriaPublicId: String? = null,
         estabelecimento: String = "Padaria do Zé",
         instituicaoOrigem: InstituicaoFinanceira? = InstituicaoFinanceira.NUBANK,

@@ -86,7 +86,11 @@ class RegistrarLancamentoManual @Inject constructor(
         val transferenciaId = UUID.randomUUID().toString()
         val saida = montar(novo, origem, duplicata = temCapturadoSemelhante(origem, novo), transferenciaId = transferenciaId)
         val entrada = saida
-            .copy(publicId = UUID.randomUUID().toString(), instrumentoPublicId = destino)
+            .copy(
+                publicId = UUID.randomUUID().toString(),
+                instrumentoPublicId = destino,
+                tipoSemTransferencia = TipoLancamento.RECEITA,
+            )
             .comDuplicata(temCapturadoSemelhante(destino, novo))
 
         transacaoLocal.executar {
@@ -117,6 +121,7 @@ class RegistrarLancamentoManual @Inject constructor(
             valorCentavos = novo.valorCentavos,
             dataHora = novo.dataHora,
             tipo = novo.tipo,
+            tipoSemTransferencia = TipoLancamento.DESPESA.takeIf { transferencia },
             estabelecimento = novo.estabelecimento?.trim()?.takeIf { it.isNotEmpty() },
             status = statusDaDuplicata(duplicata),
             origem = OrigemLancamento.MANUAL,

@@ -77,6 +77,9 @@ internal object RotulosDoDetalhe {
         MensagemDoDetalhe.MESMA_CONTA -> "Origem e destino precisam ser contas diferentes."
         MensagemDoDetalhe.PAR_AMBIGUO -> "Há mais de um lançamento candidato nessa conta."
         MensagemDoDetalhe.PAR_NAO_RESOLVIDO -> "Um lançamento que combina com este ainda está sem instrumento."
+        MensagemDoDetalhe.DIRECAO_DESCONHECIDA ->
+            "Este par antigo não tem a direção registrada. Desfazer poderia inverter despesas e receitas."
+        MensagemDoDetalhe.PAR_INCONSISTENTE -> "As direções deste par estão inconsistentes. Não é possível desfazer."
         MensagemDoDetalhe.FALHA_AO_SALVAR -> "Não foi possível salvar. Tente de novo."
     }
 

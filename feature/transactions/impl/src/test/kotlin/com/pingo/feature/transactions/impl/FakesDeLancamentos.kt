@@ -156,6 +156,7 @@ internal fun lancamentoDeTeste(
     textoBruto: String? = null,
     transferenciaId: String? = null,
     motivoPendencia: String? = null,
+    tipoSemTransferencia: TipoLancamento? = null,
 ): Lancamento = Lancamento(
     publicId = publicId,
     instrumentoPublicId = instrumentoPublicId,
@@ -164,6 +165,7 @@ internal fun lancamentoDeTeste(
     valorCentavos = valorCentavos,
     dataHora = dataHora,
     tipo = tipo,
+    tipoSemTransferencia = tipoSemTransferencia,
     estabelecimento = estabelecimento,
     status = status,
     origem = origem,

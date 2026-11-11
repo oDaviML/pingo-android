@@ -20,6 +20,7 @@ import com.pingo.core.model.OrigemLancamento
 import com.pingo.core.model.StatusLancamento
 import com.pingo.core.model.TipoCategoria
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.direcaoDaTransferencia
 import com.pingo.core.parser.DataHoraDoLancamento
 import com.pingo.core.parser.DirecaoPadrao
 import com.pingo.core.parser.HashDuplicata
@@ -107,6 +108,7 @@ class ProcessadorDeCapturaImpl @Inject constructor(
         valorCentavos = dados.captura.transacao.valorCentavos,
         dataHora = dados.dataHora,
         tipo = if (dados.par == null) tipoDe(dados.captura.transacao.direcao) else TipoLancamento.TRANSFERENCIA,
+        tipoSemTransferencia = tipoDe(dados.captura.transacao.direcao).takeIf { dados.par != null },
         estabelecimento = dados.captura.transacao.estabelecimento,
         status = if (dados.motivo == null) StatusLancamento.CONFIRMADO else StatusLancamento.PENDENTE,
         origem = OrigemLancamento.NOTIFICACAO,
@@ -145,6 +147,7 @@ class ProcessadorDeCapturaImpl @Inject constructor(
             lancamentoRepository.salvar(
                 par.copy(
                     tipo = TipoLancamento.TRANSFERENCIA,
+                    tipoSemTransferencia = par.direcaoDaCaptura(),
                     transferenciaId = lancamento.transferenciaId,
                     atualizadoEm = lancamento.atualizadoEm,
                 ),
@@ -204,6 +207,8 @@ class ProcessadorDeCapturaImpl @Inject constructor(
         TipoLancamento.RECEITA -> TipoLancamento.DESPESA
         else -> TipoLancamento.RECEITA
     }
+
+    private fun Lancamento.direcaoDaCaptura(): TipoLancamento? = tipoSemTransferencia ?: tipo.direcaoDaTransferencia
 
     private companion object {
         const val MOEDA_NACIONAL = "BRL"
