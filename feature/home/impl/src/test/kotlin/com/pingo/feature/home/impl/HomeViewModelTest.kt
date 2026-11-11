@@ -1,5 +1,6 @@
 package com.pingo.feature.home.impl
 
+import com.pingo.core.datastore.MotivoParada
 import com.pingo.core.model.Categoria
 import com.pingo.core.model.Instrumento
 import com.pingo.core.model.Lancamento
@@ -167,11 +168,33 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `desconexao com acesso e leitura recente aparece na inicio`() {
+        val saude = FakeSaudeDaCaptura(
+            diagnostico = DiagnosticoDaCaptura(
+                situacao = SituacaoDaCaptura.PARADA,
+                motivo = MotivoParada.DESCONECTADO,
+                ultimaLeituraEm = Instant.parse("2026-11-10T11:50:00Z"),
+            ),
+        )
+
+        val viewModel = criarViewModel(saude = saude)
+
+        assertTrue(viewModel.uiState.value.capturaAutomatica)
+        assertTrue(viewModel.uiState.value.capturaParada)
+        assertEquals(SituacaoDaCaptura.PARADA, viewModel.uiState.value.situacao)
+        assertEquals(MotivoParada.DESCONECTADO, viewModel.uiState.value.motivo)
+        assertFalse(viewModel.uiState.value.semLeituraHa48h)
+    }
+
+    @Test
     fun `sem acesso a captura aparece parada`() {
         val viewModel = criarViewModel(acesso = FakeAcessoNotificacoes(concedido = false))
 
         assertFalse(viewModel.uiState.value.capturaAutomatica)
         assertTrue(viewModel.uiState.value.capturaParada)
+        assertEquals(SituacaoDaCaptura.PARADA, viewModel.uiState.value.situacao)
+        assertEquals(MotivoParada.PERMISSAO_REVOGADA, viewModel.uiState.value.motivo)
+        assertFalse(viewModel.uiState.value.semLeituraHa48h)
     }
 
     @Test
@@ -199,6 +222,8 @@ class HomeViewModelTest {
 
         assertTrue(viewModel.uiState.value.capturaParada)
         assertTrue(viewModel.uiState.value.semLeituraHa48h)
+        assertEquals(SituacaoDaCaptura.SEM_LEITURA, viewModel.uiState.value.situacao)
+        assertEquals(null, viewModel.uiState.value.motivo)
     }
 
     @Test
@@ -231,6 +256,8 @@ class HomeViewModelTest {
 
         assertTrue(viewModel.uiState.value.semLeituraHa48h)
         assertTrue(viewModel.uiState.value.capturaParada)
+        assertEquals(SituacaoDaCaptura.PARADA, viewModel.uiState.value.situacao)
+        assertEquals(null, viewModel.uiState.value.motivo)
     }
 
     @Test

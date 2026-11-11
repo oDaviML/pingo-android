@@ -9,7 +9,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.pingo.core.datastore.MotivoParada
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.notifications.SituacaoDaCaptura
 import com.pingo.core.ui.Valores
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -66,6 +68,40 @@ class HomeScreenTest {
         composeRule.onNodeWithText("Corrigir").performClick()
 
         assertEquals(1, correcoes)
+    }
+
+    @Test
+    fun desconexaoComAcessoELeituraRecenteMostraAvisoHonesto() {
+        var correcoes = 0
+
+        mostrar(
+            estadoPadrao().copy(situacao = SituacaoDaCaptura.PARADA, motivo = MotivoParada.DESCONECTADO),
+            onOpenCaptura = { correcoes++ },
+        )
+
+        composeRule.onNodeWithText("Captura parada").assertIsDisplayed()
+        composeRule.onNodeWithText("O Android encerrou o serviço de captura. Toque em Corrigir para reconectar.")
+            .assertIsDisplayed()
+        composeRule.onAllNodesWithText("Nenhuma notificação lida há 2 dias", substring = true).assertCountEquals(0)
+
+        composeRule.onNodeWithText("Corrigir").performClick()
+
+        assertEquals(1, correcoes)
+    }
+
+    @Test
+    fun permissaoRevogadaNoDiagnosticoMostraTextoDeSemAcesso() {
+        mostrar(
+            estadoPadrao().copy(
+                capturaAutomatica = true,
+                situacao = SituacaoDaCaptura.PARADA,
+                motivo = MotivoParada.PERMISSAO_REVOGADA,
+            ),
+        )
+
+        composeRule.onNodeWithText("Captura parada").assertIsDisplayed()
+        composeRule.onNodeWithText("Sem acesso às notificações, o Pingo está no modo manual.").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Nenhuma notificação lida há 2 dias", substring = true).assertCountEquals(0)
     }
 
     @Test

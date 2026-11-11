@@ -6,6 +6,7 @@ import com.pingo.core.data.CategoriaRepository
 import com.pingo.core.data.ContaRepository
 import com.pingo.core.data.InstrumentoRepository
 import com.pingo.core.data.LancamentoRepository
+import com.pingo.core.datastore.MotivoParada
 import com.pingo.core.model.Categoria
 import com.pingo.core.model.Conta
 import com.pingo.core.model.Instrumento
@@ -13,6 +14,7 @@ import com.pingo.core.model.Lancamento
 import com.pingo.core.notifications.AcessoNotificacoes
 import com.pingo.core.notifications.DiagnosticoDaCaptura
 import com.pingo.core.notifications.SaudeDaCaptura
+import com.pingo.core.notifications.SituacaoDaCaptura
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,12 +38,19 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
     private val dados = MutableStateFlow(BaseDoInicio())
     private val mes = MutableStateFlow(mesAtual())
-    private val mutableUiState = MutableStateFlow(HomeUiState(capturaAutomatica = acessoNotificacoes.concedido()))
+    private var capturaAutomatica = acessoNotificacoes.concedido()
+    private var situacao = if (capturaAutomatica) SituacaoDaCaptura.ATIVA else SituacaoDaCaptura.PARADA
+    private var motivo = if (capturaAutomatica) null else MotivoParada.PERMISSAO_REVOGADA
+    private var semLeituraHa48h = false
+    private val mutableUiState = MutableStateFlow(
+        HomeUiState(
+            capturaAutomatica = capturaAutomatica,
+            situacao = situacao,
+            motivo = motivo,
+        ),
+    )
 
     val uiState: StateFlow<HomeUiState> = mutableUiState.asStateFlow()
-
-    private var capturaAutomatica = acessoNotificacoes.concedido()
-    private var semLeituraHa48h = false
 
     init {
         recompor()
@@ -97,6 +106,12 @@ class HomeViewModel @Inject constructor(
 
     private fun aplicarDiagnostico(diagnostico: DiagnosticoDaCaptura) {
         semLeituraHa48h = diagnostico.semLeituraDesde != null
+        situacao = if (capturaAutomatica) diagnostico.situacao else SituacaoDaCaptura.PARADA
+        motivo = when {
+            situacao != SituacaoDaCaptura.PARADA -> null
+            capturaAutomatica -> diagnostico.motivo
+            else -> MotivoParada.PERMISSAO_REVOGADA
+        }
         recompor()
     }
 
@@ -113,6 +128,8 @@ class HomeViewModel @Inject constructor(
         mutableUiState.value = HomeUiState(
             carregando = !base.carregado,
             capturaAutomatica = capturaAutomatica,
+            situacao = situacao,
+            motivo = motivo,
             semLeituraHa48h = semLeituraHa48h,
             mes = mesEscolhido,
             podeVoltarMes = mesEscolhido > limites.first,

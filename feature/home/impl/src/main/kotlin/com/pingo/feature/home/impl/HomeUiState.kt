@@ -1,10 +1,12 @@
 package com.pingo.feature.home.impl
 
 import androidx.compose.runtime.Immutable
+import com.pingo.core.datastore.MotivoParada
 import com.pingo.core.model.Categoria
 import com.pingo.core.model.Conta
 import com.pingo.core.model.Instrumento
 import com.pingo.core.model.Lancamento
+import com.pingo.core.notifications.SituacaoDaCaptura
 import java.time.YearMonth
 
 @Immutable
@@ -17,6 +19,8 @@ data class CategoriaDoTopo(val publicId: String, val nome: String, val valorCent
 data class HomeUiState(
     val carregando: Boolean = true,
     val capturaAutomatica: Boolean = true,
+    val situacao: SituacaoDaCaptura = SituacaoDaCaptura.ATIVA,
+    val motivo: MotivoParada? = null,
     val semLeituraHa48h: Boolean = false,
     val mes: YearMonth? = null,
     val podeVoltarMes: Boolean = false,
@@ -30,5 +34,5 @@ data class HomeUiState(
     val vazia: Boolean = false,
 ) {
     val capturaParada: Boolean
-        get() = !capturaAutomatica || semLeituraHa48h
+        get() = !capturaAutomatica || situacao != SituacaoDaCaptura.ATIVA || semLeituraHa48h
 }

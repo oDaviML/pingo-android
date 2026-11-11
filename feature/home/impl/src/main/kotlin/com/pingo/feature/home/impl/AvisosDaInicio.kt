@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.pingo.core.datastore.MotivoParada
 import com.pingo.core.designsystem.component.PingoButton
 import com.pingo.core.designsystem.component.PingoButtonSize
 import com.pingo.core.designsystem.component.PingoButtonType
@@ -26,6 +27,7 @@ import com.pingo.core.designsystem.icon.PingoIcons
 import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.notifications.SituacaoDaCaptura
 
 @Composable
 internal fun AvisoDeRevisao(quantidade: Int, onAbrir: () -> Unit) {
@@ -138,10 +140,20 @@ private fun CabecalhoDaCapturaParada(descricao: String) {
     }
 }
 
-internal fun descricaoDaCaptura(state: HomeUiState): String = if (!state.capturaAutomatica) {
-    "Sem acesso às notificações, o Pingo está no modo manual."
-} else {
-    "Nenhuma notificação lida há 2 dias. O Pingo pode não estar vendo seus bancos."
+internal fun descricaoDaCaptura(state: HomeUiState): String = when {
+    !state.capturaAutomatica || state.motivo == MotivoParada.PERMISSAO_REVOGADA ->
+        "Sem acesso às notificações, o Pingo está no modo manual."
+
+    state.situacao == SituacaoDaCaptura.PARADA && state.motivo == MotivoParada.DESCONECTADO ->
+        "O Android encerrou o serviço de captura. Toque em Corrigir para reconectar."
+
+    state.situacao == SituacaoDaCaptura.PARADA ->
+        "A captura está parada. Toque em Corrigir para reconectar."
+
+    state.situacao == SituacaoDaCaptura.SEM_LEITURA || state.semLeituraHa48h ->
+        "Nenhuma notificação lida há 2 dias. O Pingo pode não estar vendo seus bancos."
+
+    else -> "A captura está parada. Toque em Corrigir para reconectar."
 }
 
 private fun textoDaQuantidade(quantidade: Int): String = if (quantidade == 1) {
