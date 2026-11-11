@@ -94,7 +94,16 @@ private fun NavGraphBuilder.telasDeAba(navController: NavHostController) {
     composable(ReportsRoute.ROUTE) {
         ReportsScreen(onSelecionarAba = { aba -> navController.abrirAba(aba) })
     }
-    composable(ReviewRoute.ROUTE) { ReviewScreen() }
+    telaDeRevisao(navController = navController)
+}
+
+private fun NavGraphBuilder.telaDeRevisao(navController: NavHostController) {
+    composable(ReviewRoute.ROUTE) {
+        ReviewScreen(
+            onCorrigir = { publicId -> navController.navigate(TransactionsRoute.detalhe(publicId)) },
+            onVoltar = { navController.popBackStack() },
+        )
+    }
 }
 
 private fun NavGraphBuilder.telasDeApoio(navController: NavHostController) {

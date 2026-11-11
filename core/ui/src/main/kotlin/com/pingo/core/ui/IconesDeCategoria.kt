@@ -19,4 +19,4 @@ private val iconesPorNome = mapOf(
     "reembolso" to PingoIcons.RotateCcw,
 )
 
-internal fun iconeDaCategoria(nome: String?): ImageVector = iconesPorNome[nome?.lowercase()?.trim()] ?: PingoIcons.Tag
+fun iconeDaCategoria(nome: String?): ImageVector = iconesPorNome[nome?.lowercase()?.trim()] ?: PingoIcons.Tag
