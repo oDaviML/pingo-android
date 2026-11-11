@@ -24,7 +24,7 @@ class GatilhoDeCapturaParada @Inject constructor(
         val diagnostico = monitorDaCaptura.atual()
         val referencia = diagnostico.semLeituraDesde
 
-        if (diagnostico.situacao == SituacaoDaCaptura.SEM_LEITURA && referencia != null) {
+        if (referencia != null) {
             val jaAvisado = capturaDataSource.alertaDeCaptura.first()?.referencia == referencia
             if (!jaAvisado) {
                 notificador.capturaParada()

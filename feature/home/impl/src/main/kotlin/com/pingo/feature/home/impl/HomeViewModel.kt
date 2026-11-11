@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.pingo.core.notifications.AcessoNotificacoes
 import com.pingo.core.notifications.DiagnosticoDaCaptura
 import com.pingo.core.notifications.SaudeDaCaptura
-import com.pingo.core.notifications.SituacaoDaCaptura
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,6 +32,6 @@ class HomeViewModel @Inject constructor(private val acessoNotificacoes: AcessoNo
     }
 
     private fun aplicarDiagnostico(diagnostico: DiagnosticoDaCaptura) {
-        mutableUiState.update { it.copy(semLeituraHa48h = diagnostico.situacao == SituacaoDaCaptura.SEM_LEITURA) }
+        mutableUiState.update { it.copy(semLeituraHa48h = diagnostico.semLeituraDesde != null) }
     }
 }

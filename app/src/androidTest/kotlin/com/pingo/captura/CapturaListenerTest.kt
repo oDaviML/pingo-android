@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -74,6 +75,7 @@ class CapturaListenerTest {
 
     @Before
     fun concedeAcessoEConectaOListener() {
+        limparBancoCompartilhado()
         semearInstrumentoECategoria()
         shell("pm grant $PACOTE android.permission.POST_NOTIFICATIONS")
         shell("cmd notification allow_listener $COMPONENTE")
@@ -81,6 +83,11 @@ class CapturaListenerTest {
         aguardarEstado(EstadoListener.ATIVO)
         aguardarNotificacaoProcessada()
         aguardarContadoresEstaveis()
+    }
+
+    @After
+    fun limpaOBancoCompartilhado() {
+        limparBancoCompartilhado()
     }
 
     @Test
@@ -273,6 +280,10 @@ class CapturaListenerTest {
             assertEquals(TipoLancamento.TRANSFERENCIA, lancamento.tipo)
             assertEquals(StatusLancamento.CONFIRMADO, lancamento.status)
         }
+    }
+
+    private fun limparBancoCompartilhado() {
+        captura.database().clearAllTables()
     }
 
     private fun semearInstrumentoECategoria() = runBlocking {

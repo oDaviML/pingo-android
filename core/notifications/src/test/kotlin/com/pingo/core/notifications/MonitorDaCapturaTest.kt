@@ -52,4 +52,19 @@ class MonitorDaCapturaTest {
         assertEquals(SituacaoDaCaptura.PARADA, diagnostico.situacao)
         assertEquals(MotivoParada.PERMISSAO_REVOGADA, diagnostico.motivo)
     }
+
+    @Test
+    fun `estado parado tambem informa o silencio para o alerta`() = runTest {
+        val inicio = agora.minus(Duration.ofDays(5))
+        val dataSource = FakeCapturaDataSource().apply {
+            registrarAtivo(inicio)
+            registrarParado(MotivoParada.DESCONECTADO, agora.minus(Duration.ofDays(2)))
+        }
+
+        val diagnostico = MonitorDaCaptura(dataSource, clock).atual()
+
+        assertEquals(SituacaoDaCaptura.PARADA, diagnostico.situacao)
+        assertEquals(MotivoParada.DESCONECTADO, diagnostico.motivo)
+        assertEquals(inicio, diagnostico.semLeituraDesde)
+    }
 }

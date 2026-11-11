@@ -50,6 +50,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -204,6 +205,14 @@ class SyncHttpIntegrationTest {
             assertEquals(instrumento.publicId, localResolvido?.instrumentoPublicId)
             assertEquals(StatusLancamento.CONFIRMADO, localResolvido?.status)
             assertEquals(textoBruto, localResolvido?.textoBruto)
+        }
+    }
+
+    @After
+    fun limpaOBancoCompartilhado() {
+        runBlocking {
+            captura.database().clearAllTables()
+            capturaDataSource.clear()
         }
     }
 

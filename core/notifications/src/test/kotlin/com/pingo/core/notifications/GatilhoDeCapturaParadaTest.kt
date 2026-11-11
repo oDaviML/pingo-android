@@ -59,15 +59,89 @@ class GatilhoDeCapturaParadaTest {
     }
 
     @Test
-    fun `nao posta quando o listener esta parado por permissao`() = runTest {
+    fun `posta o alerta com o listener parado por permissao e preserva o motivo`() = runTest {
         val dataSource = FakeCapturaDataSource()
+        dataSource.registrarAtivo(agora.minus(Duration.ofDays(10)))
         dataSource.registrarParado(MotivoParada.PERMISSAO_REVOGADA, agora.minus(Duration.ofDays(3)))
+        dataSource.registrarLeitura(InstituicaoFinanceira.ITAU, agora.minus(Duration.ofHours(49)))
         val notificador = FakeNotificadorDeCapturaParada()
 
         val diagnostico = gatilho(dataSource, notificador).verificar()
 
         assertEquals(SituacaoDaCaptura.PARADA, diagnostico.situacao)
+        assertEquals(MotivoParada.PERMISSAO_REVOGADA, diagnostico.motivo)
+        assertEquals(agora.minus(Duration.ofHours(49)), diagnostico.semLeituraDesde)
+        assertEquals(1, notificador.postados)
+        assertEquals(agora.minus(Duration.ofHours(49)), dataSource.alertaDeCaptura.first()?.referencia)
+    }
+
+    @Test
+    fun `estado parado com silencio recente nao alerta`() = runTest {
+        val dataSource = FakeCapturaDataSource()
+        dataSource.registrarAtivo(agora.minus(Duration.ofDays(10)))
+        dataSource.registrarParado(MotivoParada.DESCONECTADO, agora.minus(Duration.ofHours(2)))
+        dataSource.registrarLeitura(InstituicaoFinanceira.INTER, agora.minus(Duration.ofHours(47)))
+        val notificador = FakeNotificadorDeCapturaParada()
+
+        val diagnostico = gatilho(dataSource, notificador).verificar()
+
+        assertEquals(SituacaoDaCaptura.PARADA, diagnostico.situacao)
+        assertEquals(MotivoParada.DESCONECTADO, diagnostico.motivo)
+        assertNull(diagnostico.semLeituraDesde)
         assertEquals(0, notificador.postados)
+        assertNull(dataSource.alertaDeCaptura.first())
+    }
+
+    @Test
+    fun `estado parado sem leitura alerta a partir do inicio da observacao`() = runTest {
+        val dataSource = FakeCapturaDataSource()
+        dataSource.registrarAtivo(agora.minus(Duration.ofHours(50)))
+        dataSource.registrarParado(MotivoParada.DESCONECTADO, agora.minus(Duration.ofHours(49)))
+        val notificador = FakeNotificadorDeCapturaParada()
+
+        val diagnostico = gatilho(dataSource, notificador).verificar()
+
+        assertEquals(SituacaoDaCaptura.PARADA, diagnostico.situacao)
+        assertEquals(agora.minus(Duration.ofHours(50)), diagnostico.semLeituraDesde)
+        assertEquals(1, notificador.postados)
+    }
+
+    @Test
+    fun `nao repete o alerta no mesmo silencio com listener parado`() = runTest {
+        val dataSource = FakeCapturaDataSource()
+        dataSource.registrarAtivo(agora.minus(Duration.ofDays(10)))
+        dataSource.registrarParado(MotivoParada.PERMISSAO_REVOGADA, agora.minus(Duration.ofDays(3)))
+        dataSource.registrarLeitura(InstituicaoFinanceira.ITAU, agora.minus(Duration.ofHours(49)))
+        val notificador = FakeNotificadorDeCapturaParada()
+        val gatilho = gatilho(dataSource, notificador)
+
+        gatilho.verificar()
+        gatilho.verificar()
+
+        assertEquals(1, notificador.postados)
+    }
+
+    @Test
+    fun `nova leitura e novo silencio com listener parado voltam a alertar`() = runTest {
+        val dataSource = FakeCapturaDataSource()
+        dataSource.registrarAtivo(agora.minus(Duration.ofDays(10)))
+        dataSource.registrarParado(MotivoParada.DESCONECTADO, agora.minus(Duration.ofDays(3)))
+        dataSource.registrarLeitura(InstituicaoFinanceira.ITAU, agora.minus(Duration.ofHours(60)))
+        val notificador = FakeNotificadorDeCapturaParada()
+        gatilho(dataSource, notificador).verificar()
+
+        dataSource.registrarAtivo(agora.plus(Duration.ofHours(1)))
+        dataSource.registrarLeitura(InstituicaoFinanceira.INTER, agora.plus(Duration.ofHours(2)))
+        gatilho(dataSource, notificador, relogio = agora.plus(Duration.ofHours(3))).verificar()
+
+        assertEquals(1, notificador.postados)
+
+        dataSource.registrarParado(MotivoParada.DESCONECTADO, agora.plus(Duration.ofHours(4)))
+        gatilho(dataSource, notificador, relogio = agora.plus(Duration.ofHours(51))).verificar()
+
+        assertEquals(2, notificador.postados)
+        assertEquals(agora.plus(Duration.ofHours(2)), dataSource.alertaDeCaptura.first()?.referencia)
+        assertEquals(EstadoListener.PARADO, dataSource.estadoListener.first().estado)
     }
 
     @Test
@@ -87,19 +161,6 @@ class GatilhoDeCapturaParadaTest {
         assertEquals(2, notificador.postados)
         assertNotNull(dataSource.alertaDeCaptura.first())
         assertEquals(agora.minus(Duration.ofHours(2)), dataSource.alertaDeCaptura.first()?.referencia)
-    }
-
-    @Test
-    fun `estado parado nao e convertido em alerta de inatividade`() = runTest {
-        val dataSource = FakeCapturaDataSource()
-        dataSource.registrarParado(MotivoParada.DESCONECTADO, agora.minus(Duration.ofHours(60)))
-        val notificador = FakeNotificadorDeCapturaParada()
-
-        gatilho(dataSource, notificador).verificar()
-
-        assertEquals(0, notificador.postados)
-        assertEquals(EstadoListener.PARADO, dataSource.estadoListener.first().estado)
-        assertEquals(MotivoParada.DESCONECTADO, dataSource.estadoListener.first().motivo)
     }
 
     private suspend fun dataSourceAtivo(observandoDesde: Instant): FakeCapturaDataSource = FakeCapturaDataSource().apply {

@@ -16,6 +16,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.pingo.core.common.DefaultAppDispatchers
 import com.pingo.core.data.RegraParserRepository
 import com.pingo.core.data.di.CapturaEntryPoint
 import com.pingo.core.datastore.CapturaDataSource
@@ -34,8 +35,10 @@ import com.pingo.core.notifications.AcessoNotificacoes
 import com.pingo.core.notifications.BateriaDoAparelho
 import com.pingo.core.notifications.CapturaController
 import com.pingo.core.notifications.GatilhoDeCapturaParada
+import com.pingo.core.notifications.MonitorDaCaptura
 import com.pingo.core.notifications.NotificacoesDeCaptura
 import com.pingo.core.notifications.NotificacoesDoSistema
+import com.pingo.core.notifications.NotificadorDeCapturaParadaDoSistema
 import com.pingo.core.notifications.ResultadoAtualizacaoRegras
 import com.pingo.core.notifications.SaudeDaCaptura
 import com.pingo.core.notifications.SituacaoDaCaptura
@@ -43,6 +46,7 @@ import com.pingo.core.notifications.di.CapturaStatusEntryPoint
 import com.pingo.feature.capturestatus.impl.AtualizacaoDeRegras
 import com.pingo.feature.capturestatus.impl.CaptureStatusScreen
 import com.pingo.feature.capturestatus.impl.CaptureStatusViewModel
+import com.pingo.feature.home.impl.HomeViewModel
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -63,6 +67,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.YearMonth
 import java.time.ZoneId
+import java.time.ZoneOffset
 
 @RunWith(AndroidJUnit4::class)
 class StatusDaCapturaTest {
@@ -80,25 +85,25 @@ class StatusDaCapturaTest {
 
     @Before
     fun preparaOListener() {
+        limparBancoEEstadoDaCaptura()
         shell("pm grant $PACOTE android.permission.POST_NOTIFICATIONS")
         shell("cmd notification allow_listener $COMPONENTE")
         aguardarAcessoConcedido()
         conectarOListener()
         aguardarNotificacaoProcessada()
+        aguardarContadoresEstaveis()
     }
 
     @After
     fun limpaOEstadoDaCaptura() {
         gerenciadorNotificacoes.cancel(NotificacoesDeCaptura.ID_ALERTA_PARADA)
-        runBlocking {
-            dataSource.clear()
-            controller.reconectar()
-        }
+        shell("cmd notification allow_listener $COMPONENTE")
+        limparBancoEEstadoDaCaptura()
+        runBlocking { controller.reconectar() }
     }
 
     @Test
     fun t10MostraContadoresEstaveisComNotificacoesSinteticasEPendenteSemInstrumento() {
-        limparCaptura()
         val mes = mesAtual()
         val antes = contadores(mes)
         assertTrue(
@@ -240,6 +245,60 @@ class StatusDaCapturaTest {
         }
     }
 
+    @Test
+    fun alertaDe48hPostaNotificacaoComListenerParadoEPermissaoRevogada() {
+        shell("cmd notification disallow_listener $COMPONENTE")
+        aguardarEstado(EstadoListener.PARADO, MotivoParada.PERMISSAO_REVOGADA)
+        aguardarAcessoRevogado()
+
+        val agora = Instant.now()
+        runBlocking {
+            dataSource.clear()
+            dataSource.registrarAtivo(agora.minus(Duration.ofDays(3)))
+            dataSource.registrarParado(MotivoParada.PERMISSAO_REVOGADA, agora.minus(Duration.ofDays(1)))
+            dataSource.registrarLeitura(InstituicaoFinanceira.ITAU, agora.minus(Duration.ofHours(49)))
+        }
+        val relogio = Clock.fixed(agora, ZoneOffset.UTC)
+        val gatilhoParado = GatilhoDeCapturaParada(
+            monitorDaCaptura = MonitorDaCaptura(dataSource, relogio),
+            capturaDataSource = dataSource,
+            notificador = NotificadorDeCapturaParadaDoSistema(contexto),
+            clock = relogio,
+            dispatchers = DefaultAppDispatchers,
+        )
+
+        val diagnostico = runBlocking { gatilhoParado.verificar() }
+
+        assertEquals(SituacaoDaCaptura.PARADA, diagnostico.situacao)
+        assertEquals(MotivoParada.PERMISSAO_REVOGADA, diagnostico.motivo)
+        assertEquals(agora.minus(Duration.ofHours(49)), diagnostico.semLeituraDesde)
+        val alerta = runBlocking { dataSource.alertaDeCaptura.first() }
+        assertEquals(agora.minus(Duration.ofHours(49)), alerta?.referencia)
+
+        val notificacao = aguardarNotificacao(NotificacoesDeCaptura.ID_ALERTA_PARADA)
+        assertEquals(
+            "A captura parou",
+            notificacao.notification.extras.getCharSequence(Notification.EXTRA_TITLE)?.toString(),
+        )
+
+        val modelo = modeloDaTela()
+
+        composeRule.setContent {
+            PingoTheme {
+                CaptureStatusScreen(onBack = {}, viewModel = modelo)
+            }
+        }
+
+        aguardarTexto("Captura parada")
+        aguardarTexto("Sem acesso às notificações")
+
+        val inicio = HomeViewModel(AcessoConcedido, MonitorDaCaptura(dataSource, relogio))
+        runBlocking {
+            withTimeout(TEMPO_ESPERA) { inicio.uiState.first { it.semLeituraHa48h } }
+        }
+        assertTrue(inicio.uiState.value.capturaParada)
+    }
+
     private fun prepararSilencioDe48h(agora: Instant) {
         val limite = System.currentTimeMillis() + TEMPO_ESPERA
         while (System.currentTimeMillis() < limite) {
@@ -268,6 +327,23 @@ class StatusDaCapturaTest {
         throw AssertionError("acesso às notificações não foi concedido")
     }
 
+    private fun aguardarAcessoRevogado() {
+        val limite = System.currentTimeMillis() + TEMPO_ESPERA
+        while (System.currentTimeMillis() < limite) {
+            if (!injecao.acessoNotificacoes().concedido()) {
+                return
+            }
+            Thread.sleep(INTERVALO_CONSULTA)
+        }
+        throw AssertionError("acesso às notificações continuou concedido após a revogação")
+    }
+
+    private fun aguardarEstado(estado: EstadoListener, motivo: MotivoParada? = null) = runBlocking {
+        withTimeout(TEMPO_ESPERA) {
+            dataSource.estadoListener.first { atual -> atual.estado == estado && atual.motivo == motivo }
+        }
+    }
+
     private fun conectarOListener() {
         val limite = System.currentTimeMillis() + TEMPO_ESPERA
         while (System.currentTimeMillis() < limite) {
@@ -283,12 +359,9 @@ class StatusDaCapturaTest {
         throw AssertionError("listener não ficou ativo: ${estadoAtual()}")
     }
 
-    private fun limparCaptura() {
+    private fun limparBancoEEstadoDaCaptura() {
         captura.database().clearAllTables()
         runBlocking { dataSource.clear() }
-        conectarOListener()
-        aguardarNotificacaoProcessada()
-        aguardarContadoresEstaveis()
     }
 
     private fun modeloDaTela(
@@ -436,8 +509,8 @@ class StatusDaCapturaTest {
         }
     }
 
-    private object AcessoNegado : AcessoNotificacoes {
-        override fun concedido(): Boolean = false
+    private object AcessoConcedido : AcessoNotificacoes {
+        override fun concedido(): Boolean = true
     }
 
     private object AtualizacaoSemAlteracoes : AtualizacaoDeRegras {

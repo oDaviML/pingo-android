@@ -36,6 +36,9 @@ object AvaliadorDaCaptura {
         val ultimaLeitura = leituras.maxByOrNull { (_, em) -> em }
         val ultimaLeituraEm = ultimaLeitura?.value
         val ultimaLeituraInstituicao = ultimaLeitura?.key
+        val referencia = listOfNotNull(observandoDesde, ultimaLeituraEm).maxOrNull()
+        val semLeitura = referencia != null && Duration.between(referencia, agora) >= SILENCIO_PARA_ALERTA
+        val semLeituraDesde = referencia.takeIf { semLeitura }
 
         if (estado.estado == EstadoListener.PARADO) {
             return DiagnosticoDaCaptura(
@@ -43,17 +46,15 @@ object AvaliadorDaCaptura {
                 motivo = estado.motivo,
                 ultimaLeituraEm = ultimaLeituraEm,
                 ultimaLeituraInstituicao = ultimaLeituraInstituicao,
+                semLeituraDesde = semLeituraDesde,
             )
         }
-
-        val referencia = listOfNotNull(observandoDesde, ultimaLeituraEm).maxOrNull()
-        val semLeitura = referencia != null && Duration.between(referencia, agora) >= SILENCIO_PARA_ALERTA
 
         return DiagnosticoDaCaptura(
             situacao = if (semLeitura) SituacaoDaCaptura.SEM_LEITURA else SituacaoDaCaptura.ATIVA,
             ultimaLeituraEm = ultimaLeituraEm,
             ultimaLeituraInstituicao = ultimaLeituraInstituicao,
-            semLeituraDesde = referencia.takeIf { semLeitura },
+            semLeituraDesde = semLeituraDesde,
         )
     }
 }

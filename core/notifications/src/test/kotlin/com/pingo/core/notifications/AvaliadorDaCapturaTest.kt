@@ -109,16 +109,46 @@ class AvaliadorDaCapturaTest {
 
     @Test
     fun `estado parado tem precedencia e preserva o motivo`() {
+        val leitura = agora.minus(Duration.ofDays(4))
+
         val diagnostico = avaliar(
             estado = EstadoListenerPersistido(EstadoListener.PARADO, MotivoParada.PERMISSAO_REVOGADA, agora.minus(Duration.ofDays(3))),
-            leituras = mapOf(InstituicaoFinanceira.ITAU to agora.minus(Duration.ofDays(4))),
+            leituras = mapOf(InstituicaoFinanceira.ITAU to leitura),
+            observandoDesde = agora.minus(Duration.ofDays(5)),
         )
 
         assertEquals(SituacaoDaCaptura.PARADA, diagnostico.situacao)
         assertTrue(diagnostico.parada)
         assertEquals(MotivoParada.PERMISSAO_REVOGADA, diagnostico.motivo)
-        assertNull(diagnostico.semLeituraDesde)
+        assertEquals(leitura, diagnostico.semLeituraDesde)
         assertEquals(InstituicaoFinanceira.ITAU, diagnostico.ultimaLeituraInstituicao)
+    }
+
+    @Test
+    fun `estado parado com silencio abaixo do limite nao sinaliza alerta`() {
+        val diagnostico = avaliar(
+            estado = EstadoListenerPersistido(EstadoListener.PARADO, MotivoParada.DESCONECTADO, agora.minus(Duration.ofHours(2))),
+            leituras = mapOf(InstituicaoFinanceira.NUBANK to agora.minus(Duration.ofHours(47))),
+            observandoDesde = agora.minus(Duration.ofDays(5)),
+        )
+
+        assertEquals(SituacaoDaCaptura.PARADA, diagnostico.situacao)
+        assertEquals(MotivoParada.DESCONECTADO, diagnostico.motivo)
+        assertNull(diagnostico.semLeituraDesde)
+    }
+
+    @Test
+    fun `estado parado sem leitura usa o inicio da observacao como referencia do silencio`() {
+        val inicio = agora.minus(Duration.ofHours(49))
+
+        val diagnostico = avaliar(
+            estado = EstadoListenerPersistido(EstadoListener.PARADO, MotivoParada.DESCONECTADO, agora.minus(Duration.ofDays(2))),
+            leituras = emptyMap(),
+            observandoDesde = inicio,
+        )
+
+        assertEquals(SituacaoDaCaptura.PARADA, diagnostico.situacao)
+        assertEquals(inicio, diagnostico.semLeituraDesde)
     }
 
     @Test

@@ -12,6 +12,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import java.time.Duration
+import java.time.Instant
 
 class HomeViewModelTest {
     @get:Rule
@@ -40,7 +42,10 @@ class HomeViewModelTest {
     @Test
     fun `sem leitura ha quarenta e oito horas aparece captura parada`() {
         val saude = FakeSaudeDaCaptura(
-            diagnostico = DiagnosticoDaCaptura(situacao = SituacaoDaCaptura.SEM_LEITURA),
+            diagnostico = DiagnosticoDaCaptura(
+                situacao = SituacaoDaCaptura.SEM_LEITURA,
+                semLeituraDesde = Instant.now().minus(Duration.ofHours(49)),
+            ),
         )
 
         val viewModel = HomeViewModel(FakeAcessoNotificacoes(concedido = true), saude)
@@ -52,7 +57,10 @@ class HomeViewModelTest {
     @Test
     fun `leitura recente volta a esconder o aviso`() {
         val saude = FakeSaudeDaCaptura(
-            diagnostico = DiagnosticoDaCaptura(situacao = SituacaoDaCaptura.SEM_LEITURA),
+            diagnostico = DiagnosticoDaCaptura(
+                situacao = SituacaoDaCaptura.SEM_LEITURA,
+                semLeituraDesde = Instant.now().minus(Duration.ofHours(49)),
+            ),
         )
         val viewModel = HomeViewModel(FakeAcessoNotificacoes(concedido = true), saude)
 
@@ -61,6 +69,21 @@ class HomeViewModelTest {
 
         assertFalse(viewModel.uiState.value.semLeituraHa48h)
         assertFalse(viewModel.uiState.value.capturaParada)
+    }
+
+    @Test
+    fun `estado parado com silencio de quarenta e oito horas aparece na inicio`() {
+        val saude = FakeSaudeDaCaptura(
+            diagnostico = DiagnosticoDaCaptura(
+                situacao = SituacaoDaCaptura.PARADA,
+                semLeituraDesde = Instant.now().minus(Duration.ofHours(49)),
+            ),
+        )
+
+        val viewModel = HomeViewModel(FakeAcessoNotificacoes(concedido = true), saude)
+
+        assertTrue(viewModel.uiState.value.semLeituraHa48h)
+        assertTrue(viewModel.uiState.value.capturaParada)
     }
 
     private class FakeAcessoNotificacoes(var concedido: Boolean) : AcessoNotificacoes {

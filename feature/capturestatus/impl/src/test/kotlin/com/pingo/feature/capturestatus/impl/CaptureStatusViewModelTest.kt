@@ -104,6 +104,22 @@ class CaptureStatusViewModelTest {
     }
 
     @Test
+    fun `estado parado preserva motivo e referencia do silencio`() = runTest {
+        val dataSource = dataSourceAtiva(observandoDesde = agora.minus(Duration.ofDays(4)))
+        dataSource.registrarParado(MotivoParada.DESCONECTADO, agora.minus(Duration.ofHours(2)))
+
+        val viewModel = viewModel(dataSource = dataSource)
+
+        advanceUntilIdle()
+
+        val estado = viewModel.uiState.value
+        assertEquals(SituacaoDaCaptura.PARADA, estado.situacao)
+        assertTrue(estado.parada)
+        assertEquals(MotivoParada.DESCONECTADO, estado.motivo)
+        assertEquals(agora.minus(Duration.ofDays(4)), estado.semLeituraDesde)
+    }
+
+    @Test
     fun `pendente sem instrumento nao sinaliza captura parada`() = runTest {
         val dataSource = dataSourceAtiva()
         dataSource.registrarLeitura(InstituicaoFinanceira.INTER, agora.minus(Duration.ofMinutes(1)))
