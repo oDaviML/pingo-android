@@ -27,12 +27,14 @@ class Auth0Repository @Inject constructor(
     private val googleSignIn: GoogleSignIn,
     private val dispatchers: AppDispatchers,
 ) : AuthRepository {
-    private val account: Auth0? = if (config.domain.isNotBlank() && config.clientId.isNotBlank()) {
-        Auth0.getInstance(config.clientId, config.domain)
-    } else {
-        null
+    private val account: Auth0? by lazy {
+        if (config.domain.isNotBlank() && config.clientId.isNotBlank()) {
+            Auth0.getInstance(config.clientId, config.domain)
+        } else {
+            null
+        }
     }
-    private val authentication: AuthenticationAPIClient? = account?.let(::AuthenticationAPIClient)
+    private val authentication: AuthenticationAPIClient? by lazy { account?.let(::AuthenticationAPIClient) }
     private val refreshMutex = Mutex()
     private val sessionScope = CoroutineScope(SupervisorJob() + dispatchers.io)
     private val mutableSession = MutableStateFlow(SessionState.Loading)

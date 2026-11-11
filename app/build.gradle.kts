@@ -77,6 +77,7 @@ dependencies {
     implementation(libs.hilt.androidx.work)
     implementation(libs.androidx.work.runtime.ktx)
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(project(":core:auth"))
     androidTestImplementation(project(":core:common"))
     androidTestImplementation(project(":core:designsystem"))

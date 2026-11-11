@@ -9,12 +9,14 @@ import com.pingo.core.notifications.CapturaController
 import com.pingo.core.notifications.CapturaControllerImpl
 import com.pingo.core.notifications.FabricanteDoAparelho
 import com.pingo.core.notifications.FabricanteDoAparelhoDoAndroid
+import com.pingo.core.notifications.IniciadorDeObservacaoDePendencias
 import com.pingo.core.notifications.MonitorDaCaptura
 import com.pingo.core.notifications.NotificacoesDoSistema
 import com.pingo.core.notifications.NotificacoesDoSistemaDoAndroid
 import com.pingo.core.notifications.NotificadorDeCapturaParada
 import com.pingo.core.notifications.NotificadorDeCapturaParadaDoSistema
 import com.pingo.core.notifications.NotificationHealthCheck
+import com.pingo.core.notifications.ObservadorDePendencias
 import com.pingo.core.notifications.RebindDeListener
 import com.pingo.core.notifications.RebindDeListenerDoSistema
 import com.pingo.core.notifications.RevisaoNotificacoes
@@ -80,4 +82,8 @@ abstract class CapturaModule {
     @Binds
     @Singleton
     abstract fun bindRevisaoNotificacoes(implementation: RevisaoNotificacoesDoAndroid): RevisaoNotificacoes
+
+    @Binds
+    @Singleton
+    abstract fun bindIniciadorDeObservacao(implementation: ObservadorDePendencias): IniciadorDeObservacaoDePendencias
 }

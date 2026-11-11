@@ -19,12 +19,12 @@ class ObservadorDePendencias @Inject constructor(
     private val categoriaRepository: CategoriaRepository,
     private val notificacoes: RevisaoNotificacoes,
     private val dispatchers: AppDispatchers,
-) {
+) : IniciadorDeObservacaoDePendencias {
     private val escopo = CoroutineScope(SupervisorJob() + dispatchers.io)
     private val notificadas = mutableSetOf<String>()
     private var iniciado = false
 
-    fun iniciar() {
+    override fun iniciar() {
         if (iniciado) {
             return
         }

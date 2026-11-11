@@ -4,6 +4,7 @@ import com.pingo.core.auth.Auth0Config
 import com.pingo.core.common.AppDispatchers
 import com.pingo.core.common.DefaultAppDispatchers
 import com.pingo.core.network.PingoApiConfig
+import com.pingo.sync.SyncScheduler
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -30,4 +31,11 @@ object AppModule {
     @Provides
     @Singleton
     fun providePingoApiConfig(): PingoApiConfig = PingoApiConfig(baseUrl = BuildConfig.API_BASE_URL)
+
+    @Provides
+    @Singleton
+    fun provideAgendadorDeSync(syncScheduler: SyncScheduler): AgendadorDeSync = AgendadorDeSync {
+        syncScheduler.schedulePeriodic()
+        syncScheduler.syncNow()
+    }
 }
