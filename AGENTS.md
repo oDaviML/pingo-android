@@ -61,13 +61,13 @@ pingo-android/
 ├─ core/
 │  ├─ model/        modelos de domínio: Usuario, Conta, Instrumento, Lancamento, Categoria, RegraCategoria, Fatura, Assinatura, RegraParser
 │  ├─ common/       dispatchers (AppDispatchers) e Result (AppResult), Kotlin puro
-│  ├─ designsystem/ casca do design system (tema, cores, tipografia e componentes virão depois)
+│  ├─ designsystem/ tema, tokens, tipografia, ícones e componentes `Pingo*` do design system
 │  ├─ ui/           componentes de UI que renderizam os models
 │  ├─ data/         repositórios offline-first com Flow do Room
 │  ├─ database/     Room + SQLCipher, entidades, DAOs e schema versionado
 │  ├─ datastore/    preferências e estado de sync
 │  ├─ network/      cliente da pingo-api
-│  ├─ notifications/ NotificationListenerService, foreground service e health check
+│  ├─ notifications/ NotificationListenerService, foreground service, notificações de revisão e saúde da captura
 │  ├─ parser/       motor de regras versionadas, confiança, dedup e transferência
 │  ├─ auth/         Auth0 SDK, token store e biometria
 │  ├─ analytics/    fachada Firebase Analytics/Crashlytics opt-in
@@ -105,6 +105,14 @@ Namespace dos módulos Android: `com.pingo.<area>.<nome>` (por exemplo, `com.pin
 ```
 
 Para rodar localmente: `./gradlew installDebug` com um dispositivo ou emulador conectado, ou `./gradlew assembleDebug` e instalar o APK gerado. O listener de notificações precisa ser habilitado manualmente em Ajustes do Android após a primeira instalação.
+
+Testes instrumentados de sync/HTTP precisam do `Pingo.Api.TestHost` em `127.0.0.1:8080` (fixture de autenticação só do assembly de testes, sem segredos) e do Postgres do compose. O caminho do emulador até o host usa `10.0.2.2`:
+
+```bash
+./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.pingo.syncHost=http://10.0.2.2:8080/
+```
+
+Os testes de captura usam a seam de debug: notificações postadas pelo shell com a tag `pingo-teste-<INSTITUICAO>` mapeiam para a instituição (somente em builds debug). Fluxos entre telas reutilizam o banco real do app via entry points de teste; features usam Room em memória.
 
 ## 5. Boas práticas
 

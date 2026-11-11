@@ -99,6 +99,7 @@ private fun NavGraphBuilder.telasDeAba(navController: NavHostController) {
         HomeScreen(
             onOpenSettings = { navController.navigate(SettingsRoute.ROUTE) },
             onOpenCaptura = { navController.navigate(CaptureStatusRoute.ROUTE) },
+            onOpenRevisao = { navController.navigate(ReviewRoute.ROUTE) },
             onOpenNovo = { navController.navigate(TransactionsRoute.NOVO_ROUTE) },
             onSelecionarAba = { aba -> navController.abrirAba(aba) },
         )

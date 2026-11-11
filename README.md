@@ -2,6 +2,16 @@
 
 Aplicativo Android do Pingo: captura automática de transações financeiras a partir das notificações dos apps de banco, parser executado no aparelho e interface para acompanhamento de gastos.
 
+## Estado atual (F1)
+
+O F1 entrega o fluxo completo de captura automática e as telas principais:
+
+- Onboarding passos 1–7: login Google via Credential Manager, termo LGPD, acesso às notificações, permissão para o Pingo notificar, bateria/autostart e escolha de bancos/instrumentos. Biometria fica para F3.
+- Início: saldo do mês (receitas − despesas, transferências excluídas), seletor de mês, avisos de "N para revisar" e "captura parada", top 3 categorias de despesa, últimos 5 lançamentos e atalho para lançamento manual.
+- Lançamentos: lista por dia, busca, filtros, detalhe/edição e novo lançamento.
+- Revisão de pendências, notificações por pendente (Confirmar sem abrir o app e Corrigir abrindo o detalhe) e Status da captura com permissões, contadores e reconexão.
+- Contas e Relatórios são placeholders nesta fase.
+
 ## Como buildar
 
 Requisitos: JDK 21 e Android SDK com a plataforma API 36.
@@ -10,6 +20,8 @@ Requisitos: JDK 21 e Android SDK com a plataforma API 36.
 ./gradlew assembleDebug
 ./gradlew build
 ```
+
+O `build` roda compilação, testes unitários, detekt e ktlint (Spotless).
 
 ## Estrutura resumida
 
@@ -52,6 +64,47 @@ pingo.api.baseUrl=http://10.0.2.2:8080/
 O `app` injeta esses valores via `BuildConfig` e `manifestPlaceholders`; o `core:auth` lê o token do Keystore e o `core:network` o envia como `Authorization: Bearer` nas chamadas à API.
 
 Em builds **debug**, o `network_security_config` permite cleartext apenas para `10.0.2.2` e `localhost` (emulador); os demais builds exigem HTTPS.
+
+## Como rodar
+
+Com um dispositivo ou emulador conectado:
+
+```bash
+./gradlew installDebug
+```
+
+Depois da primeira instalação, habilite em Ajustes do Android:
+
+- **Acesso às notificações**: Apps → Acesso especial → Acesso a notificações → Pingo.
+- **Notificações do Pingo**: permitir notificações do app.
+- **Bateria**: desativar a otimização para o Pingo (o passo 6 do onboarding orienta por fabricante).
+
+O `PingoApplication` inicia o listener e agenda a sincronização. Em builds debug, o `SeamInstituicaoResolver` aceita notificações sintéticas postadas pelo shell com a tag `pingo-teste-<INSTITUICAO>` e mapeia para a instituição correspondente; builds de release usam apenas o pacote real do app de banco.
+
+## Testes
+
+```bash
+./gradlew test                 # unitários de todos os módulos
+./gradlew connectedAndroidTest # instrumentados (device/emulador conectado)
+```
+
+Os testes instrumentados de UI usam `createAndroidComposeRule` com Room em memória nas features e, nos fluxos entre telas, o banco real do app via entry points de teste. As suítes de captura usam a seam de debug (`pingo-teste-<INSTITUICAO>`) para postar notificações sintéticas e comprovar o caminho real do listener.
+
+Os testes de sync/HTTP precisam do `Pingo.Api.TestHost`, que escuta apenas em loopback e usa uma fixture de autenticação exclusiva de testes:
+
+```bash
+# em ../pingo-api, com o Postgres do compose de pé
+ASPNETCORE_URLS=http://127.0.0.1:8080 \
+ConnectionStrings__Postgres="Host=localhost;Port=5432;Database=pingo_testhost;Username=pingo;Password=pingo" \
+dotnet run --project tests/Pingo.Api.TestHost/Pingo.Api.TestHost.csproj --no-launch-profile
+```
+
+```bash
+./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.pingo.syncHost=http://10.0.2.2:8080/
+```
+
+O TestHost não vai para produção e não contém segredos: a autenticação de teste é uma fixture do assembly de testes. Credenciais reais do Auth0 continuam fora do repositório, em `local.properties` ou variáveis de ambiente do CI.
 
 ## Documentação
 

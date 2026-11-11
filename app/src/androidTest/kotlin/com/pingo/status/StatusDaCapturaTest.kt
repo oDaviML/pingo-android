@@ -292,7 +292,15 @@ class StatusDaCapturaTest {
         aguardarTexto("Captura parada")
         aguardarTexto("Sem acesso às notificações")
 
-        val inicio = HomeViewModel(AcessoConcedido, MonitorDaCaptura(dataSource, relogio))
+        val inicio = HomeViewModel(
+            acessoNotificacoes = AcessoConcedido,
+            saudeDaCaptura = MonitorDaCaptura(dataSource, relogio),
+            lancamentoRepository = captura.lancamentoRepository(),
+            contaRepository = captura.contaRepository(),
+            instrumentoRepository = captura.instrumentoRepository(),
+            categoriaRepository = captura.categoriaRepository(),
+            clock = relogio,
+        )
         runBlocking {
             withTimeout(TEMPO_ESPERA) { inicio.uiState.first { it.semLeituraHa48h } }
         }
