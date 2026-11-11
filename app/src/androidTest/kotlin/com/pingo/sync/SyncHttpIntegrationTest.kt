@@ -2,9 +2,9 @@ package com.pingo.sync
 
 import android.app.Activity
 import android.content.Context
+import android.os.ParcelFileDescriptor
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.withTransaction
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -14,21 +14,19 @@ import com.pingo.core.auth.LoginResult
 import com.pingo.core.auth.SessionState
 import com.pingo.core.auth.UsuarioAutenticado
 import com.pingo.core.common.AppDispatchers
-import com.pingo.core.data.TransacaoLocal
+import com.pingo.core.common.DefaultAppDispatchers
 import com.pingo.core.data.categoria.CategoriaSeeder
-import com.pingo.core.data.impl.CategoriaRepositoryImpl
-import com.pingo.core.data.impl.ContaRepositoryImpl
-import com.pingo.core.data.impl.InstrumentoRepositoryImpl
-import com.pingo.core.data.impl.LancamentoRepositoryImpl
-import com.pingo.core.data.mapper.toModel
+import com.pingo.core.data.di.CapturaEntryPoint
 import com.pingo.core.database.PingoDatabase
-import com.pingo.core.database.entity.LancamentoEntity
+import com.pingo.core.datastore.CapturaDataSource
+import com.pingo.core.datastore.CapturaDataSourceImpl
 import com.pingo.core.datastore.SyncStatus
 import com.pingo.core.datastore.UserPreferencesDataSource
-import com.pingo.core.model.Conta
 import com.pingo.core.model.InstituicaoFinanceira
-import com.pingo.core.model.Instrumento
+import com.pingo.core.model.Lancamento
 import com.pingo.core.model.MotivoPendencia
+import com.pingo.core.model.NovaConta
+import com.pingo.core.model.NovoInstrumento
 import com.pingo.core.model.OrigemLancamento
 import com.pingo.core.model.StatusLancamento
 import com.pingo.core.model.TipoConta
@@ -36,16 +34,31 @@ import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.model.TipoLancamento
 import com.pingo.core.network.HttpPingoApiClient
 import com.pingo.core.network.PingoApiConfig
+import com.pingo.core.notifications.AcessoNotificacoesDoSistema
+import com.pingo.core.notifications.CapturaController
+import com.pingo.core.notifications.CapturaControllerImpl
+import com.pingo.core.notifications.ConexaoDoListener
+import com.pingo.core.notifications.EscopoDeCaptura
+import com.pingo.core.notifications.RebindDeListenerDoSistema
+import com.pingo.core.notifications.ServicoDeCapturaDoAndroid
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
+import java.time.Clock
 import java.time.Instant
 import java.util.UUID
 import kotlin.time.Duration.Companion.seconds
@@ -54,6 +67,18 @@ import kotlin.time.Duration.Companion.seconds
 class SyncHttpIntegrationTest {
     private val contexto: Context = ApplicationProvider.getApplicationContext()
     private val host: String? = InstrumentationRegistry.getArguments().getString(ARG_HOST)
+    private val captura: CapturaEntryPoint = EntryPointAccessors.fromApplication(contexto, CapturaEntryPoint::class.java)
+    private val capturaDataSource: CapturaDataSource = CapturaDataSourceImpl(contexto)
+    private val acessoNotificacoes = AcessoNotificacoesDoSistema(contexto)
+    private val capturaController: CapturaController = CapturaControllerImpl(
+        capturaDataSource = capturaDataSource,
+        acessoNotificacoes = acessoNotificacoes,
+        rebindDeListener = RebindDeListenerDoSistema(contexto),
+        servicoDeCaptura = ServicoDeCapturaDoAndroid(contexto),
+        conexaoDoListener = ConexaoDoListener(),
+        escopoDeCaptura = EscopoDeCaptura(DefaultAppDispatchers),
+        clock = Clock.systemDefaultZone(),
+    )
     private val dispatchers = object : AppDispatchers {
         override val io = Dispatchers.IO
 
@@ -63,100 +88,182 @@ class SyncHttpIntegrationTest {
     }
 
     @Test
-    fun pendenteSemInstrumentoSincronizaComOrigemSemTextoBrutoEResolucaoPosterior() = runTest(timeout = 120.seconds) {
+    fun capturaDaSeamSemInstrumentoSincronizaComOrigemSemTextoBrutoEResolucaoPosterior() = runBlocking {
         assumeTrue("informe -e $ARG_HOST=<url do Pingo.Api.TestHost>", !host.isNullOrBlank())
-        val sub = "auth0|sync-${UUID.randomUUID()}"
-        val token = sub
-        val api = HttpPingoApiClient(PingoApiConfig(host!!), FixtureAuth(token), dispatchers)
-        assertTrue("host de teste inacessível em $host", api.healthCheck())
 
-        val fonte = bancoEmMemoria()
-        val preferencias = FakePreferences()
-        val engine = motor(api, fonte, preferencias, token)
-        val publicId = UUID.randomUUID().toString()
-        val hash = UUID.randomUUID().toString().replace("-", "")
-        val agora = Instant.now()
-        val textoLocal = "Olá FULANO, você acaba de comprar no débito no DL*99 99 o valor de R$ 37,90."
+        withTimeout(TEMPO_TOTAL) {
+            val token = "auth0|sync-${UUID.randomUUID()}"
+            val api = HttpPingoApiClient(PingoApiConfig(host!!), FixtureAuth(token), dispatchers)
+            assertTrue("host de teste inacessível em $host", api.healthCheck())
 
-        fonte.lancamentoDao().upsert(lancamentoPendente(publicId, hash, agora, textoLocal))
+            val fonte = captura.database()
+            fonte.clearAllTables()
+            assertTrue(
+                "o cenário exige zero instrumentos cadastrados",
+                captura.instrumentoRepository().observeInstrumentos().first().isEmpty(),
+            )
 
-        engine.run()
+            garantirListenerConectado()
 
-        val pendenteLocal = fonte.lancamentoDao().buscar(publicId)
-        assertEquals(textoLocal, pendenteLocal?.textoBruto)
-        assertNull(pendenteLocal?.instrumentoPublicId)
-        assertEquals(InstituicaoFinanceira.INTER, pendenteLocal?.instituicaoOrigem)
-        assertEquals(MotivoPendencia.INSTRUMENTO_NAO_ENCONTRADO.name, pendenteLocal?.motivoPendencia)
+            val valor = valorUnico()
+            val texto = textoCompraInter(valor)
+            val pendente = capturarPelaSeam(valor, texto)
+            val textoBruto = pendente.textoBruto
 
-        val primeiroPull = api.pullChanges(null)
-        val pendenteRemoto = primeiroPull.lancamentos.singleOrNull { it.publicId == publicId }
-        assertEquals(publicId, pendenteRemoto?.publicId)
-        assertNull(pendenteRemoto?.instrumentoPublicId)
-        assertEquals("Pendente", pendenteRemoto?.status)
-        assertEquals("Notificacao", pendenteRemoto?.origem)
-        assertEquals("Inter", pendenteRemoto?.instituicaoOrigem)
-        assertEquals("INSTRUMENTO_NAO_ENCONTRADO", pendenteRemoto?.motivoPendencia)
-        assertNull(pendenteRemoto?.transferenciaId)
+            assertNotNull(UUID.fromString(pendente.publicId))
+            assertNull(pendente.instrumentoPublicId)
+            assertEquals(StatusLancamento.PENDENTE, pendente.status)
+            assertEquals(MotivoPendencia.INSTRUMENTO_NAO_ENCONTRADO.name, pendente.motivoPendencia)
+            assertEquals(OrigemLancamento.NOTIFICACAO, pendente.origem)
+            assertEquals(InstituicaoFinanceira.INTER, pendente.instituicaoOrigem)
+            assertEquals(TipoLancamento.DESPESA, pendente.tipo)
+            assertEquals(valor, pendente.valorCentavos)
+            assertNull(pendente.transferenciaId)
+            assertTrue("texto bruto da captura não foi preservado", textoBruto?.contains(texto) == true)
 
-        engine.run()
+            val preferencias = FakePreferences()
+            val engine = motor(api, fonte, preferencias, token)
+            engine.run()
 
-        val reposicao = api.pullChanges(null).lancamentos.filter { it.publicId == publicId }
-        assertEquals(1, reposicao.size)
-        assertEquals(textoLocal, fonte.lancamentoDao().buscar(publicId)?.textoBruto)
+            assertEquals(textoBruto, captura.lancamentoRepository().buscar(pendente.publicId)?.textoBruto)
+            assertNull(captura.lancamentoRepository().buscar(pendente.publicId)?.instrumentoPublicId)
 
-        val restauracao = bancoEmMemoria()
-        motor(api, restauracao, FakePreferences(), token).run()
+            val primeiroPull = api.pullChanges(null)
+            val remoto = primeiroPull.lancamentos.singleOrNull { it.publicId == pendente.publicId }
+            assertNotNull("captura da seam não chegou ao Postgres", remoto)
+            assertEquals(pendente.publicId, remoto?.publicId)
+            assertNull(remoto?.instrumentoPublicId)
+            assertEquals("Pendente", remoto?.status)
+            assertEquals("Notificacao", remoto?.origem)
+            assertEquals("Inter", remoto?.instituicaoOrigem)
+            assertEquals("INSTRUMENTO_NAO_ENCONTRADO", remoto?.motivoPendencia)
+            assertNull(remoto?.transferenciaId)
 
-        val restaurado = restauracao.lancamentoDao().buscar(publicId)
-        assertEquals(publicId, restaurado?.publicId)
-        assertNull(restaurado?.instrumentoPublicId)
-        assertNull(restaurado?.textoBruto)
-        assertEquals(InstituicaoFinanceira.INTER, restaurado?.instituicaoOrigem)
-        assertEquals("INSTRUMENTO_NAO_ENCONTRADO", restaurado?.motivoPendencia)
+            engine.run()
+            assertEquals(1, api.pullChanges(null).lancamentos.count { it.publicId == pendente.publicId })
+            assertEquals(textoBruto, captura.lancamentoRepository().buscar(pendente.publicId)?.textoBruto)
 
-        val resolvidoEm = Instant.now().plusSeconds(10)
-        val contaPublicId = UUID.randomUUID().toString()
-        val instrumentoPublicId = UUID.randomUUID().toString()
-        val contas = ContaRepositoryImpl(fonte.contaDao(), fonte.instrumentoDao(), transacaoDe(fonte))
-        contas.salvar(
-            Conta(
-                publicId = contaPublicId,
-                instituicao = InstituicaoFinanceira.INTER,
-                apelido = "Inter",
-                tipo = TipoConta.CORRENTE,
-                criadoEm = resolvidoEm,
-                atualizadoEm = resolvidoEm,
-            ),
-        )
-        InstrumentoRepositoryImpl(fonte.instrumentoDao()).salvar(
-            Instrumento(
-                publicId = instrumentoPublicId,
-                contaPublicId = contaPublicId,
-                tipo = TipoInstrumento.DEBITO,
-                apelido = "Débito Inter",
-                ultimosDigitos = "9999",
-                criadoEm = resolvidoEm,
-                atualizadoEm = resolvidoEm,
-            ),
-        )
-        val pendente = fonte.lancamentoDao().buscar(publicId)!!
-        LancamentoRepositoryImpl(fonte.lancamentoDao()).salvar(
-            pendente.toModel().copy(
-                instrumentoPublicId = instrumentoPublicId,
-                status = StatusLancamento.CONFIRMADO,
-                motivoPendencia = null,
-                atualizadoEm = resolvidoEm,
-            ),
-        )
+            motor(api, fonte, FakePreferences(), token).run()
+            assertEquals(1, api.pullChanges(null).lancamentos.count { it.publicId == pendente.publicId })
+            assertEquals(textoBruto, captura.lancamentoRepository().buscar(pendente.publicId)?.textoBruto)
 
-        engine.run()
+            val restauracao = bancoEmMemoria()
+            try {
+                motor(api, restauracao, FakePreferences(), token).run()
 
-        val resolvidoRemoto = api.pullChanges(null).lancamentos.single { it.publicId == publicId }
-        assertEquals(instrumentoPublicId, resolvidoRemoto.instrumentoPublicId)
-        assertEquals("Confirmado", resolvidoRemoto.status)
-        assertEquals("Inter", resolvidoRemoto.instituicaoOrigem)
-        assertEquals(textoLocal, fonte.lancamentoDao().buscar(publicId)?.textoBruto)
-        assertEquals(instrumentoPublicId, fonte.lancamentoDao().buscar(publicId)?.instrumentoPublicId)
+                val restaurado = restauracao.lancamentoDao().buscar(pendente.publicId)
+                assertEquals(pendente.publicId, restaurado?.publicId)
+                assertNull(restaurado?.instrumentoPublicId)
+                assertNull(restaurado?.textoBruto)
+                assertEquals(InstituicaoFinanceira.INTER, restaurado?.instituicaoOrigem)
+                assertEquals("INSTRUMENTO_NAO_ENCONTRADO", restaurado?.motivoPendencia)
+                assertEquals(StatusLancamento.PENDENTE, restaurado?.status)
+            } finally {
+                restauracao.close()
+            }
+
+            val resolvidoEm = Instant.now().plusSeconds(10)
+            captura.contaRepository().criarComInstrumentos(
+                listOf(
+                    NovaConta(
+                        instituicao = InstituicaoFinanceira.INTER,
+                        apelido = "Inter",
+                        tipo = TipoConta.CORRENTE,
+                        instrumentos = listOf(
+                            NovoInstrumento(
+                                tipo = TipoInstrumento.DEBITO,
+                                apelido = "Débito Inter",
+                                ultimosDigitos = "9999",
+                            ),
+                        ),
+                    ),
+                ),
+                resolvidoEm,
+            )
+            val instrumento = captura.instrumentoRepository()
+                .ativosDaInstituicao(InstituicaoFinanceira.INTER)
+                .single()
+            captura.lancamentoRepository().salvar(
+                pendente.copy(
+                    instrumentoPublicId = instrumento.publicId,
+                    status = StatusLancamento.CONFIRMADO,
+                    motivoPendencia = null,
+                    atualizadoEm = resolvidoEm,
+                ),
+            )
+
+            engine.run()
+
+            val resolvidoRemoto = api.pullChanges(null).lancamentos.single { it.publicId == pendente.publicId }
+            assertEquals(instrumento.publicId, resolvidoRemoto.instrumentoPublicId)
+            assertEquals("Confirmado", resolvidoRemoto.status)
+            assertEquals("Inter", resolvidoRemoto.instituicaoOrigem)
+            assertNull(resolvidoRemoto.motivoPendencia)
+
+            val localResolvido = captura.lancamentoRepository().buscar(pendente.publicId)
+            assertEquals(instrumento.publicId, localResolvido?.instrumentoPublicId)
+            assertEquals(StatusLancamento.CONFIRMADO, localResolvido?.status)
+            assertEquals(textoBruto, localResolvido?.textoBruto)
+        }
+    }
+
+    private suspend fun garantirListenerConectado() {
+        shell("pm grant $PACOTE android.permission.POST_NOTIFICATIONS")
+        shell("cmd notification allow_listener $COMPONENTE")
+
+        val limite = System.currentTimeMillis() + TEMPO_ESPERA
+        while (System.currentTimeMillis() < limite && !acessoNotificacoes.concedido()) {
+            delay(INTERVALO_CONSULTA)
+        }
+
+        capturaController.reconectar()
+    }
+
+    private suspend fun capturarPelaSeam(valorCentavos: Long, texto: String): Lancamento {
+        val limite = System.currentTimeMillis() + TEMPO_ESPERA
+
+        while (System.currentTimeMillis() < limite) {
+            postar("Compra no débito", "pingo-teste-INTER-$valorCentavos", texto)
+
+            val capturado = withTimeoutOrNull(INTERVALO_SONDAGEM) {
+                captura.lancamentoRepository().observeLancamentos()
+                    .first { lancamentos ->
+                        lancamentos.any {
+                            it.valorCentavos == valorCentavos &&
+                                it.origem == OrigemLancamento.NOTIFICACAO &&
+                                it.instituicaoOrigem == InstituicaoFinanceira.INTER
+                        }
+                    }
+                    .first { it.valorCentavos == valorCentavos }
+            }
+
+            if (capturado != null) {
+                return capturado
+            }
+        }
+
+        throw AssertionError("captura da seam não apareceu no Room")
+    }
+
+    private fun valorUnico(): Long = 100_000L + Math.floorMod(System.nanoTime(), 800_000L)
+
+    private fun textoCompraInter(valorCentavos: Long): String {
+        val reais = valorCentavos / 100
+        val centavos = (valorCentavos % 100).toString().padStart(2, '0')
+        return "Olá FULANO, você acaba de comprar no débito no DL*99 99 o valor de R$ $reais,$centavos."
+    }
+
+    private fun postar(titulo: String, tag: String, texto: String) {
+        val script = File(contexto.getExternalFilesDir(null), "sonda_de_sync.sh")
+        script.writeText("cmd notification post -t \"$titulo\" $tag \"$texto\"\n")
+        shell("sh ${script.absolutePath}")
+    }
+
+    private fun shell(comando: String): String {
+        val descriptor = InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(comando)
+        return ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { stream ->
+            stream.readBytes().decodeToString()
+        }
     }
 
     private fun motor(api: HttpPingoApiClient, banco: PingoDatabase, preferencias: FakePreferences, token: String) = SyncEngine(
@@ -165,7 +272,7 @@ class SyncHttpIntegrationTest {
         preferences = preferencias,
         authRepository = FixtureAuth(token),
         deviceActivator = DeviceActivator(api, preferencias),
-        categoriaSeeder = CategoriaSeeder(CategoriaRepositoryImpl(banco.categoriaDao()), UsuarioAutenticado(FakeTokenStore())),
+        categoriaSeeder = CategoriaSeeder(captura.categoriaRepository(), UsuarioAutenticado(FakeTokenStore())),
     )
 
     private fun bancoEmMemoria(): PingoDatabase = Room.inMemoryDatabaseBuilder(contexto, PingoDatabase::class.java)
@@ -177,39 +284,6 @@ class SyncHttpIntegrationTest {
             },
         )
         .build()
-
-    private fun lancamentoPendente(publicId: String, hash: String, agora: Instant, texto: String) = LancamentoEntity(
-        publicId = publicId,
-        instrumentoPublicId = null,
-        categoriaPublicId = null,
-        faturaPublicId = null,
-        assinaturaPublicId = null,
-        compraPaiPublicId = null,
-        estornoDePublicId = null,
-        transferenciaId = null,
-        valorCentavos = 3790,
-        dataHora = agora,
-        tipo = TipoLancamento.DESPESA,
-        estabelecimento = "DL*99 99",
-        status = StatusLancamento.PENDENTE,
-        origem = OrigemLancamento.NOTIFICACAO,
-        instituicaoOrigem = InstituicaoFinanceira.INTER,
-        confianca = 0.6,
-        motivoPendencia = MotivoPendencia.INSTRUMENTO_NAO_ENCONTRADO.name,
-        hashDuplicata = hash,
-        observacao = null,
-        parcelaNumero = 1,
-        totalParcelas = 1,
-        valorTotalCompraCentavos = null,
-        criadoEm = agora,
-        atualizadoEm = agora,
-        excluidoEm = null,
-        textoBruto = texto,
-    )
-
-    private fun transacaoDe(banco: PingoDatabase) = object : TransacaoLocal {
-        override suspend fun <T> executar(bloco: suspend () -> T): T = banco.withTransaction { bloco() }
-    }
 
     private class FixtureAuth(private val token: String) : AuthRepository {
         override val session: MutableStateFlow<SessionState> = MutableStateFlow(SessionState.LoggedIn)
@@ -292,5 +366,11 @@ class SyncHttpIntegrationTest {
 
     private companion object {
         const val ARG_HOST = "pingo.syncHost"
+        const val PACOTE = "com.pingo"
+        const val COMPONENTE = "$PACOTE/com.pingo.core.notifications.PingoNotificationListenerService"
+        val TEMPO_TOTAL = 240.seconds
+        const val TEMPO_ESPERA = 20_000L
+        const val INTERVALO_CONSULTA = 100L
+        val INTERVALO_SONDAGEM = 2.seconds
     }
 }

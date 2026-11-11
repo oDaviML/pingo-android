@@ -28,6 +28,7 @@ import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.model.TipoLancamento
 import com.pingo.core.network.ApiProfile
 import com.pingo.core.network.PingoApiClient
+import com.pingo.core.network.rules.ParserRulesResponse
 import com.pingo.core.network.sync.CategoriaSnapshotDto
 import com.pingo.core.network.sync.ContaSnapshotDto
 import com.pingo.core.network.sync.PublicIdAliasDto
@@ -664,6 +665,8 @@ class SyncEngineTest {
             pullCalls++
             return pullResult
         }
+
+        override suspend fun getParserRules(): ParserRulesResponse = error("getParserRules não é usado pelo SyncEngine")
 
         override suspend fun recordConsent(version: String): com.pingo.core.network.ApiConsent =
             com.pingo.core.network.ApiConsent(consentedAt = Instant.EPOCH.toString(), version = version)
