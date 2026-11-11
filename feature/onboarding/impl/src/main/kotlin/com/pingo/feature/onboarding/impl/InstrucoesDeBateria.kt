@@ -1,5 +1,7 @@
 package com.pingo.feature.onboarding.impl
 
+import com.pingo.core.notifications.FabricanteDoSistema
+
 data class InstrucoesDeBateria(val titulo: String, val passos: List<String>)
 
 object InstrucoesPorFabricante {

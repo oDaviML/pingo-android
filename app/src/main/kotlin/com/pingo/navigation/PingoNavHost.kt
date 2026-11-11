@@ -59,7 +59,9 @@ fun PingoNavHost(session: SessionState, destinoInicial: DestinoInicial?, onConse
         composable(AccountsRoute.ROUTE) { AccountsScreen() }
         composable(ReportsRoute.ROUTE) { ReportsScreen() }
         composable(ReviewRoute.ROUTE) { ReviewScreen() }
-        composable(CaptureStatusRoute.ROUTE) { CaptureStatusScreen() }
+        composable(CaptureStatusRoute.ROUTE) {
+            CaptureStatusScreen(onBack = { navController.popBackStack() })
+        }
         composable(SettingsRoute.ROUTE) {
             SettingsScreen(
                 onBack = { navController.popBackStack() },

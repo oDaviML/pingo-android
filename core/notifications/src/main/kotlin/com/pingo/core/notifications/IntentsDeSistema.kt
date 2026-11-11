@@ -1,4 +1,4 @@
-package com.pingo.feature.onboarding.impl
+package com.pingo.core.notifications
 
 import android.content.ComponentName
 import android.content.Context

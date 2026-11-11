@@ -1,5 +1,7 @@
 package com.pingo.feature.onboarding.impl
 
+import com.pingo.core.notifications.FabricanteDoSistema
+
 sealed interface OnboardingPermissoesEvent {
     data object AbrirAjustesDeNotificacoes : OnboardingPermissoesEvent
 

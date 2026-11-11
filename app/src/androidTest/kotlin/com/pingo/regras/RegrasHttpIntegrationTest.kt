@@ -14,6 +14,7 @@ import com.pingo.core.auth.SessionState
 import com.pingo.core.common.AppDispatchers
 import com.pingo.core.data.impl.RegraParserRepositoryImpl
 import com.pingo.core.database.PingoDatabase
+import com.pingo.core.datastore.AlertaDeCaptura
 import com.pingo.core.datastore.CapturaDataSource
 import com.pingo.core.datastore.ContadorCaptura
 import com.pingo.core.datastore.ContadoresDoMes
@@ -334,7 +335,11 @@ private class FakeCapturaDataSource : CapturaDataSource {
 
     override val ultimaLeituraPorApp: Flow<Map<InstituicaoFinanceira, Instant>> = flowOf(emptyMap())
 
+    override val observandoDesde: Flow<Instant?> = flowOf(null)
+
     override val estadoAtualizacaoRegras: Flow<EstadoAtualizacaoRegras> = regras.asStateFlow()
+
+    override val alertaDeCaptura: Flow<AlertaDeCaptura?> = flowOf(null)
 
     fun estadoDasRegras(): EstadoAtualizacaoRegras = regras.value
 
@@ -355,6 +360,8 @@ private class FakeCapturaDataSource : CapturaDataSource {
     override suspend fun registrarFalhaAoAtualizarRegras(motivo: String, em: Instant) {
         regras.value = regras.value.copy(falhaEm = em, motivoFalha = motivo)
     }
+
+    override suspend fun registrarAlertaDeCaptura(referencia: Instant, em: Instant) = Unit
 
     override suspend fun clear() = Unit
 }

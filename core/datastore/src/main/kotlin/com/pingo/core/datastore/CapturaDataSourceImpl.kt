@@ -25,8 +25,15 @@ class CapturaDataSourceImpl @Inject constructor(@param:ApplicationContext privat
     override val ultimaLeituraPorApp: Flow<Map<InstituicaoFinanceira, Instant>> =
         context.capturaPreferencesDataStore.data.map(::leiturasDe)
 
+    override val observandoDesde: Flow<Instant?> = context.capturaPreferencesDataStore.data.map { preferences ->
+        preferences[Keys.OBSERVANDO_DESDE]?.let(::instanteOuNulo)
+    }
+
     override val estadoAtualizacaoRegras: Flow<EstadoAtualizacaoRegras> =
         context.capturaPreferencesDataStore.data.map(::estadoDasRegrasDe)
+
+    override val alertaDeCaptura: Flow<AlertaDeCaptura?> =
+        context.capturaPreferencesDataStore.data.map(::alertaDeCapturaDe)
 
     override fun contadoresDoMes(mes: YearMonth): Flow<ContadoresDoMes> = context.capturaPreferencesDataStore.data.map { preferences ->
         ContadoresDoMes(
@@ -40,6 +47,10 @@ class CapturaDataSourceImpl @Inject constructor(@param:ApplicationContext privat
 
     override suspend fun registrarAtivo(em: Instant) {
         context.capturaPreferencesDataStore.edit { preferences ->
+            val jaObservava = preferences[Keys.ESTADO_LISTENER] == EstadoListener.ATIVO.name
+            if (!jaObservava || preferences[Keys.OBSERVANDO_DESDE] == null) {
+                preferences[Keys.OBSERVANDO_DESDE] = em.toString()
+            }
             preferences[Keys.ESTADO_LISTENER] = EstadoListener.ATIVO.name
             preferences.remove(Keys.MOTIVO_PARADA)
             preferences[Keys.ATUALIZADO_EM] = em.toString()
@@ -82,6 +93,13 @@ class CapturaDataSourceImpl @Inject constructor(@param:ApplicationContext privat
         }
     }
 
+    override suspend fun registrarAlertaDeCaptura(referencia: Instant, em: Instant) {
+        context.capturaPreferencesDataStore.edit { preferences ->
+            preferences[Keys.ALERTA_REFERENCIA] = referencia.toString()
+            preferences[Keys.ALERTA_ENVIADO_EM] = em.toString()
+        }
+    }
+
     override suspend fun clear() {
         context.capturaPreferencesDataStore.edit { preferences -> preferences.clear() }
     }
@@ -113,6 +131,13 @@ class CapturaDataSourceImpl @Inject constructor(@param:ApplicationContext privat
         motivoFalha = preferences[Keys.REGRAS_FALHA_MOTIVO],
     )
 
+    private fun alertaDeCapturaDe(preferences: Preferences): AlertaDeCaptura? {
+        val referencia = preferences[Keys.ALERTA_REFERENCIA]?.let(::instanteOuNulo)
+        val enviadoEm = preferences[Keys.ALERTA_ENVIADO_EM]?.let(::instanteOuNulo)
+
+        return if (referencia == null || enviadoEm == null) null else AlertaDeCaptura(referencia, enviadoEm)
+    }
+
     private fun instanteOuNulo(valor: String): Instant? = runCatching { Instant.parse(valor) }.getOrNull()
 
     private companion object {
@@ -120,9 +145,12 @@ class CapturaDataSourceImpl @Inject constructor(@param:ApplicationContext privat
             val ESTADO_LISTENER = stringPreferencesKey("estado_listener")
             val MOTIVO_PARADA = stringPreferencesKey("motivo_parada")
             val ATUALIZADO_EM = stringPreferencesKey("estado_atualizado_em")
+            val OBSERVANDO_DESDE = stringPreferencesKey("observando_desde")
             val REGRAS_ATUALIZADAS_EM = stringPreferencesKey("regras_atualizadas_em")
             val REGRAS_FALHA_EM = stringPreferencesKey("regras_falha_em")
             val REGRAS_FALHA_MOTIVO = stringPreferencesKey("regras_falha_motivo")
+            val ALERTA_REFERENCIA = stringPreferencesKey("alerta_referencia")
+            val ALERTA_ENVIADO_EM = stringPreferencesKey("alerta_enviado_em")
 
             fun ultimaLeitura(instituicao: InstituicaoFinanceira) = stringPreferencesKey("ultima_leitura_${instituicao.name}")
 

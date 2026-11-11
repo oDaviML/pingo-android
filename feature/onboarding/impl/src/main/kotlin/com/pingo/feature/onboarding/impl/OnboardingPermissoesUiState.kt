@@ -1,6 +1,7 @@
 package com.pingo.feature.onboarding.impl
 
 import androidx.compose.runtime.Immutable
+import com.pingo.core.notifications.FabricanteDoSistema
 
 enum class PassoDePermissoes(val numero: Int) {
     ACESSO_AS_NOTIFICACOES(4),

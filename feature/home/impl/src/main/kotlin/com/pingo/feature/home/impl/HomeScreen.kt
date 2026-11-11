@@ -50,8 +50,8 @@ fun HomeContent(state: HomeUiState, onOpenSettings: () -> Unit, onOpenCaptura: (
     ) {
         PingoText(text = "Início")
 
-        if (!state.capturaAutomatica) {
-            AvisoDeCapturaParada(onCorrigir = onOpenCaptura)
+        if (state.capturaParada) {
+            AvisoDeCapturaParada(descricao = descricaoDaCaptura(state), onCorrigir = onOpenCaptura)
         }
 
         PingoButton(
@@ -63,7 +63,7 @@ fun HomeContent(state: HomeUiState, onOpenSettings: () -> Unit, onOpenCaptura: (
 }
 
 @Composable
-private fun AvisoDeCapturaParada(onCorrigir: () -> Unit) {
+private fun AvisoDeCapturaParada(descricao: String, onCorrigir: () -> Unit) {
     PingoCard(contentPadding = PingoSpacing.lg, gap = PingoSpacing.md) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
@@ -85,7 +85,7 @@ private fun AvisoDeCapturaParada(onCorrigir: () -> Unit) {
                     color = PingoTheme.colors.warning,
                 )
                 PingoText(
-                    text = "Sem acesso às notificações, o Pingo está no modo manual.",
+                    text = descricao,
                     style = PingoTheme.typography.bodySmall,
                     color = PingoTheme.colors.onSurfaceVariant,
                 )
@@ -98,4 +98,10 @@ private fun AvisoDeCapturaParada(onCorrigir: () -> Unit) {
             size = PingoButtonSize.Small,
         )
     }
+}
+
+private fun descricaoDaCaptura(state: HomeUiState): String = if (!state.capturaAutomatica) {
+    "Sem acesso às notificações, o Pingo está no modo manual."
+} else {
+    "Nenhuma notificação lida há 2 dias. O Pingo pode não estar vendo seus bancos."
 }

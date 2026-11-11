@@ -9,6 +9,7 @@ import com.pingo.core.designsystem.component.PingoChoiceChip
 import com.pingo.core.designsystem.component.PingoText
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.notifications.FabricanteDoSistema
 
 @Composable
 internal fun BateriaBody(state: OnboardingPermissoesUiState, onEvent: (OnboardingPermissoesEvent) -> Unit) {

@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.pingo.core.datastore.PermissaoDoPingo
 import com.pingo.core.datastore.PermissoesDataSource
 import com.pingo.core.notifications.AcessoNotificacoes
+import com.pingo.core.notifications.BateriaDoAparelho
+import com.pingo.core.notifications.FabricanteDoAparelho
 import com.pingo.core.notifications.NotificacoesDoSistema
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

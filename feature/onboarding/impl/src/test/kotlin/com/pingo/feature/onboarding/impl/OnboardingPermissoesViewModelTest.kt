@@ -3,6 +3,9 @@ package com.pingo.feature.onboarding.impl
 import com.pingo.core.datastore.PermissaoDoPingo
 import com.pingo.core.datastore.PermissoesDataSource
 import com.pingo.core.notifications.AcessoNotificacoes
+import com.pingo.core.notifications.BateriaDoAparelho
+import com.pingo.core.notifications.FabricanteDoAparelho
+import com.pingo.core.notifications.FabricanteDoSistema
 import com.pingo.core.notifications.NotificacoesDoSistema
 import com.pingo.core.notifications.RevisaoPorNotificacaoConfigurada
 import com.pingo.core.testing.TestDispatcherRule

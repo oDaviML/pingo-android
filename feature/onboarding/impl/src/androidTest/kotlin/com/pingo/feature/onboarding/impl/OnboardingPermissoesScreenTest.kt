@@ -10,6 +10,9 @@ import com.pingo.core.datastore.PermissaoDoPingo
 import com.pingo.core.datastore.PermissoesDataSource
 import com.pingo.core.designsystem.theme.PingoTheme
 import com.pingo.core.notifications.AcessoNotificacoes
+import com.pingo.core.notifications.BateriaDoAparelho
+import com.pingo.core.notifications.FabricanteDoAparelho
+import com.pingo.core.notifications.FabricanteDoSistema
 import com.pingo.core.notifications.NotificacoesDoSistema
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow

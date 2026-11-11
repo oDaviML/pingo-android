@@ -1,4 +1,4 @@
-package com.pingo.feature.onboarding.impl
+package com.pingo.core.notifications
 
 enum class FabricanteDoSistema {
     SAMSUNG,

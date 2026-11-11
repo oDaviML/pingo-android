@@ -1,4 +1,4 @@
-package com.pingo.feature.onboarding.impl
+package com.pingo.core.notifications
 
 import android.os.Build
 import javax.inject.Inject

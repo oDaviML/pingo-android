@@ -14,6 +14,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.pingo.core.designsystem.theme.PingoTheme
 import com.pingo.core.notifications.CapturaController
+import com.pingo.core.notifications.GatilhoDeCapturaParada
 import com.pingo.navigation.PingoNavHost
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -25,11 +26,16 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var capturaController: CapturaController
 
+    @Inject lateinit var gatilhoDeCapturaParada: GatilhoDeCapturaParada
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        lifecycleScope.launch { capturaController.reconciliar() }
+        lifecycleScope.launch {
+            capturaController.reconciliar()
+            gatilhoDeCapturaParada.verificar()
+        }
 
         setContent {
             PingoTheme {

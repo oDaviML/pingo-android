@@ -55,4 +55,26 @@ class HomeScreenTest {
 
         composeRule.onAllNodesWithText("Captura parada").assertCountEquals(0)
     }
+
+    @Test
+    fun semLeituraHaDoisDiasMostraOAvisoDeCapturaParada() {
+        var correcoes = 0
+
+        composeRule.setContent {
+            PingoTheme {
+                HomeContent(
+                    state = HomeUiState(capturaAutomatica = true, semLeituraHa48h = true),
+                    onOpenSettings = {},
+                    onOpenCaptura = { correcoes++ },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Captura parada").assertIsDisplayed()
+        composeRule.onNodeWithText("Nenhuma notificação lida há 2 dias. O Pingo pode não estar vendo seus bancos.").assertIsDisplayed()
+
+        composeRule.onNodeWithText("Corrigir").performClick()
+
+        assertEquals(1, correcoes)
+    }
 }

@@ -2,6 +2,7 @@ package com.pingo.core.notifications
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.pingo.core.common.DefaultAppDispatchers
+import com.pingo.core.datastore.AlertaDeCaptura
 import com.pingo.core.datastore.CapturaDataSource
 import com.pingo.core.datastore.ContadorCaptura
 import com.pingo.core.datastore.ContadoresDoMes
@@ -161,7 +162,11 @@ class PingoNotificationListenerServiceTest {
 
         override val ultimaLeituraPorApp: Flow<Map<InstituicaoFinanceira, Instant>> = flowOf(emptyMap())
 
+        override val observandoDesde: Flow<Instant?> = flowOf(null)
+
         override val estadoAtualizacaoRegras: Flow<EstadoAtualizacaoRegras> = flowOf(EstadoAtualizacaoRegras())
+
+        override val alertaDeCaptura: Flow<AlertaDeCaptura?> = flowOf(null)
 
         fun liberarPersistencia() {
             liberacao.complete(Unit)
@@ -187,6 +192,8 @@ class PingoNotificationListenerServiceTest {
         override suspend fun registrarRegrasAtualizadas(em: Instant) = Unit
 
         override suspend fun registrarFalhaAoAtualizarRegras(motivo: String, em: Instant) = Unit
+
+        override suspend fun registrarAlertaDeCaptura(referencia: Instant, em: Instant) = Unit
 
         override suspend fun clear() = Unit
     }

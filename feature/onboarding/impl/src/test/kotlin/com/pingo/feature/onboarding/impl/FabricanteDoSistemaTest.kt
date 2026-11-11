@@ -1,5 +1,6 @@
 package com.pingo.feature.onboarding.impl
 
+import com.pingo.core.notifications.FabricanteDoSistema
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

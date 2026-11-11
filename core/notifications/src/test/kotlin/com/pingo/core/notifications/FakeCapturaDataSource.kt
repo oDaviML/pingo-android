@@ -1,5 +1,6 @@
 package com.pingo.core.notifications
 
+import com.pingo.core.datastore.AlertaDeCaptura
 import com.pingo.core.datastore.CapturaDataSource
 import com.pingo.core.datastore.ContadorCaptura
 import com.pingo.core.datastore.ContadoresDoMes
@@ -20,18 +21,28 @@ internal class FakeCapturaDataSource : CapturaDataSource {
     private val leituras = MutableStateFlow<Map<InstituicaoFinanceira, Instant>>(emptyMap())
     private val contadores = MutableStateFlow<Map<Pair<YearMonth, ContadorCaptura>, Int>>(emptyMap())
     private val estadoRegras = MutableStateFlow(EstadoAtualizacaoRegras())
+    private val observando = MutableStateFlow<Instant?>(null)
+    private val alerta = MutableStateFlow<AlertaDeCaptura?>(null)
 
     override val estadoListener: Flow<EstadoListenerPersistido> = estado.asStateFlow()
 
     override val ultimaLeituraPorApp: Flow<Map<InstituicaoFinanceira, Instant>> = leituras.asStateFlow()
 
+    override val observandoDesde: Flow<Instant?> = observando.asStateFlow()
+
     override val estadoAtualizacaoRegras: Flow<EstadoAtualizacaoRegras> = estadoRegras.asStateFlow()
+
+    override val alertaDeCaptura: Flow<AlertaDeCaptura?> = alerta.asStateFlow()
 
     fun ultimaLeitura(instituicao: InstituicaoFinanceira): Instant? = leituras.value[instituicao]
 
     fun estadoDasRegras(): EstadoAtualizacaoRegras = estadoRegras.value
 
     fun valorDoContador(mes: YearMonth, contador: ContadorCaptura): Int = contadores.value[mes to contador] ?: 0
+
+    fun observarDesde(em: Instant?) {
+        observando.value = em
+    }
 
     override fun contadoresDoMes(mes: YearMonth): Flow<ContadoresDoMes> = flowOf(
         ContadoresDoMes(
@@ -44,6 +55,9 @@ internal class FakeCapturaDataSource : CapturaDataSource {
     )
 
     override suspend fun registrarAtivo(em: Instant) {
+        if (estado.value.estado != EstadoListener.ATIVO || observando.value == null) {
+            observando.value = em
+        }
         estado.value = EstadoListenerPersistido(estado = EstadoListener.ATIVO, motivo = null, atualizadoEm = em)
     }
 
@@ -67,10 +81,16 @@ internal class FakeCapturaDataSource : CapturaDataSource {
         estadoRegras.value = estadoRegras.value.copy(falhaEm = em, motivoFalha = motivo)
     }
 
+    override suspend fun registrarAlertaDeCaptura(referencia: Instant, em: Instant) {
+        alerta.value = AlertaDeCaptura(referencia = referencia, enviadoEm = em)
+    }
+
     override suspend fun clear() {
         estado.value = EstadoListenerPersistido(EstadoListener.PARADO)
         leituras.value = emptyMap()
         contadores.value = emptyMap()
         estadoRegras.value = EstadoAtualizacaoRegras()
+        observando.value = null
+        alerta.value = null
     }
 }

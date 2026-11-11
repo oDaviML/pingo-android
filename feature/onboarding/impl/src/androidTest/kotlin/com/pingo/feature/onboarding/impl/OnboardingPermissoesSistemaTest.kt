@@ -5,6 +5,8 @@ import android.content.Context
 import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.pingo.core.notifications.FabricanteDoSistema
+import com.pingo.core.notifications.IntentsDeSistema
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

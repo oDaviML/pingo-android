@@ -27,6 +27,9 @@ import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.NovaConta
 import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.notifications.AcessoNotificacoes
+import com.pingo.core.notifications.BateriaDoAparelho
+import com.pingo.core.notifications.FabricanteDoAparelho
+import com.pingo.core.notifications.FabricanteDoSistema
 import com.pingo.core.notifications.NotificacoesDoSistema
 import com.pingo.core.ui.PRIVACY_TERM_VERSION
 import kotlinx.coroutines.flow.Flow
