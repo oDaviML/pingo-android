@@ -1,17 +1,107 @@
 name: Release
 
 on:
+  push:
+    tags:
+      - "v*"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag existente para publicar (ex. v0.1.0)
+        required: true
+        type: string
+
+permissions:
+  contents: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      AUTH0_DOMAIN: ${{ vars.AUTH0_DOMAIN }}
+      AUTH0_CLIENT_ID: ${{ vars.AUTH0_CLIENT_ID }}
+      AUTH0_AUDIENCE: ${{ vars.AUTH0_AUDIENCE }}
+      AUTH0_GOOGLE_WEB_CLIENT_ID: ${{ vars.AUTH0_GOOGLE_WEB_CLIENT_ID }}
+      ANDROID_KEY_ALIAS: ${{ vars.ANDROID_KEY_ALIAS || 'pingo-release' }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref }}
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
       - uses: gradle/actions/setup-gradle@v4
-      - name: Assemble release
-        run: ./gradlew assembleRelease
+      - name: Validar configuração
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          faltando=""
+          [ -n "$AUTH0_DOMAIN" ] || faltando="$faltando AUTH0_DOMAIN"
+          [ -n "$AUTH0_CLIENT_ID" ] || faltando="$faltando AUTH0_CLIENT_ID"
+          [ -n "$AUTH0_AUDIENCE" ] || faltando="$faltando AUTH0_AUDIENCE"
+          [ -n "$AUTH0_GOOGLE_WEB_CLIENT_ID" ] || faltando="$faltando AUTH0_GOOGLE_WEB_CLIENT_ID"
+          [ -n "$KEYSTORE" ] || faltando="$faltando secret:ANDROID_KEYSTORE_BASE64"
+          [ -n "$KEYSTORE_PASSWORD" ] || faltando="$faltando secret:ANDROID_KEYSTORE_PASSWORD"
+          [ -n "$KEY_PASSWORD" ] || faltando="$faltando secret:ANDROID_KEY_PASSWORD"
+          if [ -n "$faltando" ]; then
+            echo "Configuração ausente:$faltando"
+            exit 1
+          fi
+      - name: Definir versão
+        id: versao
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "numero=${TAG#v}" >> "$GITHUB_OUTPUT"
+      - name: Escrever configuração do Auth0
+        run: |
+          cat > local.properties <<EOF
+          pingo.auth0.domain=$AUTH0_DOMAIN
+          pingo.auth0.clientId=$AUTH0_CLIENT_ID
+          pingo.auth0.scheme=pingo
+          pingo.auth0.audience=$AUTH0_AUDIENCE
+          pingo.auth0.googleWebClientId=$AUTH0_GOOGLE_WEB_CLIENT_ID
+          EOF
+      - name: Construir release
+        env:
+          VERSAO: ${{ steps.versao.outputs.numero }}
+        run: ./gradlew :app:assembleRelease -Ppingo.versionName="$VERSAO" --console=plain
+      - name: Assinar e verificar
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          VERSAO: ${{ steps.versao.outputs.numero }}
+        run: |
+          BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          printf '%s' "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/pingo-release.p12"
+          printf '%s' "$KEYSTORE_PASSWORD" > "$RUNNER_TEMP/keystore.pass"
+          printf '%s' "$KEY_PASSWORD" > "$RUNNER_TEMP/key.pass"
+          "$BUILD_TOOLS/zipalign" -p -f 4 app/build/outputs/apk/release/app-release-unsigned.apk "$RUNNER_TEMP/pingo-aligned.apk"
+          "$BUILD_TOOLS/apksigner" sign \
+            --ks "$RUNNER_TEMP/pingo-release.p12" \
+            --ks-type PKCS12 \
+            --ks-key-alias "$ANDROID_KEY_ALIAS" \
+            --ks-pass "file:$RUNNER_TEMP/keystore.pass" \
+            --key-pass "file:$RUNNER_TEMP/key.pass" \
+            --out "Pingo-$VERSAO-release.apk" \
+            "$RUNNER_TEMP/pingo-aligned.apk"
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "Pingo-$VERSAO-release.apk"
+          sha256sum "Pingo-$VERSAO-release.apk" > "Pingo-$VERSAO-release.apk.sha256"
+          rm -f "$RUNNER_TEMP/pingo-release.p12" "$RUNNER_TEMP/keystore.pass" "$RUNNER_TEMP/key.pass"
+      - name: Publicar no GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.versao.outputs.tag }}
+          VERSAO: ${{ steps.versao.outputs.numero }}
+        run: |
+          arquivos=("Pingo-$VERSAO-release.apk" "Pingo-$VERSAO-release.apk.sha256")
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "${arquivos[@]}" --clobber
+          else
+            gh release create "$TAG" "${arquivos[@]}" --title "Pingo $VERSAO" --generate-notes --verify-tag
+          fi

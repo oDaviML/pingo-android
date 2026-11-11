@@ -40,6 +40,22 @@ $ANDROID_HOME/build-tools/36.0.0/apksigner sign --ks ../release-private/pingo-re
 
 Nenhum caminho de chave, senha ou `signingConfig` fica no repositório. O cadastro do SHA-1 no Google/Auth0 e a compatibilidade da API de produção são pendências externas descritas em `../releases/README.md`.
 
+### Release pelo GitHub Actions
+
+O workflow `Release` publica o APK assinado em GitHub Releases ao enviar uma tag `v*` ou ao disparar manualmente com uma tag existente. Ele grava o `local.properties` com os valores do Auth0, assina com a chave de release guardada nos secrets, verifica a assinatura e anexa o APK e o `sha256`.
+
+Variáveis do repositório (Settings → Secrets and variables → Actions → Variables): `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_AUDIENCE`, `AUTH0_GOOGLE_WEB_CLIENT_ID` e, opcional, `ANDROID_KEY_ALIAS` (padrão `pingo-release`).
+
+Secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD` e `ANDROID_KEY_PASSWORD`. Sem eles o workflow falha antes de construir.
+
+```bash
+gh secret set ANDROID_KEYSTORE_BASE64 --repo oDaviML/pingo-android < <(base64 -w0 ../release-private/pingo-release.p12)
+gh secret set ANDROID_KEYSTORE_PASSWORD --repo oDaviML/pingo-android < ../release-private/pingo-release.password
+gh secret set ANDROID_KEY_PASSWORD --repo oDaviML/pingo-android < ../release-private/pingo-release.password
+```
+
+A tag define a `versionName` (`v0.2.0` gera `0.2.0`); o `versionCode` continua sendo alterado em `app/build.gradle.kts`.
+
 ## Estrutura resumida
 
 | Pasta | Papel |
