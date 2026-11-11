@@ -34,6 +34,11 @@ android {
         manifestPlaceholders["auth0Domain"] = localProperty("pingo.auth0.domain", "")
         manifestPlaceholders["auth0Scheme"] = localProperty("pingo.auth0.scheme", "pingo")
     }
+    buildTypes {
+        release {
+            buildConfigField("String", "API_BASE_URL", "\"https://api-pingo.davimartinslage.com.br/\"")
+        }
+    }
     buildFeatures {
         buildConfig = true
     }

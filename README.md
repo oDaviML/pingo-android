@@ -23,6 +23,23 @@ Requisitos: JDK 21 e Android SDK com a plataforma API 36.
 
 O `build` roda compilação, testes unitários, detekt e ktlint (Spotless).
 
+## Release local
+
+A variante **release** fixa `API_BASE_URL=https://api-pingo.davimartinslage.com.br/` em `app/build.gradle.kts` e não é debuggable. A variante **debug** continua lendo `pingo.api.baseUrl` de `local.properties` (padrão `http://10.0.2.2:8080/`) e mantém a seam de notificações sintéticas.
+
+O `assembleRelease` gera um APK não assinado. A assinatura é feita fora do repositório, por linha de comando, com chave e senha guardadas em `../release-private/`:
+
+```bash
+./gradlew :app:assembleRelease
+$ANDROID_HOME/build-tools/36.0.0/zipalign -p -f 4 app/build/outputs/apk/release/app-release-unsigned.apk /tmp/pingo-aligned.apk
+$ANDROID_HOME/build-tools/36.0.0/apksigner sign --ks ../release-private/pingo-release.p12 \
+  --ks-type PKCS12 --ks-key-alias pingo-release \
+  --ks-pass "file:../release-private/pingo-release.password" \
+  --out ../releases/Pingo-0.1.0-release.apk /tmp/pingo-aligned.apk
+```
+
+Nenhum caminho de chave, senha ou `signingConfig` fica no repositório. O cadastro do SHA-1 no Google/Auth0 e a compatibilidade da API de produção são pendências externas descritas em `../releases/README.md`.
+
 ## Estrutura resumida
 
 | Pasta | Papel |
