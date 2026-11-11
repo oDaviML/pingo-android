@@ -26,6 +26,10 @@
                 android:value="Leitura local de notificações bancárias para captura automática de lançamentos" />
         </service>
 
+        <receiver
+            android:name=".RevisarPendenciaReceiver"
+            android:exported="false" />
+
     </application>
 
 </manifest>

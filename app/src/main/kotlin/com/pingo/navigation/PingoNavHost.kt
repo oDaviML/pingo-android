@@ -1,5 +1,7 @@
 package com.pingo.navigation
 
+import android.app.Activity
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -8,6 +10,10 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -16,9 +22,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import com.pingo.core.auth.SessionState
 import com.pingo.core.designsystem.component.AbaInferior
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.notifications.NotificacoesDeRevisao
 import com.pingo.feature.accounts.api.AccountsRoute
 import com.pingo.feature.accounts.impl.AccountsScreen
 import com.pingo.feature.capturestatus.api.CaptureStatusRoute
@@ -58,6 +66,32 @@ fun PingoNavHost(session: SessionState, destinoInicial: DestinoInicial?, onConse
         telasDeAba(navController = navController)
         telasDeApoio(navController = navController)
     }
+
+    ContextoInicial(
+        activity = LocalActivity.current,
+        destinoInicial = destinoInicial,
+        navController = navController,
+    )
+}
+
+@Composable
+private fun ContextoInicial(activity: Activity?, destinoInicial: DestinoInicial, navController: NavHostController) {
+    var tratado by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(navController, destinoInicial) {
+        val intencao = activity?.intent
+        if (tratado || destinoInicial != DestinoInicial.HOME || intencao == null) {
+            return@LaunchedEffect
+        }
+
+        tratado = true
+        val publicId = intencao.getStringExtra(NotificacoesDeRevisao.EXTRA_PUBLIC_ID)
+        if (publicId != null) {
+            navController.navigate(TransactionsRoute.detalhe(publicId))
+        } else {
+            navController.handleDeepLink(intencao)
+        }
+    }
 }
 
 private fun NavGraphBuilder.telasDeAba(navController: NavHostController) {
@@ -82,6 +116,7 @@ private fun NavGraphBuilder.telasDeAba(navController: NavHostController) {
     composable(
         route = TransactionsRoute.DETALHE_ROUTE,
         arguments = listOf(navArgument(TransactionsRoute.ARG_PUBLIC_ID) { type = NavType.StringType }),
+        deepLinks = listOf(navDeepLink { uriPattern = NotificacoesDeRevisao.PADRAO_DEEP_LINK_DETALHE }),
     ) { entrada ->
         DetalheDoLancamentoScreen(
             publicId = entrada.arguments?.getString(TransactionsRoute.ARG_PUBLIC_ID).orEmpty(),

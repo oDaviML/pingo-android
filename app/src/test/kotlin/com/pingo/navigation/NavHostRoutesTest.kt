@@ -1,5 +1,6 @@
 package com.pingo.navigation
 
+import com.pingo.core.notifications.NotificacoesDeRevisao
 import com.pingo.feature.accounts.api.AccountsRoute
 import com.pingo.feature.capturestatus.api.CaptureStatusRoute
 import com.pingo.feature.home.api.HomeRoute
@@ -35,5 +36,13 @@ class NavHostRoutesTest {
     @Test
     fun detalheRouteCarregaPublicId() {
         assertEquals("transactions/detalhe/lanc-1", TransactionsRoute.detalhe("lanc-1"))
+    }
+
+    @Test
+    fun deepLinkDaNotificacaoApontaParaODetalhe() {
+        assertEquals(
+            "pingo://detalhe/{${TransactionsRoute.ARG_PUBLIC_ID}}",
+            NotificacoesDeRevisao.PADRAO_DEEP_LINK_DETALHE,
+        )
     }
 }
