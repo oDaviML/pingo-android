@@ -22,6 +22,7 @@ class NavHostRoutesTest {
             OnboardingContasRoute.ROUTE,
             HomeRoute.ROUTE,
             TransactionsRoute.ROUTE,
+            TransactionsRoute.DETALHE_ROUTE,
             AccountsRoute.ROUTE,
             ReportsRoute.ROUTE,
             ReviewRoute.ROUTE,
@@ -29,5 +30,10 @@ class NavHostRoutesTest {
             SettingsRoute.ROUTE,
         )
         assertEquals(routes.size, routes.toSet().size)
+    }
+
+    @Test
+    fun detalheRouteCarregaPublicId() {
+        assertEquals("transactions/detalhe/lanc-1", TransactionsRoute.detalhe("lanc-1"))
     }
 }

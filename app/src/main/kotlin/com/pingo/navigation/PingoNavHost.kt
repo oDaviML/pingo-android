@@ -9,11 +9,15 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.pingo.core.auth.SessionState
+import com.pingo.core.designsystem.component.AbaInferior
 import com.pingo.core.designsystem.theme.PingoTheme
 import com.pingo.feature.accounts.api.AccountsRoute
 import com.pingo.feature.accounts.impl.AccountsScreen
@@ -30,6 +34,7 @@ import com.pingo.feature.review.impl.ReviewScreen
 import com.pingo.feature.settings.api.SettingsRoute
 import com.pingo.feature.settings.impl.SettingsScreen
 import com.pingo.feature.transactions.api.TransactionsRoute
+import com.pingo.feature.transactions.impl.DetalheDoLancamentoScreen
 import com.pingo.feature.transactions.impl.TransactionsScreen
 
 @Composable
@@ -49,25 +54,52 @@ fun PingoNavHost(session: SessionState, destinoInicial: DestinoInicial?, onConse
         modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars),
     ) {
         onboardingGraph(navController = navController, onConsentAccepted = onConsentAccepted)
-        composable(HomeRoute.ROUTE) {
-            HomeScreen(
-                onOpenSettings = { navController.navigate(SettingsRoute.ROUTE) },
-                onOpenCaptura = { navController.navigate(CaptureStatusRoute.ROUTE) },
-            )
-        }
-        composable(TransactionsRoute.ROUTE) { TransactionsScreen() }
-        composable(AccountsRoute.ROUTE) { AccountsScreen() }
-        composable(ReportsRoute.ROUTE) { ReportsScreen() }
-        composable(ReviewRoute.ROUTE) { ReviewScreen() }
-        composable(CaptureStatusRoute.ROUTE) {
-            CaptureStatusScreen(onBack = { navController.popBackStack() })
-        }
-        composable(SettingsRoute.ROUTE) {
-            SettingsScreen(
-                onBack = { navController.popBackStack() },
-                onAccountDeleted = { navController.toOnboarding() },
-            )
-        }
+        telasDeAba(navController = navController)
+        telasDeApoio(navController = navController)
+    }
+}
+
+private fun NavGraphBuilder.telasDeAba(navController: NavHostController) {
+    composable(HomeRoute.ROUTE) {
+        HomeScreen(
+            onOpenSettings = { navController.navigate(SettingsRoute.ROUTE) },
+            onOpenCaptura = { navController.navigate(CaptureStatusRoute.ROUTE) },
+            onSelecionarAba = { aba -> navController.abrirAba(aba) },
+        )
+    }
+    composable(TransactionsRoute.ROUTE) {
+        TransactionsScreen(
+            onOpenDetalhe = { publicId -> navController.navigate(TransactionsRoute.detalhe(publicId)) },
+            onSelecionarAba = { aba -> navController.abrirAba(aba) },
+        )
+    }
+    composable(
+        route = TransactionsRoute.DETALHE_ROUTE,
+        arguments = listOf(navArgument(TransactionsRoute.ARG_PUBLIC_ID) { type = NavType.StringType }),
+    ) { entrada ->
+        DetalheDoLancamentoScreen(
+            publicId = entrada.arguments?.getString(TransactionsRoute.ARG_PUBLIC_ID).orEmpty(),
+            onBack = { navController.popBackStack() },
+        )
+    }
+    composable(AccountsRoute.ROUTE) {
+        AccountsScreen(onSelecionarAba = { aba -> navController.abrirAba(aba) })
+    }
+    composable(ReportsRoute.ROUTE) {
+        ReportsScreen(onSelecionarAba = { aba -> navController.abrirAba(aba) })
+    }
+    composable(ReviewRoute.ROUTE) { ReviewScreen() }
+}
+
+private fun NavGraphBuilder.telasDeApoio(navController: NavHostController) {
+    composable(CaptureStatusRoute.ROUTE) {
+        CaptureStatusScreen(onBack = { navController.popBackStack() })
+    }
+    composable(SettingsRoute.ROUTE) {
+        SettingsScreen(
+            onBack = { navController.popBackStack() },
+            onAccountDeleted = { navController.toOnboarding() },
+        )
     }
 }
 
@@ -75,6 +107,24 @@ private fun DestinoInicial.rota(): String = when (this) {
     DestinoInicial.ONBOARDING -> OnboardingRoute.ROUTE
     DestinoInicial.CONTAS -> OnboardingContasRoute.ROUTE
     DestinoInicial.HOME -> HomeRoute.ROUTE
+}
+
+private fun NavHostController.abrirAba(aba: AbaInferior) {
+    val rota = when (aba) {
+        AbaInferior.INICIO -> HomeRoute.ROUTE
+        AbaInferior.LANCAMENTOS -> TransactionsRoute.ROUTE
+        AbaInferior.CONTAS -> AccountsRoute.ROUTE
+        AbaInferior.RELATORIOS -> ReportsRoute.ROUTE
+    }
+
+    if (currentDestination?.route == rota) {
+        return
+    }
+
+    navigate(rota) {
+        popUpTo(HomeRoute.ROUTE) { inclusive = false }
+        launchSingleTop = true
+    }
 }
 
 @Composable

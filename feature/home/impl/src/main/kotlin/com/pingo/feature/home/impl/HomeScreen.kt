@@ -15,6 +15,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.pingo.core.designsystem.component.AbaInferior
+import com.pingo.core.designsystem.component.PingoBottomBar
 import com.pingo.core.designsystem.component.PingoButton
 import com.pingo.core.designsystem.component.PingoButtonSize
 import com.pingo.core.designsystem.component.PingoButtonType
@@ -26,7 +28,12 @@ import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
 
 @Composable
-fun HomeScreen(onOpenSettings: () -> Unit, onOpenCaptura: () -> Unit, viewModel: HomeViewModel = hiltViewModel()) {
+fun HomeScreen(
+    onOpenSettings: () -> Unit,
+    onOpenCaptura: () -> Unit,
+    onSelecionarAba: (AbaInferior) -> Unit,
+    viewModel: HomeViewModel = hiltViewModel(),
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -37,28 +44,33 @@ fun HomeScreen(onOpenSettings: () -> Unit, onOpenCaptura: () -> Unit, viewModel:
         state = state,
         onOpenSettings = onOpenSettings,
         onOpenCaptura = onOpenCaptura,
+        onSelecionarAba = onSelecionarAba,
     )
 }
 
 @Composable
-fun HomeContent(state: HomeUiState, onOpenSettings: () -> Unit, onOpenCaptura: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(PingoSpacing.lg),
-        verticalArrangement = Arrangement.spacedBy(PingoSpacing.md),
-    ) {
-        PingoText(text = "Início")
+fun HomeContent(state: HomeUiState, onOpenSettings: () -> Unit, onOpenCaptura: () -> Unit, onSelecionarAba: (AbaInferior) -> Unit = {}) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(PingoSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(PingoSpacing.md),
+        ) {
+            PingoText(text = "Início")
 
-        if (state.capturaParada) {
-            AvisoDeCapturaParada(descricao = descricaoDaCaptura(state), onCorrigir = onOpenCaptura)
+            if (state.capturaParada) {
+                AvisoDeCapturaParada(descricao = descricaoDaCaptura(state), onCorrigir = onOpenCaptura)
+            }
+
+            PingoButton(
+                text = "Configurações",
+                onClick = onOpenSettings,
+                type = PingoButtonType.Text,
+            )
         }
 
-        PingoButton(
-            text = "Configurações",
-            onClick = onOpenSettings,
-            type = PingoButtonType.Text,
-        )
+        PingoBottomBar(selecionada = AbaInferior.INICIO, onSelecionar = onSelecionarAba)
     }
 }
 
