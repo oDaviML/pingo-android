@@ -9,6 +9,7 @@ import com.pingo.core.designsystem.component.AbaInferior
 @Composable
 fun TransactionsScreen(
     onOpenDetalhe: (String) -> Unit,
+    onOpenNovo: () -> Unit,
     onSelecionarAba: (AbaInferior) -> Unit,
     viewModel: TransactionsViewModel = hiltViewModel(),
 ) {
@@ -18,6 +19,7 @@ fun TransactionsScreen(
         state = state,
         onEvent = viewModel::onEvent,
         onOpenDetalhe = onOpenDetalhe,
+        onOpenNovo = onOpenNovo,
         onSelecionarAba = onSelecionarAba,
     )
 }

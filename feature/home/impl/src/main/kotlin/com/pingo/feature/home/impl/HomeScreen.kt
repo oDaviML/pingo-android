@@ -31,6 +31,7 @@ import com.pingo.core.designsystem.theme.PingoTheme
 fun HomeScreen(
     onOpenSettings: () -> Unit,
     onOpenCaptura: () -> Unit,
+    onOpenNovo: () -> Unit,
     onSelecionarAba: (AbaInferior) -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
@@ -44,12 +45,19 @@ fun HomeScreen(
         state = state,
         onOpenSettings = onOpenSettings,
         onOpenCaptura = onOpenCaptura,
+        onOpenNovo = onOpenNovo,
         onSelecionarAba = onSelecionarAba,
     )
 }
 
 @Composable
-fun HomeContent(state: HomeUiState, onOpenSettings: () -> Unit, onOpenCaptura: () -> Unit, onSelecionarAba: (AbaInferior) -> Unit = {}) {
+fun HomeContent(
+    state: HomeUiState,
+    onOpenSettings: () -> Unit,
+    onOpenCaptura: () -> Unit,
+    onOpenNovo: () -> Unit,
+    onSelecionarAba: (AbaInferior) -> Unit = {},
+) {
     Column(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -70,7 +78,11 @@ fun HomeContent(state: HomeUiState, onOpenSettings: () -> Unit, onOpenCaptura: (
             )
         }
 
-        PingoBottomBar(selecionada = AbaInferior.INICIO, onSelecionar = onSelecionarAba)
+        PingoBottomBar(
+            selecionada = AbaInferior.INICIO,
+            onSelecionar = onSelecionarAba,
+            onNovo = onOpenNovo,
+        )
     }
 }
 

@@ -26,6 +26,35 @@ abstract class LancamentoDao {
 
     @Query(
         """
+        SELECT instrumentoPublicId FROM lancamentos
+        WHERE excluidoEm IS NULL AND instrumentoPublicId IN (:instrumentos)
+        ORDER BY dataHora DESC
+        LIMIT 1
+        """,
+    )
+    abstract suspend fun ultimoInstrumentoUsado(instrumentos: List<String>): String?
+
+    @Query(
+        """
+        SELECT * FROM lancamentos
+        WHERE excluidoEm IS NULL
+        AND origem = :origem
+        AND instrumentoPublicId = :instrumentoPublicId
+        AND valorCentavos = :valorCentavos
+        AND dataHora BETWEEN :inicio AND :fim
+        ORDER BY dataHora
+        """,
+    )
+    abstract suspend fun capturadosSemelhantes(
+        instrumentoPublicId: String,
+        valorCentavos: Long,
+        inicio: Instant,
+        fim: Instant,
+        origem: OrigemLancamento,
+    ): List<LancamentoEntity>
+
+    @Query(
+        """
         SELECT lancamentos.* FROM lancamentos
         INNER JOIN instrumentos ON instrumentos.publicId = lancamentos.instrumentoPublicId
         INNER JOIN contas ON contas.publicId = instrumentos.contaPublicId

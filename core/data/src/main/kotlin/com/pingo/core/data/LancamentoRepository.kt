@@ -15,6 +15,10 @@ interface LancamentoRepository {
 
     suspend fun buscarPorHash(hash: String): Lancamento?
 
+    suspend fun ultimoInstrumentoUsado(instrumentos: List<String>): String?
+
+    suspend fun capturadosSemelhantes(instrumentoPublicId: String, valorCentavos: Long, inicio: Instant, fim: Instant): List<Lancamento>
+
     suspend fun candidatosDeTransferencia(
         tipo: TipoLancamento,
         valorCentavos: Long,

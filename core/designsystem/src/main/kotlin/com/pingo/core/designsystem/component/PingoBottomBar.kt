@@ -1,6 +1,7 @@
 package com.pingo.core.designsystem.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -26,7 +28,12 @@ import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
 
 @Composable
-fun PingoBottomBar(selecionada: AbaInferior, onSelecionar: (AbaInferior) -> Unit, modifier: Modifier = Modifier) {
+fun PingoBottomBar(
+    selecionada: AbaInferior,
+    onSelecionar: (AbaInferior) -> Unit,
+    onNovo: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -44,6 +51,9 @@ fun PingoBottomBar(selecionada: AbaInferior, onSelecionar: (AbaInferior) -> Unit
                 .padding(horizontal = PingoSpacing.sm, vertical = PingoSpacing.xs),
         ) {
             AbaInferior.entries.forEach { aba ->
+                if (onNovo != null && aba == AbaInferior.CONTAS) {
+                    BotaoDoNovoLancamento(onClick = onNovo)
+                }
                 AbaItem(
                     aba = aba,
                     selecionada = aba == selecionada,
@@ -91,6 +101,32 @@ private fun AbaItem(aba: AbaInferior, selecionada: Boolean, onClick: () -> Unit,
             color = conteudo,
             maxLines = 1,
         )
+    }
+}
+
+@Composable
+private fun BotaoDoNovoLancamento(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .width(64.dp)
+            .height(52.dp)
+            .testTag("novo-lancamento"),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(52.dp)
+                .background(color = PingoTheme.colors.primary, shape = CircleShape)
+                .clickable(role = Role.Button, onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) {
+            PingoIcon(
+                imageVector = PingoIcons.Plus,
+                contentDescription = "Novo lançamento",
+                modifier = Modifier.size(24.dp),
+                tint = PingoTheme.colors.onPrimary,
+            )
+        }
     }
 }
 

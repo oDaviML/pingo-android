@@ -252,4 +252,8 @@ object PingoIcons {
     val Undo: ImageVector by lazy {
         strokeIcon("Undo", "M9 14 4 9l5-5", "M4 9h10a6 6 0 0 1 0 12h-3")
     }
+
+    val Backspace: ImageVector by lazy {
+        strokeIcon("Backspace", "M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z", "m18 9-6 6", "m12 9 6 6")
+    }
 }

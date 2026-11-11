@@ -167,6 +167,7 @@ class TransactionsRoomTest {
                     state = state,
                     onEvent = viewModel::onEvent,
                     onOpenDetalhe = {},
+                    onOpenNovo = {},
                     onSelecionarAba = {},
                 )
             }

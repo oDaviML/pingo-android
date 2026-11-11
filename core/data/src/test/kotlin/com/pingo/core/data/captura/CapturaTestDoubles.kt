@@ -124,6 +124,24 @@ internal class FakeLancamentos(private val instrumentos: FakeInstrumentos) : Lan
     override suspend fun buscarPorHash(hash: String): Lancamento? =
         lancamentos.firstOrNull { it.hashDuplicata == hash && it.excluidoEm == null }
 
+    override suspend fun ultimoInstrumentoUsado(instrumentos: List<String>): String? = lancamentos
+        .filter { it.excluidoEm == null && it.instrumentoPublicId in instrumentos }
+        .maxByOrNull { it.dataHora }
+        ?.instrumentoPublicId
+
+    override suspend fun capturadosSemelhantes(
+        instrumentoPublicId: String,
+        valorCentavos: Long,
+        inicio: Instant,
+        fim: Instant,
+    ): List<Lancamento> = lancamentos.filter { lancamento ->
+        lancamento.excluidoEm == null &&
+            lancamento.origem == OrigemLancamento.NOTIFICACAO &&
+            lancamento.instrumentoPublicId == instrumentoPublicId &&
+            lancamento.valorCentavos == valorCentavos &&
+            lancamento.dataHora in inicio..fim
+    }
+
     override suspend fun candidatosDeTransferencia(
         tipo: TipoLancamento,
         valorCentavos: Long,

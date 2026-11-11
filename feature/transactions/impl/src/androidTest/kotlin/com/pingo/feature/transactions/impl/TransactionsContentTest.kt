@@ -252,10 +252,21 @@ class TransactionsContentTest {
         assertEquals(listOf(AbaInferior.CONTAS, AbaInferior.RELATORIOS, AbaInferior.INICIO), abas)
     }
 
+    @Test
+    fun botaoNovoLancamentoDaBarraInferiorAbreOTerceiroPasso() {
+        var aberturas = 0
+        mostrar(estadoPadrao(), aoAbrirNovo = { aberturas++ })
+
+        composeRule.onNodeWithContentDescription("Novo lançamento").performClick()
+
+        assertEquals(1, aberturas)
+    }
+
     private fun mostrar(
         state: TransactionsUiState,
         eventos: MutableList<TransactionsEvent> = mutableListOf(),
         aoAbrirDetalhe: (String) -> Unit = {},
+        aoAbrirNovo: () -> Unit = {},
         aoSelecionarAba: (AbaInferior) -> Unit = {},
     ) {
         composeRule.setContent {
@@ -264,6 +275,7 @@ class TransactionsContentTest {
                     state = state,
                     onEvent = { eventos += it },
                     onOpenDetalhe = aoAbrirDetalhe,
+                    onOpenNovo = aoAbrirNovo,
                     onSelecionarAba = aoSelecionarAba,
                 )
             }

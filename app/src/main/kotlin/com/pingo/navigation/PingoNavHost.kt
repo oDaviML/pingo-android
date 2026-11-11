@@ -35,6 +35,7 @@ import com.pingo.feature.settings.api.SettingsRoute
 import com.pingo.feature.settings.impl.SettingsScreen
 import com.pingo.feature.transactions.api.TransactionsRoute
 import com.pingo.feature.transactions.impl.DetalheDoLancamentoScreen
+import com.pingo.feature.transactions.impl.NovoLancamentoScreen
 import com.pingo.feature.transactions.impl.TransactionsScreen
 
 @Composable
@@ -64,14 +65,19 @@ private fun NavGraphBuilder.telasDeAba(navController: NavHostController) {
         HomeScreen(
             onOpenSettings = { navController.navigate(SettingsRoute.ROUTE) },
             onOpenCaptura = { navController.navigate(CaptureStatusRoute.ROUTE) },
+            onOpenNovo = { navController.navigate(TransactionsRoute.NOVO_ROUTE) },
             onSelecionarAba = { aba -> navController.abrirAba(aba) },
         )
     }
     composable(TransactionsRoute.ROUTE) {
         TransactionsScreen(
             onOpenDetalhe = { publicId -> navController.navigate(TransactionsRoute.detalhe(publicId)) },
+            onOpenNovo = { navController.navigate(TransactionsRoute.NOVO_ROUTE) },
             onSelecionarAba = { aba -> navController.abrirAba(aba) },
         )
+    }
+    composable(TransactionsRoute.NOVO_ROUTE) {
+        NovoLancamentoScreen(onVoltar = { navController.popBackStack() })
     }
     composable(
         route = TransactionsRoute.DETALHE_ROUTE,

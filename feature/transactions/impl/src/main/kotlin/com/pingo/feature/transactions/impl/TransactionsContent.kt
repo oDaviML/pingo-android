@@ -52,6 +52,7 @@ fun TransactionsContent(
     state: TransactionsUiState,
     onEvent: (TransactionsEvent) -> Unit,
     onOpenDetalhe: (String) -> Unit,
+    onOpenNovo: () -> Unit,
     onSelecionarAba: (AbaInferior) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -61,23 +62,17 @@ fun TransactionsContent(
             .background(PingoTheme.colors.background),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            Column(modifier = Modifier.weight(1f)) {
-                CabecalhoDaTela(state = state, onEvent = onEvent)
-                Box(modifier = Modifier.weight(1f)) {
-                    ConteudoDaLista(state = state, onEvent = onEvent, onOpenDetalhe = onOpenDetalhe)
-                    state.mensagemDeExclusao?.let { mensagem ->
-                        SnackbarDeExclusao(
-                            mensagem = mensagem,
-                            onDesfazer = { onEvent(TransactionsEvent.DesfazerExclusao) },
-                            onDispensar = { onEvent(TransactionsEvent.DispensarMensagem) },
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(PingoSpacing.lg),
-                        )
-                    }
-                }
-            }
-            PingoBottomBar(selecionada = AbaInferior.LANCAMENTOS, onSelecionar = onSelecionarAba)
+            SecaoDaLista(
+                state = state,
+                onEvent = onEvent,
+                onOpenDetalhe = onOpenDetalhe,
+                modifier = Modifier.weight(1f),
+            )
+            PingoBottomBar(
+                selecionada = AbaInferior.LANCAMENTOS,
+                onSelecionar = onSelecionarAba,
+                onNovo = onOpenNovo,
+            )
         }
 
         if (state.filtrosVisiveis) {
@@ -92,6 +87,31 @@ fun TransactionsContent(
                 },
                 onFechar = { onEvent(TransactionsEvent.FecharTrocaCategoria) },
             )
+        }
+    }
+}
+
+@Composable
+private fun SecaoDaLista(
+    state: TransactionsUiState,
+    onEvent: (TransactionsEvent) -> Unit,
+    onOpenDetalhe: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        CabecalhoDaTela(state = state, onEvent = onEvent)
+        Box(modifier = Modifier.weight(1f)) {
+            ConteudoDaLista(state = state, onEvent = onEvent, onOpenDetalhe = onOpenDetalhe)
+            state.mensagemDeExclusao?.let { mensagem ->
+                SnackbarDeExclusao(
+                    mensagem = mensagem,
+                    onDesfazer = { onEvent(TransactionsEvent.DesfazerExclusao) },
+                    onDispensar = { onEvent(TransactionsEvent.DispensarMensagem) },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(PingoSpacing.lg),
+                )
+            }
         }
     }
 }

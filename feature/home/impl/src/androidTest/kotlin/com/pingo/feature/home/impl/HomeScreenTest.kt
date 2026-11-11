@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -29,6 +30,7 @@ class HomeScreenTest {
                     state = HomeUiState(capturaAutomatica = false),
                     onOpenSettings = {},
                     onOpenCaptura = { correcoes++ },
+                    onOpenNovo = {},
                 )
             }
         }
@@ -42,6 +44,25 @@ class HomeScreenTest {
     }
 
     @Test
+    fun botaoNovoLancamentoDaInicioAbreOTerceiroPasso() {
+        var aberturas = 0
+        composeRule.setContent {
+            PingoTheme {
+                HomeContent(
+                    state = HomeUiState(capturaAutomatica = true),
+                    onOpenSettings = {},
+                    onOpenCaptura = {},
+                    onOpenNovo = { aberturas++ },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("novo-lancamento").performClick()
+
+        assertEquals(1, aberturas)
+    }
+
+    @Test
     fun comAcessoAtivoNaoMostraOAviso() {
         composeRule.setContent {
             PingoTheme {
@@ -49,6 +70,7 @@ class HomeScreenTest {
                     state = HomeUiState(capturaAutomatica = true),
                     onOpenSettings = {},
                     onOpenCaptura = {},
+                    onOpenNovo = {},
                 )
             }
         }
@@ -66,6 +88,7 @@ class HomeScreenTest {
                     state = HomeUiState(capturaAutomatica = true, semLeituraHa48h = true),
                     onOpenSettings = {},
                     onOpenCaptura = { correcoes++ },
+                    onOpenNovo = {},
                 )
             }
         }

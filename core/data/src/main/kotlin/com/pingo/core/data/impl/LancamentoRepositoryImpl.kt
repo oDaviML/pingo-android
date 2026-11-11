@@ -23,6 +23,17 @@ class LancamentoRepositoryImpl @Inject constructor(private val lancamentoDao: La
 
     override suspend fun buscarPorHash(hash: String): Lancamento? = lancamentoDao.buscarPorHash(hash)?.toModel()
 
+    override suspend fun ultimoInstrumentoUsado(instrumentos: List<String>): String? = lancamentoDao.ultimoInstrumentoUsado(instrumentos)
+
+    override suspend fun capturadosSemelhantes(
+        instrumentoPublicId: String,
+        valorCentavos: Long,
+        inicio: Instant,
+        fim: Instant,
+    ): List<Lancamento> = lancamentoDao
+        .capturadosSemelhantes(instrumentoPublicId, valorCentavos, inicio, fim, OrigemLancamento.NOTIFICACAO)
+        .map { it.toModel() }
+
     override suspend fun candidatosDeTransferencia(
         tipo: TipoLancamento,
         valorCentavos: Long,
