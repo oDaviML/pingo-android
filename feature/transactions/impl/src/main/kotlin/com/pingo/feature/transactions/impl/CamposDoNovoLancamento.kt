@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import com.pingo.core.designsystem.component.PingoIcon
 import com.pingo.core.designsystem.component.PingoText
 import com.pingo.core.designsystem.icon.PingoIcons
+import com.pingo.core.designsystem.theme.PingoLayout
 import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
@@ -165,7 +166,10 @@ private fun LinhaDoEstabelecimento(
             .heightIn(min = 56.dp)
             .background(color = PingoTheme.colors.surface, shape = forma)
             .border(width = 1.5.dp, color = PingoTheme.colors.outline, shape = forma)
-            .padding(horizontal = PingoSpacing.lg),
+            .padding(
+                start = PingoSpacing.lg,
+                end = if (state.estabelecimento.isNotEmpty()) PingoSpacing.sm else PingoSpacing.lg,
+            ),
         horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -213,7 +217,7 @@ private fun EntradaDeEstabelecimento(texto: String, onTexto: (String) -> Unit, m
 private fun BotaoLimparEstabelecimento(onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .size(32.dp)
+            .size(PingoLayout.minTouchTarget)
             .testTag("limpar-estabelecimento")
             .clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,

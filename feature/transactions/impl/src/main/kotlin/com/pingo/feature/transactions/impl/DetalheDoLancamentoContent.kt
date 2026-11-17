@@ -46,6 +46,7 @@ import com.pingo.core.designsystem.component.PingoStatusTag
 import com.pingo.core.designsystem.component.PingoText
 import com.pingo.core.designsystem.component.pingoElevation
 import com.pingo.core.designsystem.icon.PingoIcons
+import com.pingo.core.designsystem.theme.PingoLayout
 import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
@@ -325,7 +326,10 @@ private fun LinhaDoEstabelecimentoDoDetalhe(state: DetalheDoLancamentoUiState, o
             .heightIn(min = 56.dp)
             .background(PingoTheme.colors.surface, RoundedCornerShape(PingoRadius.md))
             .border(1.5.dp, PingoTheme.colors.outline, RoundedCornerShape(PingoRadius.md))
-            .padding(horizontal = PingoSpacing.lg),
+            .padding(
+                start = PingoSpacing.lg,
+                end = if (state.estabelecimento.isNotEmpty()) PingoSpacing.sm else PingoSpacing.lg,
+            ),
         horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -350,7 +354,7 @@ private fun LinhaDoEstabelecimentoDoDetalhe(state: DetalheDoLancamentoUiState, o
 private fun BotaoLimparDoDetalhe(onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .size(32.dp)
+            .size(PingoLayout.minTouchTarget)
             .testTag("limpar-estabelecimento-detalhe")
             .clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,

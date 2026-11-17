@@ -1,7 +1,6 @@
 package com.pingo.feature.home.impl
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -19,8 +18,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,9 +64,9 @@ private val SaldoGradienteFim = Color(0xFF09637E)
 internal fun SaldoDoMes(state: HomeUiState) {
     val mes = state.mes ?: return
     val shape = RoundedCornerShape(PingoRadius.xl)
-    val saldoAnimado = centavosAnimados(state.saldoCentavos, "saldo-counter")
-    val receitasAnimadas = centavosAnimados(state.receitasCentavos, "receitas-counter")
-    val despesasAnimadas = centavosAnimados(state.despesasCentavos, "despesas-counter")
+    val saldoAnimado = centavosAnimados(state.saldoCentavos)
+    val receitasAnimadas = centavosAnimados(state.receitasCentavos)
+    val despesasAnimadas = centavosAnimados(state.despesasCentavos)
 
     Box(
         modifier = Modifier
@@ -175,18 +177,39 @@ private fun ResumoDaConta(rotulo: String, valor: String, icone: ImageVector, mod
 }
 
 @Composable
-private fun centavosAnimados(alvo: Long, label: String): Long {
+private fun centavosAnimados(alvo: Long): Long {
     val reducedMotion = rememberReducedMotion()
-    val valor by animateFloatAsState(
-        targetValue = alvo.toFloat(),
-        animationSpec = if (reducedMotion) {
-            snap()
-        } else {
-            tween(durationMillis = PingoMotion.MEDIUM_MS, easing = PingoMotion.StandardEasing)
-        },
-        label = label,
-    )
-    return valor.roundToLong()
+    var origem by remember { mutableLongStateOf(alvo) }
+    var destino by remember { mutableLongStateOf(alvo) }
+    val progresso = remember { Animatable(1f) }
+
+    LaunchedEffect(alvo, reducedMotion) {
+        if (reducedMotion || destino == alvo) {
+            origem = alvo
+            destino = alvo
+            progresso.snapTo(1f)
+            return@LaunchedEffect
+        }
+        origem = interpolarCentavos(origem = origem, destino = destino, progresso = progresso.value)
+        destino = alvo
+        progresso.snapTo(0f)
+        progresso.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = PingoMotion.MEDIUM_MS, easing = PingoMotion.StandardEasing),
+        )
+        origem = alvo
+    }
+
+    return when {
+        reducedMotion || (destino == alvo && progresso.value >= 1f) -> alvo
+        else -> interpolarCentavos(origem = origem, destino = destino, progresso = progresso.value)
+    }
+}
+
+internal fun interpolarCentavos(origem: Long, destino: Long, progresso: Float): Long = when {
+    progresso <= 0f -> origem
+    progresso >= 1f -> destino
+    else -> origem + ((destino - origem).toDouble() * progresso).roundToLong()
 }
 
 @Composable

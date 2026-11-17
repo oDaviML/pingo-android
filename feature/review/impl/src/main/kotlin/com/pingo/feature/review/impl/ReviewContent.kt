@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,15 +18,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.pingo.core.designsystem.component.PingoButton
 import com.pingo.core.designsystem.component.PingoButtonSize
 import com.pingo.core.designsystem.component.PingoButtonType
 import com.pingo.core.designsystem.component.PingoCard
 import com.pingo.core.designsystem.component.PingoIcon
+import com.pingo.core.designsystem.component.PingoIconButton
+import com.pingo.core.designsystem.component.PingoIconButtonStyle
 import com.pingo.core.designsystem.component.PingoSkeletonList
 import com.pingo.core.designsystem.component.PingoText
-import com.pingo.core.designsystem.component.PingoTopBar
 import com.pingo.core.designsystem.icon.PingoIcons
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
@@ -46,7 +49,7 @@ fun ReviewContent(
             .background(PingoTheme.colors.background),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            PingoTopBar(title = RotulosDaRevisao.TITULO, onBack = onVoltar, modifier = Modifier.testTag("voltar-revisao"))
+            CabecalhoDaRevisao(onVoltar = onVoltar)
             when {
                 state.carregando -> PingoSkeletonList(count = 4, modifier = Modifier.weight(1f))
                 state.vazia -> EstadoVazioDaRevisao(modifier = Modifier.weight(1f))
@@ -76,6 +79,34 @@ fun ReviewContent(
         state.painelDeTransferencia?.let { painel ->
             PainelDeMarcarTransferenciaDaRevisao(painel = painel, onEvent = onEvent)
         }
+    }
+}
+
+@Composable
+private fun CabecalhoDaRevisao(onVoltar: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .padding(horizontal = PingoSpacing.sm, vertical = PingoSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        PingoIconButton(
+            icon = PingoIcons.ArrowLeft,
+            contentDescription = "Voltar",
+            onClick = onVoltar,
+            style = PingoIconButtonStyle.Standard,
+            modifier = Modifier.testTag("voltar-revisao"),
+        )
+        PingoText(
+            text = RotulosDaRevisao.TITULO,
+            style = PingoTheme.typography.subtitle,
+            color = PingoTheme.colors.onBackground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 

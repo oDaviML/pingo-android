@@ -178,7 +178,10 @@ private fun CampoDeTextoDeBusca(texto: String, onTexto: (String) -> Unit, modifi
             .clip(forma)
             .background(color = fundo, shape = forma)
             .then(if (borda == Color.Transparent) Modifier else Modifier.border(width = 1.5.dp, color = borda, shape = forma))
-            .padding(horizontal = PingoSpacing.md),
+            .padding(
+                start = PingoSpacing.md,
+                end = if (texto.isNotEmpty()) 4.dp else PingoSpacing.md,
+            ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         PingoIcon(
@@ -232,8 +235,8 @@ private fun CampoDeTexto(texto: String, onTexto: (String) -> Unit, onFoco: (Bool
 private fun BotaoLimparBusca(onLimpar: () -> Unit) {
     Box(
         modifier = Modifier
-            .size(32.dp)
-            .clickable(onClick = onLimpar)
+            .size(PingoLayout.minTouchTarget)
+            .clickable(role = Role.Button, onClick = onLimpar)
             .semantics { contentDescription = "Limpar busca" },
         contentAlignment = Alignment.Center,
     ) {
@@ -511,6 +514,7 @@ private fun SnackbarDeExclusao(
 private fun BotaoDesfazerExclusao(onDesfazer: () -> Unit, cor: Color) {
     Row(
         modifier = Modifier
+            .heightIn(min = PingoLayout.minTouchTarget)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
