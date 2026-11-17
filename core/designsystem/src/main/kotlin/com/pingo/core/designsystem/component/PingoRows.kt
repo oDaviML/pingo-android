@@ -106,13 +106,54 @@ fun PingoCard(
 }
 
 @Composable
-fun SectionHeader(title: String, modifier: Modifier = Modifier) {
-    PingoText(
-        text = title,
-        style = PingoTheme.typography.subtitle,
-        color = PingoTheme.colors.onBackground,
-        modifier = modifier.fillMaxWidth(),
-    )
+fun SectionHeader(title: String, modifier: Modifier = Modifier, actionLabel: String? = null, onAction: (() -> Unit)? = null) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = PingoSpacing.xs),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        PingoText(
+            text = title,
+            style = PingoTheme.typography.subtitle,
+            color = PingoTheme.colors.onBackground,
+            modifier = Modifier.weight(1f),
+        )
+        if (actionLabel != null && onAction != null) {
+            SectionHeaderAction(actionLabel = actionLabel, onAction = onAction)
+        }
+    }
+}
+
+@Composable
+private fun SectionHeaderAction(actionLabel: String, onAction: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .heightIn(min = PingoLayout.minTouchTarget)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                role = Role.Button,
+                onClick = onAction,
+            )
+            .padding(horizontal = PingoSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        PingoText(
+            text = actionLabel,
+            style = PingoTheme.typography.label,
+            color = PingoTheme.colors.brand,
+            maxLines = 1,
+        )
+        PingoIcon(
+            imageVector = PingoIcons.ChevronRight,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = PingoTheme.colors.brand,
+        )
+    }
 }
 
 enum class SettingsRowStyle {
