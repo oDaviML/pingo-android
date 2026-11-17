@@ -32,6 +32,11 @@ internal class MutableClock(var agora: Instant, private val fuso: ZoneId) : Cloc
 internal class FakeContas {
     private val contas = mutableListOf<Conta>()
 
+    fun adicionar(conta: Conta): Conta {
+        contas += conta
+        return conta
+    }
+
     fun criar(instituicao: InstituicaoFinanceira, apelido: String = instituicao.name): Conta {
         val conta = Conta(
             publicId = UUID.randomUUID().toString(),
@@ -49,6 +54,15 @@ internal class FakeContas {
     fun porId(publicId: String): Conta? = contas.firstOrNull { it.publicId == publicId }
 
     fun instituicaoDe(contaPublicId: String): InstituicaoFinanceira? = porId(contaPublicId)?.instituicao
+
+    fun arquivar(publicId: String, quando: Instant) {
+        val posicao = contas.indexOfFirst { it.publicId == publicId }
+        if (posicao >= 0) {
+            contas[posicao] = contas[posicao].copy(arquivada = true, atualizadoEm = quando)
+        }
+    }
+
+    fun ativa(contaPublicId: String): Boolean = porId(contaPublicId)?.let { it.excluidoEm == null && !it.arquivada } == true
 }
 
 internal class FakeInstrumentos(private val contas: FakeContas) : InstrumentoRepository {
@@ -80,14 +94,28 @@ internal class FakeInstrumentos(private val contas: FakeContas) : InstrumentoRep
     override fun observeInstrumentos(): Flow<List<Instrumento>> =
         flowOf(instrumentos.filter { instrumento -> instrumento.excluidoEm == null })
 
+    override fun observeInstrumentosAtivos(): Flow<List<Instrumento>> = flowOf(
+        instrumentos.filter { instrumento ->
+            instrumento.excluidoEm == null && !instrumento.arquivado && contas.ativa(instrumento.contaPublicId)
+        },
+    )
+
     override fun observePorConta(contaPublicId: String): Flow<List<Instrumento>> =
         observeInstrumentos().map { lista -> lista.filter { instrumento -> instrumento.contaPublicId == contaPublicId } }
 
     override suspend fun buscar(publicId: String): Instrumento? = instrumentos.firstOrNull { it.publicId == publicId }
 
+    override suspend fun buscarAtivo(publicId: String): Instrumento? = instrumentos.firstOrNull { instrumento ->
+        instrumento.publicId == publicId &&
+            instrumento.excluidoEm == null &&
+            !instrumento.arquivado &&
+            contas.ativa(instrumento.contaPublicId)
+    }
+
     override suspend fun ativosDaInstituicao(instituicao: InstituicaoFinanceira): List<Instrumento> = instrumentos
         .filter { instrumento ->
             contas.instituicaoDe(instrumento.contaPublicId) == instituicao &&
+                contas.ativa(instrumento.contaPublicId) &&
                 instrumento.excluidoEm == null &&
                 !instrumento.arquivado
         }

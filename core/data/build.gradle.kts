@@ -19,5 +19,9 @@ dependencies {
     implementation(libs.room.ktx)
     implementation(libs.kotlinx.coroutines.android)
     testImplementation(project(":core:testing"))
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.room.testing)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
 }

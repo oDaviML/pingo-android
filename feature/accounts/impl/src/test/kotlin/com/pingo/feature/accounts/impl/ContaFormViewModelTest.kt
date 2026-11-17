@@ -157,6 +157,27 @@ class ContaFormViewModelTest {
     }
 
     @Test
+    fun `adicionar instrumento ou trocar tipo durante salvamento pendente e ignorado`() {
+        val viewModel = criarViewModel()
+        contarCreditoCompleto(viewModel)
+        contas.gateDeSalvamento = CompletableDeferred()
+
+        viewModel.onEvent(ContaFormEvent.Salvar)
+        viewModel.onEvent(ContaFormEvent.Formulario(EventoDoFormularioDeConta.AdicionarInstrumento(TipoInstrumento.DEBITO)))
+        viewModel.onEvent(ContaFormEvent.Formulario(EventoDoFormularioDeConta.AlterarTipoConta(TipoConta.BENEFICIO)))
+        viewModel.onEvent(ContaFormEvent.Formulario(EventoDoFormularioDeConta.AlterarInstituicao(InstituicaoFinanceira.ITAU)))
+
+        assertEquals(1, viewModel.uiState.value.formulario.instrumentos.size)
+        assertEquals(TipoConta.CORRENTE, viewModel.uiState.value.formulario.tipoConta)
+        assertEquals(InstituicaoFinanceira.NUBANK, viewModel.uiState.value.formulario.instituicao)
+
+        contas.gateDeSalvamento?.complete(Unit)
+
+        assertEquals(1, contas.criadas.single().single().instrumentos.size)
+        assertTrue(viewModel.uiState.value.concluido)
+    }
+
+    @Test
     fun `falha ao salvar mostra erro e nova tentativa conclui uma vez`() {
         val viewModel = criarViewModel()
         contarCreditoCompleto(viewModel)

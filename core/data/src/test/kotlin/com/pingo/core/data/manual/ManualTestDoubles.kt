@@ -35,6 +35,11 @@ internal class AmbienteManual {
 
 internal class FakeInstrumentosManual : InstrumentoRepository {
     private val tabela = MutableStateFlow<List<Instrumento>>(emptyList())
+    private val contasArquivadas = MutableStateFlow<Set<String>>(emptySet())
+
+    fun arquivarConta(contaPublicId: String) {
+        contasArquivadas.value = contasArquivadas.value + contaPublicId
+    }
 
     fun criar(apelido: String = "Cartão", arquivado: Boolean = false, contaPublicId: String = "conta-1"): Instrumento {
         val instrumento = Instrumento(
@@ -55,13 +60,21 @@ internal class FakeInstrumentosManual : InstrumentoRepository {
 
     override fun observeInstrumentos(): Flow<List<Instrumento>> = tabela.map { lista -> lista.filter { it.excluidoEm == null } }
 
+    override fun observeInstrumentosAtivos(): Flow<List<Instrumento>> = tabela.map { lista ->
+        lista.filter { it.excluidoEm == null && !it.arquivado && it.contaPublicId !in contasArquivadas.value }
+    }
+
     override fun observePorConta(contaPublicId: String): Flow<List<Instrumento>> =
         observeInstrumentos().map { lista -> lista.filter { it.contaPublicId == contaPublicId } }
 
     override suspend fun buscar(publicId: String): Instrumento? = tabela.value.firstOrNull { it.publicId == publicId }
 
+    override suspend fun buscarAtivo(publicId: String): Instrumento? = tabela.value.firstOrNull {
+        it.publicId == publicId && it.excluidoEm == null && !it.arquivado && it.contaPublicId !in contasArquivadas.value
+    }
+
     override suspend fun ativosDaInstituicao(instituicao: InstituicaoFinanceira): List<Instrumento> =
-        tabela.value.filter { it.excluidoEm == null && !it.arquivado }
+        tabela.value.filter { it.excluidoEm == null && !it.arquivado && it.contaPublicId !in contasArquivadas.value }
 
     override suspend fun salvar(instrumento: Instrumento) = salvarTodos(listOf(instrumento))
 
@@ -150,10 +163,15 @@ internal class FakeLancamentosManual : LancamentoRepository {
 
 internal class FakeTransacaoLocal : TransacaoLocal {
     var execucoes: Int = 0
+    var antesDeIniciar: (suspend () -> Unit)? = null
+    var depoisDeCommitar: (suspend () -> Unit)? = null
 
     override suspend fun <T> executar(bloco: suspend () -> T): T {
+        antesDeIniciar?.invoke()
         execucoes++
+        val resultado = bloco()
+        depoisDeCommitar?.invoke()
 
-        return bloco()
+        return resultado
     }
 }

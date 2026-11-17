@@ -60,13 +60,15 @@ internal class AmbienteDoDetalhe {
 
     private fun instanciaConta(apelido: String, instituicao: InstituicaoFinanceira): Conta {
         contadorContas += 1
-        return Conta(
-            publicId = "conta-$contadorContas",
-            instituicao = instituicao,
-            apelido = apelido,
-            tipo = com.pingo.core.model.TipoConta.CORRENTE,
-            criadoEm = agora,
-            atualizadoEm = agora,
+        return contas.adicionar(
+            Conta(
+                publicId = "conta-$contadorContas",
+                instituicao = instituicao,
+                apelido = apelido,
+                tipo = com.pingo.core.model.TipoConta.CORRENTE,
+                criadoEm = agora,
+                atualizadoEm = agora,
+            ),
         )
     }
 }

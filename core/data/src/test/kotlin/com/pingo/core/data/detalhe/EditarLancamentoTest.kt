@@ -6,6 +6,8 @@ import com.pingo.core.model.OrigemLancamento
 import com.pingo.core.model.StatusLancamento
 import com.pingo.core.model.TipoCategoria
 import com.pingo.core.model.TipoLancamento
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -467,6 +469,107 @@ class EditarLancamentoTest {
         )
 
         assertEquals(setOf(CampoDoDetalhe.DESTINO), (resultado as ResultadoDaEdicao.Invalido).campos)
+    }
+
+    @Test
+    fun `editar recusa escolher instrumento de conta pai arquivada mesmo com flag ativa`() = runTest {
+        val original = ambiente.instrumento(ambiente.conta("Nubank"))
+        val contaArquivada = ambiente.conta("Inter", InstituicaoFinanceira.INTER)
+        val deContaArquivada = ambiente.instrumento(contaArquivada)
+        ambiente.contas.arquivar(contaArquivada.publicId, ambiente.agora)
+        ambiente.lancamentos.salvar(
+            lancamentoDeTeste(publicId = "historico", instrumentoPublicId = original.publicId, valorCentavos = 4290),
+        )
+
+        val resultado = ambiente.editar.editar(
+            edicao(publicId = "historico", valorCentavos = 4290, instrumento = deContaArquivada.publicId),
+        )
+
+        assertEquals(setOf(CampoDoDetalhe.INSTRUMENTO), (resultado as ResultadoDaEdicao.Invalido).campos)
+        assertEquals(original.publicId, ambiente.lancamentos.buscar("historico")?.instrumentoPublicId)
+    }
+
+    @Test
+    fun `editar historico mantem instrumento original mesmo com conta pai arquivada`() = runTest {
+        val contaArquivada = ambiente.conta("Inter", InstituicaoFinanceira.INTER)
+        val instrumento = ambiente.instrumento(contaArquivada)
+        ambiente.contas.arquivar(contaArquivada.publicId, ambiente.agora)
+        ambiente.lancamentos.salvar(
+            lancamentoDeTeste(publicId = "historico", instrumentoPublicId = instrumento.publicId, valorCentavos = 4290),
+        )
+
+        val resultado = ambiente.editar.editar(
+            edicao(publicId = "historico", valorCentavos = 5190, instrumento = instrumento.publicId),
+        )
+
+        val salvo = (resultado as ResultadoDaEdicao.Salvo).lancamento
+        assertEquals(instrumento.publicId, salvo.instrumentoPublicId)
+        assertEquals(5190L, salvo.valorCentavos)
+    }
+
+    @Test
+    fun `editar transferencia recusa destino de conta pai arquivada que nao e o par original`() = runTest {
+        val origem = ambiente.instrumento(ambiente.conta("Nubank"))
+        val destino = ambiente.instrumento(ambiente.conta("Inter", InstituicaoFinanceira.INTER))
+        val contaArquivada = ambiente.conta("Itaú", InstituicaoFinanceira.ITAU)
+        val deContaArquivada = ambiente.instrumento(contaArquivada)
+        ambiente.contas.arquivar(contaArquivada.publicId, ambiente.agora)
+        val saida = lancamentoDeTeste(
+            publicId = "saida",
+            instrumentoPublicId = origem.publicId,
+            valorCentavos = 50000,
+            tipo = TipoLancamento.TRANSFERENCIA,
+            transferenciaId = "transferencia",
+            tipoSemTransferencia = TipoLancamento.DESPESA,
+        )
+        val entrada = lancamentoDeTeste(
+            publicId = "entrada",
+            instrumentoPublicId = destino.publicId,
+            valorCentavos = 50000,
+            tipo = TipoLancamento.TRANSFERENCIA,
+            transferenciaId = "transferencia",
+            tipoSemTransferencia = TipoLancamento.RECEITA,
+        )
+        ambiente.lancamentos.salvarTodos(listOf(saida, entrada))
+
+        val resultado = ambiente.editar.editar(
+            edicao(
+                publicId = "saida",
+                tipo = TipoLancamento.TRANSFERENCIA,
+                valorCentavos = 50000,
+                instrumento = origem.publicId,
+                destino = deContaArquivada.publicId,
+            ),
+        )
+
+        assertEquals(setOf(CampoDoDetalhe.DESTINO), (resultado as ResultadoDaEdicao.Invalido).campos)
+    }
+
+    @Test
+    fun `corrida com arquivamento antes da edicao recusa trocar para instrumento de conta arquivada`() = runTest {
+        val original = ambiente.instrumento(ambiente.conta("Nubank"))
+        val contaDestino = ambiente.conta("Inter", InstituicaoFinanceira.INTER)
+        val novoInstrumento = ambiente.instrumento(contaDestino)
+        ambiente.lancamentos.salvar(
+            lancamentoDeTeste(publicId = "historico", instrumentoPublicId = original.publicId, valorCentavos = 4290),
+        )
+
+        val entrouNaBarreira = CompletableDeferred<Unit>()
+        val liberarBarreira = CompletableDeferred<Unit>()
+        ambiente.transacoes.antesDeIniciar = {
+            entrouNaBarreira.complete(Unit)
+            liberarBarreira.await()
+        }
+
+        val tarefa = async {
+            ambiente.editar.editar(edicao(publicId = "historico", valorCentavos = 4290, instrumento = novoInstrumento.publicId))
+        }
+        entrouNaBarreira.await()
+        ambiente.contas.arquivar(contaDestino.publicId, ambiente.agora)
+        liberarBarreira.complete(Unit)
+
+        assertEquals(ResultadoDaEdicao.Invalido(setOf(CampoDoDetalhe.INSTRUMENTO)), tarefa.await())
+        assertEquals(original.publicId, ambiente.lancamentos.buscar("historico")?.instrumentoPublicId)
     }
 
     private fun edicao(

@@ -23,6 +23,8 @@ class InstrumentoRepositoryImpl @Inject constructor(private val instrumentoDao: 
 
     override suspend fun buscar(publicId: String): Instrumento? = instrumentoDao.buscar(publicId)?.toModel()
 
+    override suspend fun buscarAtivo(publicId: String): Instrumento? = instrumentoDao.buscarAtivo(publicId)?.toModel()
+
     override suspend fun ativosDaInstituicao(instituicao: InstituicaoFinanceira): List<Instrumento> =
         instrumentoDao.ativosDaInstituicao(instituicao).map { it.toModel() }
 

@@ -65,6 +65,10 @@ abstract class LancamentoDao {
         AND lancamentos.valorCentavos = :valorCentavos
         AND lancamentos.dataHora BETWEEN :inicio AND :fim
         AND contas.publicId <> :contaPublicId
+        AND contas.arquivada = 0
+        AND contas.excluidoEm IS NULL
+        AND instrumentos.arquivado = 0
+        AND instrumentos.excluidoEm IS NULL
         ORDER BY lancamentos.dataHora
         """,
     )

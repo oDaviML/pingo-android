@@ -4,6 +4,8 @@ import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.MotivoPendencia
 import com.pingo.core.model.StatusLancamento
 import com.pingo.core.model.TipoLancamento
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -430,5 +432,43 @@ class MarcarTransferenciaTest {
 
         assertEquals(TipoLancamento.DESPESA, ambiente.lancamentos.buscar("saida")?.tipoSemTransferencia)
         assertEquals(TipoLancamento.RECEITA, ambiente.lancamentos.buscar("entrada")?.tipoSemTransferencia)
+    }
+
+    @Test
+    fun `nao marca quando conta pai do destino esta arquivada`() = runTest {
+        val nubank = ambiente.instrumento(ambiente.conta("Nubank"))
+        val contaInter = ambiente.conta("Inter", InstituicaoFinanceira.INTER)
+        val inter = ambiente.instrumento(contaInter)
+        ambiente.lancamentos.salvar(lancamentoDeTeste("saida", nubank.publicId, 5000))
+        ambiente.contas.arquivar(contaInter.publicId, ambiente.agora)
+
+        val resultado = ambiente.transferir.marcar("saida", inter.publicId)
+
+        assertEquals(ResultadoDaTransferencia.Recusada(MotivoDaRecusa.DESTINO_NAO_ENCONTRADO), resultado)
+        assertNull(ambiente.lancamentos.buscar("saida")?.transferenciaId)
+        assertEquals(1, ambiente.lancamentos.todos().size)
+    }
+
+    @Test
+    fun `corrida com arquivamento antes da marcacao recusa transferencia sem criar par`() = runTest {
+        val nubank = ambiente.instrumento(ambiente.conta("Nubank"))
+        val contaInter = ambiente.conta("Inter", InstituicaoFinanceira.INTER)
+        val inter = ambiente.instrumento(contaInter)
+        ambiente.lancamentos.salvar(lancamentoDeTeste("saida", nubank.publicId, 5000))
+
+        val entrouNaBarreira = CompletableDeferred<Unit>()
+        val liberarBarreira = CompletableDeferred<Unit>()
+        ambiente.transacoes.antesDeIniciar = {
+            entrouNaBarreira.complete(Unit)
+            liberarBarreira.await()
+        }
+
+        val tarefa = async { ambiente.transferir.marcar("saida", inter.publicId) }
+        entrouNaBarreira.await()
+        ambiente.contas.arquivar(contaInter.publicId, ambiente.agora)
+        liberarBarreira.complete(Unit)
+
+        assertEquals(ResultadoDaTransferencia.Recusada(MotivoDaRecusa.DESTINO_NAO_ENCONTRADO), tarefa.await())
+        assertEquals(1, ambiente.lancamentos.todos().size)
     }
 }

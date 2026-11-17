@@ -30,14 +30,31 @@ class EditarLancamento @Inject constructor(
     private val transacaoLocal: TransacaoLocal,
     private val clock: Clock,
 ) {
-    suspend fun editar(edicao: EdicaoDoLancamento): ResultadoDaEdicao {
+    suspend fun editar(edicao: EdicaoDoLancamento): ResultadoDaEdicao = transacaoLocal.executar {
+        editarNaTransacao(edicao)
+    }
+
+    private suspend fun editarNaTransacao(edicao: EdicaoDoLancamento): ResultadoDaEdicao {
         val original = lancamentoRepository.buscar(edicao.publicId)?.takeIf { it.excluidoEm == null }
             ?: return ResultadoDaEdicao.NaoEncontrado
         val instrumento = resolverInstrumento(edicao.instrumentoPublicId)
         val destino = resolverInstrumento(edicao.destinoPublicId)
+        val instrumentoAtivo = edicao.instrumentoPublicId?.let { instrumentoRepository.buscarAtivo(it) }
+        val destinoAtivo = edicao.destinoPublicId?.let { instrumentoRepository.buscarAtivo(it) }
         val categoria = resolverCategoria(edicao.categoriaPublicId)
         val destinoOriginal = destinoOriginalDe(original, edicao.destinoPublicId)
-        val invalidos = validar(edicao, original, instrumento, destino, destinoOriginal, categoria)
+        val invalidos = validar(
+            ValidacaoDaEdicao(
+                edicao = edicao,
+                original = original,
+                instrumento = instrumento,
+                instrumentoAtivo = instrumentoAtivo,
+                destino = destino,
+                destinoAtivo = destinoAtivo,
+                destinoOriginal = destinoOriginal,
+                categoria = categoria,
+            ),
+        )
 
         return when {
             invalidos.isNotEmpty() -> ResultadoDaEdicao.Invalido(invalidos)
@@ -66,73 +83,69 @@ class EditarLancamento @Inject constructor(
         ?.let { categoriaRepository.buscar(it) }
         ?.takeIf { it.podeSerEscolhida }
 
-    private fun Instrumento.elegivelParaVinculo(escolhido: String, original: String?): Boolean = !arquivado || escolhido == original
+    private fun elegivelParaVinculo(escolhido: String, original: String?, ativo: Instrumento?): Boolean =
+        ativo != null || escolhido == original
 
-    private fun validar(
-        edicao: EdicaoDoLancamento,
-        original: Lancamento,
-        instrumento: Instrumento?,
-        destino: Instrumento?,
-        destinoOriginal: String?,
-        categoria: Categoria?,
-    ): Set<CampoDoDetalhe> {
-        val doValor = if (edicao.valorCentavos <= 0) setOf(CampoDoDetalhe.VALOR) else emptySet()
+    private fun validar(dados: ValidacaoDaEdicao): Set<CampoDoDetalhe> {
+        val doValor = if (dados.edicao.valorCentavos <= 0) setOf(CampoDoDetalhe.VALOR) else emptySet()
 
-        return if (edicao.tipo == TipoLancamento.TRANSFERENCIA) {
-            doValor + validarTransferencia(edicao, original, instrumento, destino, destinoOriginal)
+        return if (dados.edicao.tipo == TipoLancamento.TRANSFERENCIA) {
+            doValor + validarTransferencia(dados)
         } else {
-            doValor + validarLancamento(edicao, original, instrumento, categoria)
+            doValor + validarLancamento(dados)
         }
     }
 
-    private fun validarTransferencia(
-        edicao: EdicaoDoLancamento,
-        original: Lancamento,
-        instrumento: Instrumento?,
-        destino: Instrumento?,
-        destinoOriginal: String?,
-    ): Set<CampoDoDetalhe> = buildSet {
-        if (edicao.instrumentoPublicId == null || instrumento == null) {
+    private fun validarTransferencia(dados: ValidacaoDaEdicao): Set<CampoDoDetalhe> = buildSet {
+        val edicao = dados.edicao
+        if (edicao.instrumentoPublicId == null || dados.instrumento == null) {
             add(CampoDoDetalhe.INSTRUMENTO)
-        } else if (!instrumento.elegivelParaVinculo(edicao.instrumentoPublicId, original.instrumentoPublicId)) {
+        } else if (!elegivelParaVinculo(edicao.instrumentoPublicId, dados.original.instrumentoPublicId, dados.instrumentoAtivo)) {
             add(CampoDoDetalhe.INSTRUMENTO)
         }
-        if (edicao.destinoPublicId == null || destino == null) {
+        if (edicao.destinoPublicId == null || dados.destino == null) {
             add(CampoDoDetalhe.DESTINO)
-        } else if (instrumento != null && destino.contaPublicId == instrumento.contaPublicId) {
+        } else if (dados.instrumento != null && dados.destino.contaPublicId == dados.instrumento.contaPublicId) {
             add(CampoDoDetalhe.DESTINO)
-        } else if (!destino.elegivelParaVinculo(edicao.destinoPublicId, destinoOriginal)) {
+        } else if (!elegivelParaVinculo(edicao.destinoPublicId, dados.destinoOriginal, dados.destinoAtivo)) {
             add(CampoDoDetalhe.DESTINO)
         }
     }
 
-    private fun validarLancamento(
-        edicao: EdicaoDoLancamento,
-        original: Lancamento,
-        instrumento: Instrumento?,
-        categoria: Categoria?,
-    ): Set<CampoDoDetalhe> = buildSet {
-        if (edicao.instrumentoPublicId != null && instrumento == null) {
+    private fun validarLancamento(dados: ValidacaoDaEdicao): Set<CampoDoDetalhe> = buildSet {
+        val edicao = dados.edicao
+        if (edicao.instrumentoPublicId != null && dados.instrumento == null) {
             add(CampoDoDetalhe.INSTRUMENTO)
         }
-        if (edicao.instrumentoPublicId != null && instrumento != null) {
-            if (!instrumento.elegivelParaVinculo(edicao.instrumentoPublicId, original.instrumentoPublicId)) {
+        if (edicao.instrumentoPublicId != null && dados.instrumento != null) {
+            if (!elegivelParaVinculo(edicao.instrumentoPublicId, dados.original.instrumentoPublicId, dados.instrumentoAtivo)) {
                 add(CampoDoDetalhe.INSTRUMENTO)
             }
         }
-        if (edicao.instrumentoPublicId == null && exigeInstrumento(original)) {
+        if (edicao.instrumentoPublicId == null && exigeInstrumento(dados.original)) {
             add(CampoDoDetalhe.INSTRUMENTO)
         }
-        if (edicao.categoriaPublicId != null && categoria == null) {
+        if (edicao.categoriaPublicId != null && dados.categoria == null) {
             add(CampoDoDetalhe.CATEGORIA)
         }
-        if (categoria != null && !compativel(categoria, edicao.tipo)) {
+        if (dados.categoria != null && !compativel(dados.categoria, edicao.tipo)) {
             add(CampoDoDetalhe.CATEGORIA)
         }
-        if (edicao.aplicarCategoriaATodos && categoria == null) {
+        if (edicao.aplicarCategoriaATodos && dados.categoria == null) {
             add(CampoDoDetalhe.CATEGORIA)
         }
     }
+
+    private data class ValidacaoDaEdicao(
+        val edicao: EdicaoDoLancamento,
+        val original: Lancamento,
+        val instrumento: Instrumento?,
+        val instrumentoAtivo: Instrumento?,
+        val destino: Instrumento?,
+        val destinoAtivo: Instrumento?,
+        val destinoOriginal: String?,
+        val categoria: Categoria?,
+    )
 
     private fun exigeInstrumento(original: Lancamento): Boolean =
         original.origem == OrigemLancamento.MANUAL || original.status == StatusLancamento.CONFIRMADO
@@ -206,10 +219,8 @@ class EditarLancamento @Inject constructor(
             atualizadoEm = agora,
         ) ?: novoPar(edicao, destino, transferenciaId, original.direcaoDaTransferencia()?.direcaoOposta, agora)
 
-        transacaoLocal.executar {
-            lancamentoRepository.salvar(lancamento)
-            lancamentoRepository.salvar(par)
-        }
+        lancamentoRepository.salvar(lancamento)
+        lancamentoRepository.salvar(par)
 
         return ResultadoDaEdicao.Salvo(lancamento = lancamento, par = par)
     }

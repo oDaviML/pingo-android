@@ -8,7 +8,7 @@ private val GRUPOS_DE_MILHAR = Regex("\\d{1,3}(\\.\\d{3})+")
 private val DECIMAL_COM_PONTO = Regex("\\d+\\.\\d{1,2}")
 
 fun reaisParaCentavos(texto: String): Long? {
-    val limpo = texto.trim().removePrefix("R$").trim().replace(" ", "")
+    val limpo = texto.replace('\u00A0', ' ').trim().removePrefix("R$").trim().replace(" ", "")
     if (limpo.isEmpty()) {
         return null
     }

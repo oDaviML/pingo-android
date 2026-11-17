@@ -435,6 +435,53 @@ class OnboardingContasViewModelTest {
     }
 
     @Test
+    fun `conta desmarcada e arquivada antes de nova falha nao volta ao reabrir`() {
+        preferences.failure = IOException("sem espaco")
+        viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.NUBANK))
+        viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.INTER))
+        preencherCredito(InstituicaoFinanceira.NUBANK)
+        preencherCredito(InstituicaoFinanceira.INTER)
+        viewModel.onEvent(OnboardingContasEvent.Continuar)
+
+        val inter = contaRepository.contasSalvas().first { it.instituicao == InstituicaoFinanceira.INTER }
+        viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.INTER))
+        viewModel.onEvent(OnboardingContasEvent.Continuar)
+
+        assertEquals(listOf(inter.publicId), contaRepository.arquivadas)
+
+        preferences.failure = null
+        viewModel = criarViewModel()
+
+        assertEquals(listOf(InstituicaoFinanceira.NUBANK), viewModel.uiState.value.contas.map { it.instituicao })
+    }
+
+    @Test
+    fun `adicionar instrumento em conta recuperada e falhar novamente nao duplica o instrumento`() {
+        preferences.failure = IOException("sem espaco")
+        viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.NUBANK))
+        preencherCredito(InstituicaoFinanceira.NUBANK)
+        viewModel.onEvent(OnboardingContasEvent.Continuar)
+
+        val conta = contaRepository.contasSalvas().single()
+        alterar(InstituicaoFinanceira.NUBANK, EventoDoFormularioDeConta.AdicionarInstrumento(TipoInstrumento.DEBITO))
+        viewModel.onEvent(OnboardingContasEvent.Continuar)
+
+        val instrumentosAposSegundaFalha = instrumentoRepository.porConta(conta.publicId)
+        assertEquals(2, instrumentosAposSegundaFalha.size)
+        assertEquals(
+            instrumentosAposSegundaFalha.map { it.publicId }.toSet(),
+            contaDe(InstituicaoFinanceira.NUBANK).instrumentos.mapNotNull { it.publicId }.toSet(),
+        )
+
+        preferences.failure = null
+        viewModel.onEvent(OnboardingContasEvent.Continuar)
+
+        assertEquals(2, instrumentoRepository.porConta(conta.publicId).size)
+        assertTrue(preferences.configuradas)
+        assertTrue(viewModel.uiState.value.concluido)
+    }
+
+    @Test
     fun `pular apos falha de preferencia limpa o marcador sem duplicar`() {
         preferences.failure = IOException("sem espaco")
         viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.NUBANK))

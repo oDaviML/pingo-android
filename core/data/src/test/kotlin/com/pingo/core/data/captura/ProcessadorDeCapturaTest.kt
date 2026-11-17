@@ -15,7 +15,10 @@ import com.pingo.core.parser.HashDuplicata
 import com.pingo.core.parser.TipoLancamentoPadrao
 import com.pingo.core.parser.TransacaoExtraida
 import com.pingo.core.testing.FakeAppDispatchers
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -559,6 +562,89 @@ class ProcessadorDeCapturaTest {
         assertNull(lancamento.instrumentoPublicId)
         assertEquals(StatusLancamento.PENDENTE, lancamento.status)
         assertEquals(MotivoPendencia.INSTRUMENTO_NAO_ENCONTRADO.name, lancamento.motivoPendencia)
+    }
+
+    @Test
+    fun `captura com conta pai arquivada mesmo sem flag no instrumento grava pendente sem vinculo`() = runTest {
+        val categorias = AmbienteCategorias().comPadroes()
+        val conta = ambiente.contas.criar(InstituicaoFinanceira.ITAU, "Itaú")
+        ambiente.instrumentos.criarNaConta(conta)
+        ambiente.contas.arquivar(conta.publicId, AGORA_DA_CAPTURA)
+
+        val resultado = processador(categorias).processar(captura(instituicao = InstituicaoFinanceira.ITAU))
+
+        val lancamento = (resultado as ResultadoProcessamento.Gravado).lancamento
+        assertNull(lancamento.instrumentoPublicId)
+        assertEquals(StatusLancamento.PENDENTE, lancamento.status)
+        assertEquals(MotivoPendencia.INSTRUMENTO_NAO_ENCONTRADO.name, lancamento.motivoPendencia)
+    }
+
+    @Test
+    fun `corrida com arquivamento antes da transacao grava captura pendente sem vincular instrumento`() = runTest {
+        val categorias = AmbienteCategorias().comPadroes()
+        val conta = ambiente.contas.criar(InstituicaoFinanceira.ITAU, "Itaú")
+        ambiente.instrumentos.criarNaConta(conta)
+        val receita = ambiente.instrumentos.criar(InstituicaoFinanceira.NUBANK)
+        val processador = processador(categorias)
+        processador.processar(capturaPixRecebido())
+
+        val entrouNaBarreira = CompletableDeferred<Unit>()
+        val liberarBarreira = CompletableDeferred<Unit>()
+        ambiente.transacoes.antesDeIniciar = {
+            entrouNaBarreira.complete(Unit)
+            liberarBarreira.await()
+        }
+
+        val tentativa = async { processador.processar(capturaPixEnviado()) }
+        entrouNaBarreira.await()
+        ambiente.contas.arquivar(conta.publicId, AGORA_DA_CAPTURA)
+        liberarBarreira.complete(Unit)
+
+        val gravado = (tentativa.await() as ResultadoProcessamento.Gravado).lancamento
+        assertNull(gravado.instrumentoPublicId)
+        assertNull(gravado.transferenciaId)
+        assertEquals(StatusLancamento.PENDENTE, gravado.status)
+        assertEquals(MotivoPendencia.INSTRUMENTO_NAO_ENCONTRADO.name, gravado.motivoPendencia)
+        val parceiro = ambiente.lancamentos.todos().first { it.instrumentoPublicId == receita.publicId }
+        assertNull(parceiro.transferenciaId)
+    }
+
+    private fun capturaPixRecebido(): CapturaParaProcessar = captura(
+        instituicao = InstituicaoFinanceira.NUBANK,
+        direcao = DirecaoPadrao.RECEITA,
+        tipo = TipoLancamentoPadrao.TRANSFERENCIA_RECEBIDA,
+        valorCentavos = 15000,
+        estabelecimento = "DAVI",
+    )
+
+    private fun capturaPixEnviado(): CapturaParaProcessar = captura(
+        instituicao = InstituicaoFinanceira.ITAU,
+        direcao = DirecaoPadrao.DESPESA,
+        tipo = TipoLancamentoPadrao.PIX_ENVIADO,
+        valorCentavos = 15000,
+        estabelecimento = "DAVI",
+        postTime = AGORA_DA_CAPTURA.plus(Duration.ofMinutes(2)),
+    )
+
+    @Test
+    fun `corrida em que captura comita primeiro preserva vinculo historico apos arquivamento`() = runTest {
+        val categorias = AmbienteCategorias().comPadroes()
+        val conta = ambiente.contas.criar(InstituicaoFinanceira.ITAU, "Itaú")
+        val cartao = ambiente.instrumentos.criarNaConta(conta)
+        val gravou = CompletableDeferred<Unit>()
+        ambiente.transacoes.depoisDeCommitar = { gravou.complete(Unit) }
+
+        val arquivo = launch {
+            gravou.await()
+            ambiente.contas.arquivar(conta.publicId, AGORA_DA_CAPTURA.plusSeconds(10))
+        }
+        val resultado = processador(categorias).processar(captura(instituicao = InstituicaoFinanceira.ITAU))
+        arquivo.join()
+
+        val gravado = (resultado as ResultadoProcessamento.Gravado).lancamento
+        assertEquals(cartao.publicId, gravado.instrumentoPublicId)
+        assertEquals(StatusLancamento.CONFIRMADO, gravado.status)
+        assertTrue(ambiente.contas.porId(conta.publicId)?.arquivada == true)
     }
 
     private class AmbienteDeCaptura {

@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -60,6 +62,26 @@ class InstrumentoDaoTest {
         val historicos = database.instrumentoDao().observeNaoExcluidos().first()
 
         assertEquals(listOf("arquivado", "de-conta-arquivada"), historicos.map(InstrumentoEntity::publicId))
+    }
+
+    @Test
+    fun buscarAtivoExigeContaEInstrumentoAtivos() = runBlocking {
+        database.contaDao().upsert(conta("ativa", arquivada = false))
+        database.contaDao().upsert(conta("arquivada", arquivada = true))
+        database.contaDao().upsert(conta("apagada", arquivada = false, excluidoEm = AGORA))
+        database.instrumentoDao().upsert(instrumento("ativo", "ativa"))
+        database.instrumentoDao().upsert(instrumento("arquivado", "ativa", arquivado = true))
+        database.instrumentoDao().upsert(instrumento("apagado", "ativa", excluidoEm = AGORA))
+        database.instrumentoDao().upsert(instrumento("de-conta-arquivada", "arquivada"))
+        database.instrumentoDao().upsert(instrumento("de-conta-apagada", "apagada"))
+
+        val dao = database.instrumentoDao()
+
+        assertNotNull(dao.buscarAtivo("ativo"))
+        assertNull(dao.buscarAtivo("arquivado"))
+        assertNull(dao.buscarAtivo("apagado"))
+        assertNull(dao.buscarAtivo("de-conta-arquivada"))
+        assertNull(dao.buscarAtivo("de-conta-apagada"))
     }
 
     private fun conta(publicId: String, arquivada: Boolean, excluidoEm: Instant? = null) = ContaEntity(

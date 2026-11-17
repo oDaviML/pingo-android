@@ -45,14 +45,31 @@ class ContaFormViewModel @Inject constructor(
         when (event) {
             is ContaFormEvent.Formulario -> alterarFormulario(event)
             ContaFormEvent.Salvar -> salvar()
-            ContaFormEvent.TentarDeNovo -> contaPublicId?.let(::carregar)
+            ContaFormEvent.TentarDeNovo -> tentarCarregarDeNovo()
             ContaFormEvent.SolicitarArquivamentoDaConta -> solicitarArquivamentoDaConta()
             is ContaFormEvent.SolicitarArquivamentoDoInstrumento -> solicitarArquivamentoDoInstrumento(event.chave)
             ContaFormEvent.ConfirmarArquivamento -> confirmarArquivamento()
-            ContaFormEvent.CancelarArquivamento -> mutableUiState.update { it.copy(dialogo = null) }
+            ContaFormEvent.CancelarArquivamento -> cancelarArquivamento()
             ContaFormEvent.ReativarConta -> reativarConta()
             is ContaFormEvent.ReativarInstrumento -> reativarInstrumento(event.chave)
         }
+    }
+
+    private fun tentarCarregarDeNovo() {
+        val atual = mutableUiState.value
+        if (!atual.falhaDeLeitura || atual.carregando) {
+            return
+        }
+
+        contaPublicId?.let(::carregar)
+    }
+
+    private fun cancelarArquivamento() {
+        if (mutableUiState.value.processandoArquivamento || mutableUiState.value.salvando) {
+            return
+        }
+
+        mutableUiState.update { it.copy(dialogo = null) }
     }
 
     private fun alterarFormulario(event: ContaFormEvent.Formulario) {
@@ -148,8 +165,12 @@ class ContaFormViewModel @Inject constructor(
     private fun contaNaoEditavel(atual: ContaFormUiState): Boolean = contaPublicId == null || !atual.edicao || atual.contaArquivada
 
     private fun confirmarArquivamento() {
-        val dialogo = mutableUiState.value.dialogo ?: return
+        val atual = mutableUiState.value
+        val dialogo = atual.dialogo ?: return
         val publicId = contaPublicId ?: return
+        if (atual.salvando || atual.processandoArquivamento) {
+            return
+        }
 
         mutableUiState.update { it.copy(processandoArquivamento = true, falhouAoArquivar = false) }
 
@@ -184,7 +205,8 @@ class ContaFormViewModel @Inject constructor(
 
     private fun reativarConta() {
         val publicId = contaPublicId ?: return
-        if (!mutableUiState.value.contaArquivada || !mutableUiState.value.formularioEditavel) {
+        val atual = mutableUiState.value
+        if (!atual.contaArquivada || atual.salvando || atual.processandoArquivamento) {
             return
         }
 

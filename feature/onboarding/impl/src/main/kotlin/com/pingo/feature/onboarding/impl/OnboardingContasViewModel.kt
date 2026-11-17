@@ -94,7 +94,8 @@ class OnboardingContasViewModel @Inject constructor(
         val existentes = formularios.filter(ContaFormulario::editando)
         val novas = formularios.filterNot(ContaFormulario::editando)
 
-        existentes.forEach { contaRepository.salvarCadastro(it.paraEdicao(), agora) }
+        val salvas = existentes.map { contaRepository.salvarCadastro(it.paraEdicao(), agora) }
+        atualizarContasSalvas(salvas)
         val idsCriados = criarContasNovas(novas = novas, agora = agora)
         arquivarContasRemovidas(mantidas = existentes.mapNotNull(ContaFormulario::publicId) + idsCriados, agora = agora)
 
@@ -116,14 +117,18 @@ class OnboardingContasViewModel @Inject constructor(
         )
 
         contasPendentes = contasPendentes + criadas.map { it.conta.publicId }
-        atualizarContasCriadas(novas = novas, criadas = criadas)
+        atualizarContasSalvas(criadas)
 
         return criadas.map { it.conta.publicId }
     }
 
-    private fun atualizarContasCriadas(novas: List<ContaFormulario>, criadas: List<CadastroSalvo>) {
-        val substituicoes = novas.zip(criadas).associate { (formulario, criada) ->
-            formulario.instituicao to ContaFormulario.de(criada.conta, criada.instrumentos)
+    private fun atualizarContasSalvas(salvas: List<CadastroSalvo>) {
+        if (salvas.isEmpty()) {
+            return
+        }
+
+        val substituicoes = salvas.associate { salva ->
+            salva.conta.instituicao to ContaFormulario.de(salva.conta, salva.instrumentos)
         }
 
         mutableUiState.update { state ->
@@ -133,10 +138,14 @@ class OnboardingContasViewModel @Inject constructor(
 
     private suspend fun arquivarContasRemovidas(mantidas: List<String>, agora: Instant) {
         val mantidasSet = mantidas.toSet()
-
-        contasPendentes.filterNot { it in mantidasSet }.forEach { publicId ->
-            contaRepository.arquivar(publicId, agora)
+        val removidas = contasPendentes.filterNot { it in mantidasSet }
+        if (removidas.isEmpty()) {
+            return
         }
+
+        removidas.forEach { publicId -> contaRepository.arquivar(publicId, agora) }
+        contasPendentes = mantidas
+        preferences.setContasOnboardingPendentes(mantidas)
     }
 
     private suspend fun concluirPreferencias() {
@@ -196,9 +205,11 @@ class OnboardingContasViewModel @Inject constructor(
     }
 
     private suspend fun recuperarFormulario(publicId: String): ContaFormulario? = runCatching {
-        val conta = contaRepository.buscar(publicId)
-        val instrumentos = instrumentoRepository.observePorConta(publicId).first()
+        val conta = contaRepository.buscar(publicId)?.takeIf { !it.arquivada && it.excluidoEm == null }
+        val instrumentos = instrumentoRepository.observePorConta(publicId)
+            .first()
+            .filter { !it.arquivado && it.excluidoEm == null }
 
-        conta?.let { ContaFormulario.de(it, instrumentos) }
+        conta?.takeIf { instrumentos.isNotEmpty() }?.let { ContaFormulario.de(it, instrumentos) }
     }.getOrNull()
 }

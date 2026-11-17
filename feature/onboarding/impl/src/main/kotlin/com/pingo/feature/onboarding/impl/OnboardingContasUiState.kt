@@ -11,7 +11,7 @@ data class OnboardingContasUiState(
     val recuperando: Boolean = false,
 ) {
     val formularioEditavel: Boolean
-        get() = !recuperando && salvamento != SalvamentoUiState.Loading
+        get() = !recuperando && !concluido && salvamento != SalvamentoUiState.Loading
 
     val podeContinuar: Boolean
         get() = formularioEditavel && contas.isNotEmpty() && contas.all(ContaFormulario::valida)

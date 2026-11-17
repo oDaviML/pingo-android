@@ -5,6 +5,9 @@ import com.pingo.core.model.MotivoPendencia
 import com.pingo.core.model.OrigemLancamento
 import com.pingo.core.model.StatusLancamento
 import com.pingo.core.model.TipoLancamento
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -445,6 +448,63 @@ class RegistrarLancamentoManualTest {
         val ambiente = AmbienteManual()
 
         assertNull(ambiente.registrar.ultimoInstrumentoUsado())
+    }
+
+    @Test
+    fun `conta pai arquivada bloqueia criacao manual mesmo com instrumento sem flag`() = runBlocking {
+        val ambiente = AmbienteManual()
+        val instrumento = ambiente.instrumentos.criar("Cartão", contaPublicId = "conta-arquivada")
+        ambiente.instrumentos.arquivarConta("conta-arquivada")
+
+        val resultado = ambiente.registrar.registrar(entrada(valorCentavos = 1000, instrumentoPublicId = instrumento.publicId))
+
+        assertEquals(ResultadoLancamentoManual.Invalido(setOf(CampoDeLancamentoManual.INSTRUMENTO)), resultado)
+        assertTrue(ambiente.lancamentos.todos().isEmpty())
+    }
+
+    @Test
+    fun `corrida com arquivamento antes da transacao recusa lancamento manual e transferencia`() = runBlocking {
+        val ambiente = AmbienteManual()
+        val origem = ambiente.instrumentos.criar("Origem", contaPublicId = "conta-origem")
+        val destino = ambiente.instrumentos.criar("Destino", contaPublicId = "conta-destino")
+
+        val entrouNaBarreira = CompletableDeferred<Unit>()
+        val liberarBarreira = CompletableDeferred<Unit>()
+        ambiente.transacao.antesDeIniciar = {
+            entrouNaBarreira.complete(Unit)
+            liberarBarreira.await()
+        }
+
+        val tarefa = async {
+            ambiente.registrar.registrar(transferencia(origem.publicId, destino.publicId, valorCentavos = 5000))
+        }
+        entrouNaBarreira.await()
+        ambiente.instrumentos.arquivarConta("conta-destino")
+        liberarBarreira.complete(Unit)
+
+        assertEquals(ResultadoLancamentoManual.Invalido(setOf(CampoDeLancamentoManual.DESTINO)), tarefa.await())
+        assertTrue(ambiente.lancamentos.todos().isEmpty())
+    }
+
+    @Test
+    fun `corrida em que criacao manual comita primeiro preserva vinculos historicos apos arquivamento`() = runBlocking {
+        val ambiente = AmbienteManual()
+        val origem = ambiente.instrumentos.criar("Origem", contaPublicId = "conta-origem")
+        val destino = ambiente.instrumentos.criar("Destino", contaPublicId = "conta-destino")
+        val gravou = CompletableDeferred<Unit>()
+        ambiente.transacao.depoisDeCommitar = { gravou.complete(Unit) }
+
+        val arquivo = launch {
+            gravou.await()
+            ambiente.instrumentos.arquivarConta("conta-origem")
+            ambiente.instrumentos.arquivar(destino.publicId, AGORA_MANUAL)
+        }
+        val resultado = ambiente.registrar.registrar(transferencia(origem.publicId, destino.publicId, valorCentavos = 5000))
+        arquivo.join()
+
+        val par = (resultado as ResultadoLancamentoManual.Salvo).lancamentos
+        assertEquals(2, par.size)
+        assertEquals(setOf(origem.publicId, destino.publicId), ambiente.lancamentos.todos().map { it.instrumentoPublicId }.toSet())
     }
 
     private fun transferencia(origemPublicId: String, destinoPublicId: String, valorCentavos: Long): NovoLancamentoManual = entrada(

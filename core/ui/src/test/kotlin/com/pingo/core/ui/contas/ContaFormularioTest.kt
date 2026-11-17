@@ -139,6 +139,12 @@ class ContaFormularioTest {
         assertFalse(valorInvalido.instrumentos.single().recargaValida())
         assertFalse(valorInvalido.valida())
 
+        val diaInvalido = voucher.aplicar(EventoDoFormularioDeConta.AlterarDiaRecarga(chave, "32"))
+        assertEquals("32", diaInvalido.instrumentos.single().diaRecarga)
+        assertFalse(diaInvalido.instrumentos.single().diaRecargaValido())
+        assertFalse(diaInvalido.instrumentos.single().recargaValida())
+        assertFalse(diaInvalido.valida())
+
         val diaSemValor = voucher.aplicar(EventoDoFormularioDeConta.AlterarDiaRecarga(chave, "10"))
         assertFalse(diaSemValor.instrumentos.single().recargaValida())
         assertFalse(diaSemValor.valida())
@@ -151,6 +157,21 @@ class ContaFormularioTest {
         assertTrue(completo.instrumentos.single().valorRecargaValido())
         assertTrue(completo.valida())
         assertEquals(100_000L, completo.instrumentos.single().paraNovoInstrumento().valorRecargaCentavos)
+    }
+
+    @Test
+    fun `voucher aceita saldo inicial zero e recarga milhar sem virgula`() {
+        val formulario = ContaFormulario.nova(InstituicaoFinanceira.CAJU)
+        val chave = formulario.instrumentos.single().chave
+        val voucher = formulario
+            .aplicar(EventoDoFormularioDeConta.AlterarBeneficio(chave, BeneficioVoucher.VT))
+            .aplicar(EventoDoFormularioDeConta.AlterarSaldoInicial(chave, "0,00"))
+            .aplicar(EventoDoFormularioDeConta.AlterarDiaRecarga(chave, "1"))
+            .aplicar(EventoDoFormularioDeConta.AlterarValorRecarga(chave, "1.000"))
+
+        assertTrue(voucher.valida())
+        assertEquals(0L, voucher.instrumentos.single().paraNovoInstrumento().saldoCentavos)
+        assertEquals(100_000L, voucher.instrumentos.single().paraNovoInstrumento().valorRecargaCentavos)
     }
 
     @Test

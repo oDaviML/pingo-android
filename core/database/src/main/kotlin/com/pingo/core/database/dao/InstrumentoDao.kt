@@ -29,6 +29,19 @@ interface InstrumentoDao {
     @Query("SELECT * FROM instrumentos WHERE publicId = :publicId")
     suspend fun buscar(publicId: String): InstrumentoEntity?
 
+    @Query(
+        """
+        SELECT instrumentos.* FROM instrumentos
+        INNER JOIN contas ON contas.publicId = instrumentos.contaPublicId
+        WHERE instrumentos.publicId = :publicId
+        AND contas.arquivada = 0
+        AND contas.excluidoEm IS NULL
+        AND instrumentos.excluidoEm IS NULL
+        AND instrumentos.arquivado = 0
+        """,
+    )
+    suspend fun buscarAtivo(publicId: String): InstrumentoEntity?
+
     @Query("SELECT * FROM instrumentos WHERE contaPublicId = :contaPublicId AND excluidoEm IS NULL ORDER BY apelido")
     fun observePorConta(contaPublicId: String): Flow<List<InstrumentoEntity>>
 

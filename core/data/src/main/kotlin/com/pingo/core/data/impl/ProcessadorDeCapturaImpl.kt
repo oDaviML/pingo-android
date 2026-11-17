@@ -66,9 +66,12 @@ class ProcessadorDeCapturaImpl @Inject constructor(
             return ResultadoProcessamento.Duplicada
         }
 
-        val instrumentos = instrumentosElegiveis(captura.instituicao)
+        val categoria = resolverCategoria(captura.transacao)
+        val dataHora = DataHoraDoLancamento.resolver(captura.transacao.dataHoraTexto, captura.postTime, clock.zone)
 
-        return gravar(captura, instrumentos, hash)
+        return transacaoLocal.executar {
+            gravar(captura, hash, categoria, dataHora)
+        }
     }
 
     private suspend fun instrumentosElegiveis(instituicao: InstituicaoFinanceira): List<Instrumento> =
@@ -78,11 +81,19 @@ class ProcessadorDeCapturaImpl @Inject constructor(
             instrumentoRepository.ativosDaInstituicao(instituicao)
         }
 
-    private suspend fun gravar(captura: CapturaParaProcessar, instrumentos: List<Instrumento>, hash: String): ResultadoProcessamento {
+    private suspend fun gravar(
+        captura: CapturaParaProcessar,
+        hash: String,
+        categoria: Categoria?,
+        dataHora: Instant,
+    ): ResultadoProcessamento {
+        if (lancamentoRepository.buscarPorHash(hash) != null) {
+            return ResultadoProcessamento.Duplicada
+        }
+
+        val instrumentos = instrumentosElegiveis(captura.instituicao)
         val transacao = captura.transacao
         val resolucao = ResolucaoDeInstrumento.de(transacao.digitos, instrumentos)
-        val categoria = resolverCategoria(transacao)
-        val dataHora = DataHoraDoLancamento.resolver(transacao.dataHoraTexto, captura.postTime, clock.zone)
         val candidatos = resolucao.instrumento?.let { instrumento ->
             candidatosDeTransferencia(captura, instrumento, dataHora)
         }.orEmpty()
@@ -145,13 +156,8 @@ class ProcessadorDeCapturaImpl @Inject constructor(
     )
 
     private suspend fun salvar(lancamento: Lancamento, par: Lancamento?) {
-        if (par == null) {
-            lancamentoRepository.salvar(lancamento)
-            return
-        }
-
-        transacaoLocal.executar {
-            lancamentoRepository.salvar(lancamento)
+        lancamentoRepository.salvar(lancamento)
+        if (par != null) {
             lancamentoRepository.salvar(
                 par.copy(
                     tipo = TipoLancamento.TRANSFERENCIA,
@@ -198,7 +204,9 @@ class ProcessadorDeCapturaImpl @Inject constructor(
             fim = dataHora.plus(JANELA_DE_TRANSFERENCIA),
             contaPublicId = instrumento.contaPublicId,
             origem = OrigemLancamento.NOTIFICACAO,
-        )
+        ).filter { candidato ->
+            candidato.instrumentoPublicId?.let { id -> instrumentoRepository.buscarAtivo(id) } != null
+        }
     }
 
     private fun tipoDe(direcao: DirecaoPadrao): TipoLancamento = when (direcao) {

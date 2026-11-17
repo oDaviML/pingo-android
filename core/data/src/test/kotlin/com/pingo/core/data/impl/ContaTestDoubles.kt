@@ -18,11 +18,16 @@ internal val INSTANTE_DA_EDICAO: Instant = Instant.parse("2026-11-10T12:01:00Z")
 internal class FakeTransacaoLocal : TransacaoLocal {
     var execucoes = 0
         private set
+    var antesDeIniciar: (suspend () -> Unit)? = null
+    var depoisDeCommitar: (suspend () -> Unit)? = null
 
     override suspend fun <T> executar(bloco: suspend () -> T): T {
+        antesDeIniciar?.invoke()
         execucoes++
+        val resultado = bloco()
+        depoisDeCommitar?.invoke()
 
-        return bloco()
+        return resultado
     }
 }
 
@@ -75,6 +80,9 @@ internal class FakeInstrumentoDao : InstrumentoDao {
         observeNaoExcluidos().map { instrumentos -> instrumentos.filter { it.contaPublicId == contaPublicId } }
 
     override suspend fun buscar(publicId: String): InstrumentoEntity? = tabela.value.firstOrNull { it.publicId == publicId }
+
+    override suspend fun buscarAtivo(publicId: String): InstrumentoEntity? =
+        tabela.value.firstOrNull { it.publicId == publicId && it.excluidoEm == null && !it.arquivado }
 
     override suspend fun ativosDaInstituicao(instituicao: InstituicaoFinanceira): List<InstrumentoEntity> =
         tabela.value.filter { it.excluidoEm == null && !it.arquivado }.sortedBy { it.apelido }

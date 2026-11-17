@@ -42,6 +42,19 @@ class InstrumentoRepositoryImplTest {
         assertEquals(INSTANTE_DA_EDICAO.plusSeconds(60), reativado?.atualizadoEm)
     }
 
+    @Test
+    fun `buscarAtivo retorna nulo quando o instrumento esta arquivado ou excluido`() = runBlocking {
+        seed(publicId = "ativo", apelido = "Ativo")
+        seed(publicId = "arquivado", apelido = "Arquivado")
+        seed(publicId = "excluido", apelido = "Excluído")
+        repositorio.arquivar("arquivado", INSTANTE_DA_EDICAO)
+        repositorio.excluir("excluido", INSTANTE_DA_EDICAO)
+
+        assertEquals("ativo", repositorio.buscarAtivo("ativo")?.publicId)
+        assertEquals(null, repositorio.buscarAtivo("arquivado"))
+        assertEquals(null, repositorio.buscarAtivo("excluido"))
+    }
+
     private suspend fun seed(publicId: String, apelido: String) {
         instrumentoDao.upsert(
             InstrumentoEntity(

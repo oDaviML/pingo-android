@@ -31,15 +31,13 @@ class RegistrarLancamentoManual @Inject constructor(
             ?: ativos.singleOrNull()?.publicId
     }
 
-    suspend fun registrar(novo: NovoLancamentoManual): ResultadoLancamentoManual {
-        val ativos = instrumentosAtivos().associateBy { it.publicId }
-        val invalidos = validar(novo, ativos)
-
+    suspend fun registrar(novo: NovoLancamentoManual): ResultadoLancamentoManual = transacaoLocal.executar {
+        val invalidos = validar(novo)
         if (invalidos.isNotEmpty()) {
-            return ResultadoLancamentoManual.Invalido(invalidos)
+            return@executar ResultadoLancamentoManual.Invalido(invalidos)
         }
 
-        return when (novo.tipo) {
+        when (novo.tipo) {
             TipoLancamento.TRANSFERENCIA -> registrarTransferencia(novo)
             TipoLancamento.DESPESA, TipoLancamento.RECEITA -> registrarLancamento(novo)
             TipoLancamento.AJUSTE -> ResultadoLancamentoManual.Invalido(setOf(CampoDeLancamentoManual.TIPO))
@@ -48,25 +46,33 @@ class RegistrarLancamentoManual @Inject constructor(
 
     private suspend fun instrumentosAtivos(): List<Instrumento> = instrumentoRepository.observeInstrumentosAtivos().first()
 
-    private fun validar(novo: NovoLancamentoManual, ativos: Map<String, Instrumento>): Set<CampoDeLancamentoManual> = buildSet {
+    private suspend fun validar(novo: NovoLancamentoManual): Set<CampoDeLancamentoManual> = buildSet {
         if (novo.valorCentavos <= 0) {
             add(CampoDeLancamentoManual.VALOR)
         }
-
-        if (novo.tipo == TipoLancamento.TRANSFERENCIA) {
-            val origem = novo.instrumentoPublicId
-            val destino = novo.destinoPublicId
-
-            if (origem == null || origem !in ativos) {
-                add(CampoDeLancamentoManual.ORIGEM)
-            }
-            if (destino == null || destino !in ativos || destino == origem) {
-                add(CampoDeLancamentoManual.DESTINO)
-            }
-        } else if (novo.instrumentoPublicId == null || novo.instrumentoPublicId !in ativos) {
+        if (novo.tipo == TipoLancamento.AJUSTE) {
+            add(CampoDeLancamentoManual.TIPO)
+        } else if (novo.tipo == TipoLancamento.TRANSFERENCIA) {
+            adicionarErrosDeTransferencia(novo)
+        } else if (!instrumentoAtivo(novo.instrumentoPublicId)) {
             add(CampoDeLancamentoManual.INSTRUMENTO)
         }
     }
+
+    private suspend fun MutableSet<CampoDeLancamentoManual>.adicionarErrosDeTransferencia(novo: NovoLancamentoManual) {
+        val origem = novo.instrumentoPublicId
+        val destino = novo.destinoPublicId
+
+        if (!instrumentoAtivo(origem)) {
+            add(CampoDeLancamentoManual.ORIGEM)
+        }
+        if (destino == null || destino == origem || !instrumentoAtivo(destino)) {
+            add(CampoDeLancamentoManual.DESTINO)
+        }
+    }
+
+    private suspend fun instrumentoAtivo(publicId: String?): Boolean =
+        publicId != null && instrumentoRepository.buscarAtivo(publicId) != null
 
     private suspend fun registrarLancamento(novo: NovoLancamentoManual): ResultadoLancamentoManual {
         val instrumento = requireNotNull(novo.instrumentoPublicId)
@@ -90,10 +96,8 @@ class RegistrarLancamentoManual @Inject constructor(
             )
             .comDuplicata(temCapturadoSemelhante(destino, novo))
 
-        transacaoLocal.executar {
-            lancamentoRepository.salvar(saida)
-            lancamentoRepository.salvar(entrada)
-        }
+        lancamentoRepository.salvar(saida)
+        lancamentoRepository.salvar(entrada)
 
         return ResultadoLancamentoManual.Salvo(listOf(saida, entrada))
     }

@@ -25,13 +25,17 @@ class ValorEmReaisTest {
         assertEquals(100_000L, reaisParaCentavos("1.000,00"))
         assertEquals(100_000L, reaisParaCentavos("1000"))
         assertEquals(100L, reaisParaCentavos("1,00"))
+        assertEquals(123_400L, reaisParaCentavos("1.234"))
         assertEquals(1_000_000_00L, reaisParaCentavos("1.000.000,00"))
+        assertEquals(0L, reaisParaCentavos("0,00"))
+        assertEquals(1L, reaisParaCentavos("0,01"))
     }
 
     @Test
     fun `aceita prefixo de real e espacos`() {
         assertEquals(4290L, reaisParaCentavos(" R$ 42,90 "))
         assertEquals(100_000L, reaisParaCentavos("R$ 1.000"))
+        assertEquals(100_000L, reaisParaCentavos("R$\u00A01.000,00"))
     }
 
     @Test
@@ -42,8 +46,15 @@ class ValorEmReaisTest {
         assertNull(reaisParaCentavos("1,234"))
         assertNull(reaisParaCentavos("abc"))
         assertNull(reaisParaCentavos("1.0000"))
+        assertNull(reaisParaCentavos("1000.000"))
+        assertNull(reaisParaCentavos("1.23.456"))
+        assertNull(reaisParaCentavos("1.234.56"))
         assertNull(reaisParaCentavos("1.2.3"))
         assertNull(reaisParaCentavos("1,2,3"))
         assertNull(reaisParaCentavos(",50"))
+        assertNull(reaisParaCentavos(".50"))
+        assertNull(reaisParaCentavos("1,"))
+        assertNull(reaisParaCentavos("1."))
+        assertNull(reaisParaCentavos("1.000,"))
     }
 }

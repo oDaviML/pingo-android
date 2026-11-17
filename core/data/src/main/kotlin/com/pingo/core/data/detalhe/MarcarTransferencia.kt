@@ -45,7 +45,11 @@ class MarcarTransferencia @Inject constructor(
     private val transacaoLocal: TransacaoLocal,
     private val clock: Clock,
 ) {
-    suspend fun marcar(publicId: String, destinoPublicId: String): ResultadoDaTransferencia {
+    suspend fun marcar(publicId: String, destinoPublicId: String): ResultadoDaTransferencia = transacaoLocal.executar {
+        marcarNaTransacao(publicId, destinoPublicId)
+    }
+
+    private suspend fun marcarNaTransacao(publicId: String, destinoPublicId: String): ResultadoDaTransferencia {
         val original = lancamentoRepository.buscar(publicId)?.takeIf { it.excluidoEm == null }
             ?: return ResultadoDaTransferencia.NaoEncontrado
         val todos = lancamentoRepository.observeLancamentos().first()
@@ -58,14 +62,12 @@ class MarcarTransferencia @Inject constructor(
         val agora = clock.instant()
         val transferenciaId = UUID.randomUUID().toString()
         val lancamento = original.comoTransferencia(transferenciaId, agora)
-        val candidato = candidatosReais(original, destino, todos).singleOrNull()?.first
+        val candidato = candidatosReais(original, destino, todos).singleOrNull()?.lancamento
         val par = candidato?.comoTransferencia(transferenciaId, agora)
             ?: novoPar(original, destino, transferenciaId, agora)
 
-        transacaoLocal.executar {
-            lancamentoRepository.salvar(lancamento)
-            lancamentoRepository.salvar(par)
-        }
+        lancamentoRepository.salvar(lancamento)
+        lancamentoRepository.salvar(par)
 
         return ResultadoDaTransferencia.Marcada(lancamento = lancamento, par = par)
     }
@@ -86,7 +88,7 @@ class MarcarTransferencia @Inject constructor(
         return when {
             destino.contaPublicId == origem.contaPublicId -> MotivoDaRecusa.MESMA_CONTA
             parNaoResolvido(original, todos) -> MotivoDaRecusa.PAR_NAO_RESOLVIDO
-            reais.any { !it.second.ativo() } -> MotivoDaRecusa.INSTRUMENTO_NAO_RESOLVIDO
+            reais.any { !it.ativo } -> MotivoDaRecusa.INSTRUMENTO_NAO_RESOLVIDO
             reais.size > 1 -> MotivoDaRecusa.PAR_AMBIGUO
             else -> null
         }
@@ -134,9 +136,7 @@ class MarcarTransferencia @Inject constructor(
         else -> false
     }
 
-    private suspend fun instrumentoAtivo(publicId: String?): Instrumento? = publicId
-        ?.let { instrumentoRepository.buscar(it) }
-        ?.takeIf { it.excluidoEm == null && !it.arquivado }
+    private suspend fun instrumentoAtivo(publicId: String?): Instrumento? = publicId?.let { instrumentoRepository.buscarAtivo(it) }
 
     private suspend fun parNaoResolvido(original: Lancamento, todos: List<Lancamento>): Boolean = todos.any { candidato ->
         val instrumentoPublicId = candidato.instrumentoPublicId
@@ -147,22 +147,26 @@ class MarcarTransferencia @Inject constructor(
             candidato.naJanelaDe(original)
     }
 
-    private suspend fun candidatosReais(
-        original: Lancamento,
-        destino: Instrumento,
-        todos: List<Lancamento>,
-    ): List<Pair<Lancamento, Instrumento>> = todos.mapNotNull { candidato ->
-        val elegivel = candidato.publicId != original.publicId &&
-            candidato.transferenciaId == null &&
-            candidato.tipo == original.tipo.oposto() &&
-            candidato.naJanelaDe(original)
-        val instrumento = candidato.instrumentoPublicId?.let { instrumentoRepository.buscar(it) }
-        if (elegivel && instrumento?.contaPublicId == destino.contaPublicId) candidato to instrumento else null
-    }
+    private suspend fun candidatosReais(original: Lancamento, destino: Instrumento, todos: List<Lancamento>): List<CandidatoReal> =
+        todos.mapNotNull { candidato ->
+            val elegivel = candidato.publicId != original.publicId &&
+                candidato.transferenciaId == null &&
+                candidato.tipo == original.tipo.oposto() &&
+                candidato.naJanelaDe(original)
+            val instrumento = candidato.instrumentoPublicId?.let { instrumentoRepository.buscar(it) }
+            if (elegivel && instrumento?.contaPublicId == destino.contaPublicId) {
+                CandidatoReal(
+                    lancamento = candidato,
+                    ativo = instrumentoRepository.buscarAtivo(instrumento.publicId) != null,
+                )
+            } else {
+                null
+            }
+        }
 
     private suspend fun instrumentoNaoExiste(publicId: String): Boolean = instrumentoRepository.buscar(publicId) == null
 
-    private fun Instrumento.ativo(): Boolean = excluidoEm == null && !arquivado
+    private data class CandidatoReal(val lancamento: Lancamento, val ativo: Boolean)
 
     private fun novoPar(original: Lancamento, destino: Instrumento, transferenciaId: String, agora: Instant): Lancamento = Lancamento(
         publicId = UUID.randomUUID().toString(),

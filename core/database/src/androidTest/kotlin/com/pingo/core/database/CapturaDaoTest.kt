@@ -134,20 +134,46 @@ class CapturaDaoTest {
         assertEquals(listOf("receita"), candidatos.map(LancamentoEntity::publicId))
     }
 
-    private suspend fun seedConta(publicId: String, instituicao: InstituicaoFinanceira) {
-        database.contaDao().upsert(conta(publicId, instituicao))
+    @Test
+    fun candidatosDeTransferenciaExcluemContaEInstrumentoArquivados() = runBlocking {
+        seedConta("itau", InstituicaoFinanceira.ITAU)
+        seedConta("nubank", InstituicaoFinanceira.NUBANK)
+        seedConta("inter", InstituicaoFinanceira.INTER, arquivada = true)
+        seedInstrumento("cartao-itau", "itau")
+        seedInstrumento("cartao-nubank-ativo", "nubank")
+        seedInstrumento("cartao-nubank-arquivado", "nubank", arquivado = true)
+        seedInstrumento("cartao-inter-conta-arquivada", "inter")
+        val dao = database.lancamentoDao()
+        dao.upsert(lancamento("receita-ativa", "cartao-nubank-ativo", tipo = TipoLancamento.RECEITA))
+        dao.upsert(lancamento("receita-inst-arquivado", "cartao-nubank-arquivado", tipo = TipoLancamento.RECEITA))
+        dao.upsert(lancamento("receita-conta-arquivada", "cartao-inter-conta-arquivada", tipo = TipoLancamento.RECEITA))
+
+        val candidatos = dao.candidatosDeTransferencia(
+            TipoLancamento.RECEITA,
+            15000,
+            AGORA.minus(Duration.ofMinutes(15)),
+            AGORA.plus(Duration.ofMinutes(15)),
+            "itau",
+            OrigemLancamento.NOTIFICACAO,
+        )
+
+        assertEquals(listOf("receita-ativa"), candidatos.map(LancamentoEntity::publicId))
     }
 
-    private suspend fun seedInstrumento(publicId: String, contaPublicId: String) {
-        database.instrumentoDao().upsert(instrumento(publicId, contaPublicId))
+    private suspend fun seedConta(publicId: String, instituicao: InstituicaoFinanceira, arquivada: Boolean = false) {
+        database.contaDao().upsert(conta(publicId, instituicao, arquivada))
     }
 
-    private fun conta(publicId: String, instituicao: InstituicaoFinanceira) = ContaEntity(
+    private suspend fun seedInstrumento(publicId: String, contaPublicId: String, arquivado: Boolean = false) {
+        database.instrumentoDao().upsert(instrumento(publicId, contaPublicId, arquivado))
+    }
+
+    private fun conta(publicId: String, instituicao: InstituicaoFinanceira, arquivada: Boolean = false) = ContaEntity(
         publicId = publicId,
         instituicao = instituicao,
         apelido = publicId,
         tipo = TipoConta.CORRENTE,
-        arquivada = false,
+        arquivada = arquivada,
         criadoEm = AGORA,
         atualizadoEm = AGORA,
         excluidoEm = null,
