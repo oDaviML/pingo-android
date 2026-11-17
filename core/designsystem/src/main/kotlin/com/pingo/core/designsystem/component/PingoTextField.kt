@@ -25,6 +25,7 @@ import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
 
+@Suppress("LongParameterList")
 @Composable
 fun PingoTextField(
     value: String,
@@ -33,6 +34,7 @@ fun PingoTextField(
     modifier: Modifier = Modifier,
     supportingText: String? = null,
     isError: Boolean = false,
+    enabled: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
 ) {
     val colors = PingoTheme.colors
@@ -52,6 +54,7 @@ fun PingoTextField(
             onValueChange = onValueChange,
             label = label,
             isError = isError,
+            enabled = enabled,
             keyboardOptions = keyboardOptions,
         )
 
@@ -72,6 +75,7 @@ private fun PingoTextFieldBox(
     onValueChange: (String) -> Unit,
     label: String,
     isError: Boolean,
+    enabled: Boolean,
     keyboardOptions: KeyboardOptions,
 ) {
     val colors = PingoTheme.colors
@@ -80,13 +84,14 @@ private fun PingoTextFieldBox(
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
+        enabled = enabled,
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = PingoLayout.minTouchTarget)
             .background(color = colors.surface, shape = shape)
             .border(width = 1.5.dp, color = if (isError) colors.expense else colors.outline, shape = shape)
             .semantics { contentDescription = label },
-        textStyle = PingoTheme.typography.body.copy(color = colors.onBackground),
+        textStyle = PingoTheme.typography.body.copy(color = if (enabled) colors.onBackground else colors.onSurfaceVariant),
         cursorBrush = SolidColor(colors.primary),
         singleLine = true,
         keyboardOptions = keyboardOptions,

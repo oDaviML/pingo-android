@@ -7,8 +7,8 @@ import com.pingo.core.model.NovoInstrumento
 import java.time.Instant
 import java.util.UUID
 
-internal fun NovaConta.criar(agora: Instant): ContaCriada {
-    val contaPublicId = UUID.randomUUID().toString()
+internal fun NovaConta.criar(agora: Instant, publicId: String? = null): ContaCriada {
+    val contaPublicId = publicId ?: UUID.randomUUID().toString()
 
     return ContaCriada(
         conta = Conta(

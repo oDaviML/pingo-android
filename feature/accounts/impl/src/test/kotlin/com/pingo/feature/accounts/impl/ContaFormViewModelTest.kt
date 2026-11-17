@@ -101,6 +101,62 @@ class ContaFormViewModelTest {
     }
 
     @Test
+    fun `editar formulario durante salvamento pendente nao altera os valores gravados`() {
+        val viewModel = criarViewModel()
+        contarCreditoCompleto(viewModel)
+        contas.gateDeSalvamento = CompletableDeferred()
+
+        viewModel.onEvent(ContaFormEvent.Salvar)
+        viewModel.onEvent(
+            ContaFormEvent.Formulario(EventoDoFormularioDeConta.AlterarApelidoConta("Alterado durante o salvamento")),
+        )
+
+        assertTrue(viewModel.uiState.value.salvando)
+        assertFalse(viewModel.uiState.value.formularioEditavel)
+        assertEquals("Nubank", viewModel.uiState.value.formulario.apelido)
+
+        contas.gateDeSalvamento?.complete(Unit)
+
+        assertEquals("Nubank", contas.criadas.single().single().apelido)
+        assertTrue(viewModel.uiState.value.concluido)
+    }
+
+    @Test
+    fun `falha ao salvar libera a edicao e o retry grava os valores corrigidos`() {
+        val viewModel = criarViewModel()
+        contarCreditoCompleto(viewModel)
+        contas.falhaAoSalvar = IOException("disco cheio")
+
+        viewModel.onEvent(ContaFormEvent.Salvar)
+
+        assertTrue(viewModel.uiState.value.falhouAoSalvar)
+        assertTrue(viewModel.uiState.value.formularioEditavel)
+
+        contas.falhaAoSalvar = null
+        viewModel.onEvent(ContaFormEvent.Formulario(EventoDoFormularioDeConta.AlterarApelidoConta("Nubank pessoal")))
+        viewModel.onEvent(ContaFormEvent.Salvar)
+
+        assertEquals("Nubank pessoal", contas.criadas.single().single().apelido)
+        assertTrue(viewModel.uiState.value.concluido)
+    }
+
+    @Test
+    fun `tentar arquivar durante salvamento pendente nao abre a confirmacao`() {
+        semearContaEditavel()
+        val viewModel = criarViewModel("conta-1")
+        contas.gateDeSalvamento = CompletableDeferred()
+
+        viewModel.onEvent(ContaFormEvent.Salvar)
+        viewModel.onEvent(ContaFormEvent.SolicitarArquivamentoDaConta)
+
+        assertNull(viewModel.uiState.value.dialogo)
+        assertTrue(contas.arquivadas.isEmpty())
+
+        contas.gateDeSalvamento?.complete(Unit)
+        assertTrue(viewModel.uiState.value.concluido)
+    }
+
+    @Test
     fun `falha ao salvar mostra erro e nova tentativa conclui uma vez`() {
         val viewModel = criarViewModel()
         contarCreditoCompleto(viewModel)

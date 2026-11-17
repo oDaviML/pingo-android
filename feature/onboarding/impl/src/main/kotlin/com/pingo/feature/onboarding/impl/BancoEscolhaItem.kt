@@ -42,6 +42,7 @@ internal fun BancosEscolhaCard(state: OnboardingContasUiState, onEvent: (Onboard
             BancoEscolhaItem(
                 banco = banco,
                 conta = state.contas.firstOrNull { it.instituicao == banco.instituicao },
+                habilitado = state.formularioEditavel,
                 onEvent = onEvent,
             )
         }
@@ -49,7 +50,12 @@ internal fun BancosEscolhaCard(state: OnboardingContasUiState, onEvent: (Onboard
 }
 
 @Composable
-internal fun BancoEscolhaItem(banco: BancoOferecido, conta: ContaFormulario?, onEvent: (OnboardingContasEvent) -> Unit) {
+internal fun BancoEscolhaItem(
+    banco: BancoOferecido,
+    conta: ContaFormulario?,
+    habilitado: Boolean,
+    onEvent: (OnboardingContasEvent) -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -59,12 +65,14 @@ internal fun BancoEscolhaItem(banco: BancoOferecido, conta: ContaFormulario?, on
         BancoCabecalho(
             banco = banco,
             selecionado = conta != null,
+            habilitado = habilitado,
             onAlternar = { onEvent(OnboardingContasEvent.AlternarBanco(banco.instituicao)) },
         )
 
         if (conta != null) {
             ContaFormularioCampos(
                 formulario = conta,
+                habilitado = habilitado,
                 onEvento = { evento ->
                     onEvent(OnboardingContasEvent.AlterarFormulario(instituicao = banco.instituicao, evento = evento))
                 },
@@ -74,12 +82,12 @@ internal fun BancoEscolhaItem(banco: BancoOferecido, conta: ContaFormulario?, on
 }
 
 @Composable
-private fun BancoCabecalho(banco: BancoOferecido, selecionado: Boolean, onAlternar: () -> Unit) {
+private fun BancoCabecalho(banco: BancoOferecido, selecionado: Boolean, habilitado: Boolean, onAlternar: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = PingoLayout.minTouchTarget)
-            .toggleable(value = selecionado, role = Role.Checkbox, onValueChange = { onAlternar() }),
+            .toggleable(value = selecionado, enabled = habilitado, role = Role.Checkbox, onValueChange = { onAlternar() }),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
     ) {

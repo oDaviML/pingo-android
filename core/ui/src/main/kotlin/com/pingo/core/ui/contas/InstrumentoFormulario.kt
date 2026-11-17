@@ -40,11 +40,13 @@ data class InstrumentoFormulario(
 
     fun diaRecargaValido(): Boolean = diaRecarga.isBlank() || diaDoMesInformado(diaRecarga.toIntOrNull())
 
-    fun valorRecargaValido(): Boolean = valorRecarga.isBlank() || reaisParaCentavos(valorRecarga) != null
+    fun valorRecargaValido(): Boolean = valorRecarga.isBlank() || (reaisParaCentavos(valorRecarga)?.let { it > 0 } == true)
 
     fun recargaValida(): Boolean = recargaVazia() || recargaCompleta()
 
-    fun valido(): Boolean = paraNovoInstrumento().valido()
+    fun valido(): Boolean = paraNovoInstrumento().valido() && configuracaoDoVoucherValida()
+
+    private fun configuracaoDoVoucherValida(): Boolean = tipo != TipoInstrumento.VOUCHER || (saldoValido() && recargaValida())
 
     fun paraNovoInstrumento(): NovoInstrumento = NovoInstrumento(
         tipo = tipo,
@@ -81,7 +83,8 @@ data class InstrumentoFormulario(
 
     private fun recargaVazia(): Boolean = diaRecarga.isBlank() && valorRecarga.isBlank()
 
-    private fun recargaCompleta(): Boolean = diaDoMesInformado(diaRecarga.toIntOrNull()) && reaisParaCentavos(valorRecarga) != null
+    private fun recargaCompleta(): Boolean =
+        diaDoMesInformado(diaRecarga.toIntOrNull()) && valorRecarga.isNotBlank() && valorRecargaValido()
 
     companion object {
         fun novo(tipo: TipoInstrumento, chave: String = UUID.randomUUID().toString()): InstrumentoFormulario =

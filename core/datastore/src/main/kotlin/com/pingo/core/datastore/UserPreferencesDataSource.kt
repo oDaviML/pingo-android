@@ -42,5 +42,9 @@ interface UserPreferencesDataSource {
 
     suspend fun setContasConfiguradas(configuradas: Boolean)
 
+    suspend fun contasOnboardingPendentes(): List<String>
+
+    suspend fun setContasOnboardingPendentes(publicIds: List<String>)
+
     suspend fun clear()
 }

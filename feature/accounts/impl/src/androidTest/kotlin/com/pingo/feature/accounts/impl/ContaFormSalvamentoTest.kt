@@ -5,12 +5,15 @@ import android.os.Build
 import android.os.ParcelFileDescriptor
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextReplacement
 import androidx.lifecycle.SavedStateHandle
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -18,6 +21,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.pingo.core.data.CadastroSalvo
 import com.pingo.core.data.ContaRepository
 import com.pingo.core.data.impl.ContaRepositoryImpl
 import com.pingo.core.data.impl.InstrumentoRepositoryImpl
@@ -26,6 +30,7 @@ import com.pingo.core.database.PingoDatabase
 import com.pingo.core.designsystem.theme.PingoTheme
 import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.NovaConta
+import com.pingo.core.ui.contas.EventoDoFormularioDeConta
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -121,6 +126,46 @@ class ContaFormSalvamentoTest {
         assertEquals(1, runBlocking { instrumentos.observeInstrumentos().first() }.size)
     }
 
+    @Test
+    fun edicaoDuranteSalvamentoPendenteNaoAlteraSnapshotEGravaValoresOriginais() {
+        val viewModel = abrirFormulario()
+
+        controlado.portao = CompletableDeferred()
+        composeRule.onNodeWithText("Salvar conta").performScrollTo().performClick()
+        composeRule.waitUntil(TEMPO_DE_ESPERA) { viewModel.uiState.value.salvando }
+
+        composeRule.onNodeWithContentDescription("Apelido da conta").assertIsNotEnabled()
+        composeRule.onNodeWithText("+ Crédito").performScrollTo().assertIsNotEnabled()
+
+        viewModel.onEvent(
+            ContaFormEvent.Formulario(EventoDoFormularioDeConta.AlterarApelidoConta("Alterado durante o salvamento")),
+        )
+        assertEquals("Outra", viewModel.uiState.value.formulario.apelido)
+
+        controlado.portao?.complete(Unit)
+        composeRule.waitUntil(TEMPO_DE_ESPERA) { viewModel.uiState.value.concluido }
+
+        assertEquals("Outra", runBlocking { contas.observeContas().first() }.single().apelido)
+    }
+
+    @Test
+    fun falhaAoSalvarLiberaEdicaoERetryPersisteValorCorrigido() {
+        val viewModel = abrirFormulario()
+
+        controlado.falharProximaCriacao = true
+        composeRule.onNodeWithText("Salvar conta").performScrollTo().performClick()
+        composeRule.waitUntil(TEMPO_DE_ESPERA) { viewModel.uiState.value.falhouAoSalvar }
+
+        composeRule.onNodeWithContentDescription("Apelido da conta").assertIsEnabled().performTextReplacement("Outra corrigida")
+        composeRule.waitUntil(TEMPO_DE_ESPERA) { viewModel.uiState.value.formulario.apelido == "Outra corrigida" }
+
+        composeRule.onNodeWithText("Salvar conta").performScrollTo().performClick()
+        composeRule.waitUntil(TEMPO_DE_ESPERA) { viewModel.uiState.value.concluido }
+
+        assertEquals("Outra corrigida", runBlocking { contas.observeContas().first() }.single().apelido)
+        assertEquals(2, controlado.criacoes)
+    }
+
     private fun abrirFormulario(): ContaFormViewModel {
         val viewModel = ContaFormViewModel(controlado, instrumentos, clock, SavedStateHandle())
         composeRule.setContent {
@@ -154,14 +199,15 @@ class ContaFormSalvamentoTest {
         var falharProximaCriacao = false
         var criacoes = 0
 
-        override suspend fun criarComInstrumentos(contas: List<NovaConta>, quando: Instant) {
+        override suspend fun criarComInstrumentos(contas: List<NovaConta>, quando: Instant, publicIds: List<String>): List<CadastroSalvo> {
             criacoes++
             portao?.await()
             if (falharProximaCriacao) {
                 falharProximaCriacao = false
                 throw IOException("falha controlada")
             }
-            delegado.criarComInstrumentos(contas, quando)
+
+            return delegado.criarComInstrumentos(contas, quando, publicIds)
         }
     }
 

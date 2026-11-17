@@ -89,7 +89,7 @@ class FakeContaRepository(iniciais: List<Conta> = emptyList()) : ContaRepository
 
     override suspend fun buscar(publicId: String): Conta? = contas.value.firstOrNull { it.publicId == publicId }
 
-    override suspend fun criarComInstrumentos(contas: List<NovaConta>, agora: Instant) = Unit
+    override suspend fun criarComInstrumentos(contas: List<NovaConta>, agora: Instant, publicIds: List<String>) = emptyList<CadastroSalvo>()
 
     override suspend fun salvarCadastro(edicao: ContaEditada, agora: Instant): CadastroSalvo = error("nao usado")
 

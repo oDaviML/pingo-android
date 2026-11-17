@@ -176,14 +176,22 @@ private fun FormularioDaConta(state: ContaFormUiState, onEvent: (ContaFormEvent)
         } else {
             InstituicaoEscolha(
                 selecionada = state.formulario.instituicao,
+                habilitado = state.formularioEditavel,
                 onSelecionar = { onEvent(ContaFormEvent.Formulario(EventoDoFormularioDeConta.AlterarInstituicao(it))) },
             )
         }
 
         ContaFormularioCampos(
             formulario = state.formulario,
+            habilitado = state.formularioEditavel,
             onEvento = { onEvent(ContaFormEvent.Formulario(it)) },
-            acaoDoInstrumento = { instrumento -> AcaoDoInstrumento(instrumento = instrumento, onEvent = onEvent) },
+            acaoDoInstrumento = { instrumento ->
+                AcaoDoInstrumento(
+                    instrumento = instrumento,
+                    habilitado = state.formularioEditavel,
+                    onEvent = onEvent,
+                )
+            },
         )
 
         AcoesDoFormulario(state = state, onEvent = onEvent)
@@ -214,7 +222,7 @@ private fun AcoesDoFormulario(state: ContaFormUiState, onEvent: (ContaFormEvent)
                 text = "Excluir conta",
                 onClick = { onEvent(ContaFormEvent.SolicitarArquivamentoDaConta) },
                 modifier = Modifier.testTag("excluir-conta"),
-                enabled = !state.processandoArquivamento,
+                enabled = state.formularioEditavel,
                 type = PingoButtonType.Text,
                 fillWidth = true,
             )
@@ -223,7 +231,7 @@ private fun AcoesDoFormulario(state: ContaFormUiState, onEvent: (ContaFormEvent)
 }
 
 @Composable
-private fun AcaoDoInstrumento(instrumento: InstrumentoFormulario, onEvent: (ContaFormEvent) -> Unit) {
+private fun AcaoDoInstrumento(instrumento: InstrumentoFormulario, habilitado: Boolean, onEvent: (ContaFormEvent) -> Unit) {
     if (instrumento.publicId == null) {
         return
     }
@@ -235,6 +243,7 @@ private fun AcaoDoInstrumento(instrumento: InstrumentoFormulario, onEvent: (Cont
             modifier = Modifier.testTag("reativar-instrumento-${instrumento.chave}"),
             type = PingoButtonType.Text,
             size = PingoButtonSize.Small,
+            enabled = habilitado,
         )
     } else {
         PingoButton(
@@ -243,6 +252,7 @@ private fun AcaoDoInstrumento(instrumento: InstrumentoFormulario, onEvent: (Cont
             modifier = Modifier.testTag("arquivar-instrumento-${instrumento.chave}"),
             type = PingoButtonType.Text,
             size = PingoButtonSize.Small,
+            enabled = habilitado,
         )
     }
 }

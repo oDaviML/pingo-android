@@ -21,6 +21,7 @@ fun ContaFormularioCampos(
     onEvento: (EventoDoFormularioDeConta) -> Unit,
     modifier: Modifier = Modifier,
     rotuloApelido: String = "Apelido da conta",
+    habilitado: Boolean = true,
     acaoDoInstrumento: (@Composable (InstrumentoFormulario) -> Unit)? = null,
 ) {
     Column(
@@ -33,40 +34,67 @@ fun ContaFormularioCampos(
             label = rotuloApelido,
             supportingText = if (formulario.apelidoValido()) null else MENSAGEM_APELIDO,
             isError = !formulario.apelidoValido(),
+            enabled = habilitado,
         )
 
-        RotuloDoFormulario(texto = "Tipo de conta")
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
-        ) {
-            TipoConta.entries.forEach { tipo ->
-                PingoChoiceChip(
-                    text = tipo.rotuloDeExibicao(),
-                    selected = formulario.tipoConta == tipo,
-                    onClick = { onEvento(EventoDoFormularioDeConta.AlterarTipoConta(tipo)) },
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
+        TipoDaContaEscolha(
+            tipoConta = formulario.tipoConta,
+            habilitado = habilitado,
+            onEvento = onEvento,
+        )
 
-        RotuloDoFormulario(texto = "Instrumentos")
-        formulario.instrumentos.forEachIndexed { indice, instrumento ->
-            InstrumentoFormularioCampos(
-                titulo = "${instrumento.tipo.rotuloDeExibicao()} ${formulario.numeroDoTipo(indice)}",
-                instrumento = instrumento,
-                podeRemover = formulario.podeRemoverInstrumento(),
-                onEvento = onEvento,
-                acao = acaoDoInstrumento?.let { acao -> { acao(instrumento) } },
-            )
-        }
+        InstrumentosDoFormulario(
+            formulario = formulario,
+            habilitado = habilitado,
+            onEvento = onEvento,
+            acaoDoInstrumento = acaoDoInstrumento,
+        )
 
-        AdicionarInstrumentoBotoes(onEvento = onEvento)
+        AdicionarInstrumentoBotoes(onEvento = onEvento, habilitado = habilitado)
     }
 }
 
 @Composable
-private fun AdicionarInstrumentoBotoes(onEvento: (EventoDoFormularioDeConta) -> Unit) {
+private fun TipoDaContaEscolha(tipoConta: TipoConta, habilitado: Boolean, onEvento: (EventoDoFormularioDeConta) -> Unit) {
+    RotuloDoFormulario(texto = "Tipo de conta")
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
+    ) {
+        TipoConta.entries.forEach { tipo ->
+            PingoChoiceChip(
+                text = tipo.rotuloDeExibicao(),
+                selected = tipoConta == tipo,
+                onClick = { onEvento(EventoDoFormularioDeConta.AlterarTipoConta(tipo)) },
+                modifier = Modifier.weight(1f),
+                enabled = habilitado,
+            )
+        }
+    }
+}
+
+@Composable
+private fun InstrumentosDoFormulario(
+    formulario: ContaFormulario,
+    habilitado: Boolean,
+    onEvento: (EventoDoFormularioDeConta) -> Unit,
+    acaoDoInstrumento: (@Composable (InstrumentoFormulario) -> Unit)?,
+) {
+    RotuloDoFormulario(texto = "Instrumentos")
+    formulario.instrumentos.forEachIndexed { indice, instrumento ->
+        InstrumentoFormularioCampos(
+            titulo = "${instrumento.tipo.rotuloDeExibicao()} ${formulario.numeroDoTipo(indice)}",
+            instrumento = instrumento,
+            podeRemover = formulario.podeRemoverInstrumento(),
+            habilitado = habilitado,
+            onEvento = onEvento,
+            acao = acaoDoInstrumento?.let { acao -> { acao(instrumento) } },
+        )
+    }
+}
+
+@Composable
+private fun AdicionarInstrumentoBotoes(onEvento: (EventoDoFormularioDeConta) -> Unit, habilitado: Boolean) {
     RotuloDoFormulario(texto = "Adicionar instrumento")
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -79,6 +107,7 @@ private fun AdicionarInstrumentoBotoes(onEvento: (EventoDoFormularioDeConta) -> 
                 modifier = Modifier.weight(1f),
                 type = PingoButtonType.Outline,
                 size = PingoButtonSize.Small,
+                enabled = habilitado,
                 fillWidth = true,
             )
         }

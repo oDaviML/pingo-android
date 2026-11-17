@@ -37,6 +37,7 @@ internal fun InstrumentoFormularioCampos(
     instrumento: InstrumentoFormulario,
     podeRemover: Boolean,
     onEvento: (EventoDoFormularioDeConta) -> Unit,
+    habilitado: Boolean = true,
     acao: (@Composable () -> Unit)? = null,
 ) {
     Column(
@@ -53,6 +54,7 @@ internal fun InstrumentoFormularioCampos(
             titulo = titulo,
             instrumento = instrumento,
             podeRemover = podeRemover,
+            habilitado = habilitado,
             onEvento = onEvento,
             acao = acao,
         )
@@ -63,15 +65,16 @@ internal fun InstrumentoFormularioCampos(
             label = "Apelido do ${instrumento.tipo.rotuloDeExibicao().lowercase()}",
             supportingText = if (instrumento.apelidoValido()) null else MENSAGEM_APELIDO,
             isError = !instrumento.apelidoValido(),
+            enabled = habilitado,
         )
 
         if (instrumento.tipo != TipoInstrumento.VOUCHER) {
-            UltimosDigitosCampo(instrumento, onEvento)
+            UltimosDigitosCampo(instrumento, habilitado, onEvento)
         }
 
         when (instrumento.tipo) {
-            TipoInstrumento.CREDITO -> CreditoCampos(instrumento, onEvento)
-            TipoInstrumento.VOUCHER -> VoucherCampos(instrumento, onEvento)
+            TipoInstrumento.CREDITO -> CreditoCampos(instrumento, habilitado, onEvento)
+            TipoInstrumento.VOUCHER -> VoucherCampos(instrumento, habilitado, onEvento)
             TipoInstrumento.DEBITO -> Unit
         }
     }
@@ -82,6 +85,7 @@ private fun CabecalhoDoInstrumento(
     titulo: String,
     instrumento: InstrumentoFormulario,
     podeRemover: Boolean,
+    habilitado: Boolean,
     onEvento: (EventoDoFormularioDeConta) -> Unit,
     acao: (@Composable () -> Unit)? = null,
 ) {
@@ -110,13 +114,14 @@ private fun CabecalhoDoInstrumento(
                 onClick = { onEvento(EventoDoFormularioDeConta.RemoverInstrumento(instrumento.chave)) },
                 type = PingoButtonType.Text,
                 size = PingoButtonSize.Small,
+                enabled = habilitado,
             )
         }
     }
 }
 
 @Composable
-private fun UltimosDigitosCampo(instrumento: InstrumentoFormulario, onEvento: (EventoDoFormularioDeConta) -> Unit) {
+private fun UltimosDigitosCampo(instrumento: InstrumentoFormulario, habilitado: Boolean, onEvento: (EventoDoFormularioDeConta) -> Unit) {
     val valido = instrumento.ultimosDigitosValidos()
 
     PingoTextField(
@@ -125,12 +130,13 @@ private fun UltimosDigitosCampo(instrumento: InstrumentoFormulario, onEvento: (E
         label = "Últimos 4 dígitos (opcional)",
         supportingText = if (valido || instrumento.ultimosDigitos.isBlank()) null else MENSAGEM_ULTIMOS_DIGITOS,
         isError = !valido && instrumento.ultimosDigitos.isNotBlank(),
+        enabled = habilitado,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
     )
 }
 
 @Composable
-private fun CreditoCampos(instrumento: InstrumentoFormulario, onEvento: (EventoDoFormularioDeConta) -> Unit) {
+private fun CreditoCampos(instrumento: InstrumentoFormulario, habilitado: Boolean, onEvento: (EventoDoFormularioDeConta) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
@@ -142,6 +148,7 @@ private fun CreditoCampos(instrumento: InstrumentoFormulario, onEvento: (EventoD
             modifier = Modifier.weight(1f),
             supportingText = erroDeDia(instrumento.fechamentoDia, instrumento.fechamentoValido()),
             isError = instrumento.fechamentoDia.isNotBlank() && !instrumento.fechamentoValido(),
+            enabled = habilitado,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         )
         PingoTextField(
@@ -151,14 +158,15 @@ private fun CreditoCampos(instrumento: InstrumentoFormulario, onEvento: (EventoD
             modifier = Modifier.weight(1f),
             supportingText = erroDeDia(instrumento.vencimentoDia, instrumento.vencimentoValido()),
             isError = instrumento.vencimentoDia.isNotBlank() && !instrumento.vencimentoValido(),
+            enabled = habilitado,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         )
     }
 }
 
 @Composable
-private fun VoucherCampos(instrumento: InstrumentoFormulario, onEvento: (EventoDoFormularioDeConta) -> Unit) {
-    BeneficioEscolha(instrumento = instrumento, onEvento = onEvento)
+private fun VoucherCampos(instrumento: InstrumentoFormulario, habilitado: Boolean, onEvento: (EventoDoFormularioDeConta) -> Unit) {
+    BeneficioEscolha(instrumento = instrumento, habilitado = habilitado, onEvento = onEvento)
 
     val saldoValido = instrumento.saldoValido()
     PingoTextField(
@@ -167,14 +175,15 @@ private fun VoucherCampos(instrumento: InstrumentoFormulario, onEvento: (EventoD
         label = "Saldo inicial (R$)",
         supportingText = if (saldoValido || instrumento.saldoInicial.isBlank()) null else MENSAGEM_VALOR,
         isError = !saldoValido && instrumento.saldoInicial.isNotBlank(),
+        enabled = habilitado,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
     )
 
-    RecargaCampos(instrumento = instrumento, onEvento = onEvento)
+    RecargaCampos(instrumento = instrumento, habilitado = habilitado, onEvento = onEvento)
 }
 
 @Composable
-private fun BeneficioEscolha(instrumento: InstrumentoFormulario, onEvento: (EventoDoFormularioDeConta) -> Unit) {
+private fun BeneficioEscolha(instrumento: InstrumentoFormulario, habilitado: Boolean, onEvento: (EventoDoFormularioDeConta) -> Unit) {
     RotuloDoFormulario(texto = "Benefício")
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -186,13 +195,14 @@ private fun BeneficioEscolha(instrumento: InstrumentoFormulario, onEvento: (Even
                 selected = instrumento.beneficio == beneficio,
                 onClick = { onEvento(EventoDoFormularioDeConta.AlterarBeneficio(instrumento.chave, beneficio)) },
                 modifier = Modifier.weight(1f),
+                enabled = habilitado,
             )
         }
     }
 }
 
 @Composable
-private fun RecargaCampos(instrumento: InstrumentoFormulario, onEvento: (EventoDoFormularioDeConta) -> Unit) {
+private fun RecargaCampos(instrumento: InstrumentoFormulario, habilitado: Boolean, onEvento: (EventoDoFormularioDeConta) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
@@ -204,6 +214,7 @@ private fun RecargaCampos(instrumento: InstrumentoFormulario, onEvento: (EventoD
             modifier = Modifier.weight(1f),
             supportingText = erroDeDia(instrumento.diaRecarga, instrumento.diaRecargaValido()),
             isError = instrumento.diaRecarga.isNotBlank() && !instrumento.diaRecargaValido(),
+            enabled = habilitado,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         )
         PingoTextField(
@@ -213,6 +224,7 @@ private fun RecargaCampos(instrumento: InstrumentoFormulario, onEvento: (EventoD
             modifier = Modifier.weight(1f),
             supportingText = if (instrumento.valorRecargaValido() || instrumento.valorRecarga.isBlank()) null else MENSAGEM_VALOR,
             isError = !instrumento.valorRecargaValido() && instrumento.valorRecarga.isNotBlank(),
+            enabled = habilitado,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         )
     }

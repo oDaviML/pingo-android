@@ -43,10 +43,7 @@ class ContaFormViewModel @Inject constructor(
 
     fun onEvent(event: ContaFormEvent) {
         when (event) {
-            is ContaFormEvent.Formulario -> mutableUiState.update { state ->
-                state.copy(formulario = state.formulario.aplicar(event.evento), falhouAoSalvar = false)
-            }
-
+            is ContaFormEvent.Formulario -> alterarFormulario(event)
             ContaFormEvent.Salvar -> salvar()
             ContaFormEvent.TentarDeNovo -> contaPublicId?.let(::carregar)
             ContaFormEvent.SolicitarArquivamentoDaConta -> solicitarArquivamentoDaConta()
@@ -55,6 +52,16 @@ class ContaFormViewModel @Inject constructor(
             ContaFormEvent.CancelarArquivamento -> mutableUiState.update { it.copy(dialogo = null) }
             ContaFormEvent.ReativarConta -> reativarConta()
             is ContaFormEvent.ReativarInstrumento -> reativarInstrumento(event.chave)
+        }
+    }
+
+    private fun alterarFormulario(event: ContaFormEvent.Formulario) {
+        if (!mutableUiState.value.formularioEditavel) {
+            return
+        }
+
+        mutableUiState.update { state ->
+            state.copy(formulario = state.formulario.aplicar(event.evento), falhouAoSalvar = false)
         }
     }
 
@@ -136,7 +143,7 @@ class ContaFormViewModel @Inject constructor(
         }
     }
 
-    private fun podeArquivar(atual: ContaFormUiState): Boolean = !contaNaoEditavel(atual) && !atual.processandoArquivamento
+    private fun podeArquivar(atual: ContaFormUiState): Boolean = !contaNaoEditavel(atual) && atual.formularioEditavel
 
     private fun contaNaoEditavel(atual: ContaFormUiState): Boolean = contaPublicId == null || !atual.edicao || atual.contaArquivada
 
@@ -177,7 +184,7 @@ class ContaFormViewModel @Inject constructor(
 
     private fun reativarConta() {
         val publicId = contaPublicId ?: return
-        if (!mutableUiState.value.contaArquivada || mutableUiState.value.processandoArquivamento) {
+        if (!mutableUiState.value.contaArquivada || !mutableUiState.value.formularioEditavel) {
             return
         }
 
@@ -202,7 +209,7 @@ class ContaFormViewModel @Inject constructor(
 
     private fun reativarInstrumento(chave: String) {
         val instrumento = mutableUiState.value.formulario.instrumentos.firstOrNull { it.chave == chave }
-        if (instrumento == null || !instrumento.arquivado || mutableUiState.value.processandoArquivamento) {
+        if (instrumento == null || !instrumento.arquivado || !mutableUiState.value.formularioEditavel) {
             return
         }
 

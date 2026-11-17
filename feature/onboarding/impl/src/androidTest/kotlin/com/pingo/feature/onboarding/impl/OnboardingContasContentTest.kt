@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -184,6 +185,33 @@ class OnboardingContasContentTest {
 
         composeRule.onNodeWithText("Use 4 números ou deixe em branco.").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Continuar").assertIsNotEnabled()
+    }
+
+    @Test
+    fun salvandoCongelaCamposEBotoesDoFormulario() {
+        mostrar(
+            OnboardingContasUiState(
+                contas = listOf(contaCompleta(InstituicaoFinanceira.NUBANK)),
+                salvamento = SalvamentoUiState.Loading,
+            ),
+        )
+
+        composeRule.onNodeWithContentDescription("Fechamento").performScrollTo().assertIsNotEnabled()
+        composeRule.onNodeWithText("+ Crédito").performScrollTo().assertIsNotEnabled()
+        composeRule.onNodeWithText("Continuar").assertIsNotEnabled()
+    }
+
+    @Test
+    fun erroAoSalvarLiberaOsCamposParaCorrecao() {
+        mostrar(
+            OnboardingContasUiState(
+                contas = listOf(contaCompleta(InstituicaoFinanceira.NUBANK)),
+                salvamento = SalvamentoUiState.Error,
+            ),
+        )
+
+        composeRule.onNodeWithContentDescription("Fechamento").performScrollTo().assertIsEnabled()
+        composeRule.onNodeWithText("Continuar").assertIsEnabled()
     }
 
     @Test

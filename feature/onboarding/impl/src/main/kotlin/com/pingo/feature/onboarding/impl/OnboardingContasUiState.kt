@@ -8,9 +8,13 @@ data class OnboardingContasUiState(
     val contas: List<ContaFormulario> = emptyList(),
     val salvamento: SalvamentoUiState = SalvamentoUiState.Idle,
     val concluido: Boolean = false,
+    val recuperando: Boolean = false,
 ) {
+    val formularioEditavel: Boolean
+        get() = !recuperando && salvamento != SalvamentoUiState.Loading
+
     val podeContinuar: Boolean
-        get() = contas.isNotEmpty() && contas.all(ContaFormulario::valida) && salvamento != SalvamentoUiState.Loading
+        get() = formularioEditavel && contas.isNotEmpty() && contas.all(ContaFormulario::valida)
 }
 
 enum class SalvamentoUiState {

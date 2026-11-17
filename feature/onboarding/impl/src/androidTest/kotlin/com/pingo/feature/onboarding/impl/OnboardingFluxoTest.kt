@@ -19,6 +19,7 @@ import com.pingo.core.auth.SessionState
 import com.pingo.core.data.AccountRepository
 import com.pingo.core.data.CadastroSalvo
 import com.pingo.core.data.ContaRepository
+import com.pingo.core.data.InstrumentoRepository
 import com.pingo.core.datastore.PermissaoDoPingo
 import com.pingo.core.datastore.PermissoesDataSource
 import com.pingo.core.datastore.SyncStatus
@@ -28,6 +29,7 @@ import com.pingo.core.designsystem.theme.PingoTheme
 import com.pingo.core.model.Conta
 import com.pingo.core.model.ContaEditada
 import com.pingo.core.model.InstituicaoFinanceira
+import com.pingo.core.model.Instrumento
 import com.pingo.core.model.NovaConta
 import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.notifications.AcessoNotificacoes
@@ -46,6 +48,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.time.Clock
 import java.time.Instant
 
 @RunWith(AndroidJUnit4::class)
@@ -122,7 +125,7 @@ class OnboardingFluxoTest {
 
     private fun mostrarFluxo(autenticacao: AuthRepository) {
         val onboarding = OnboardingViewModel(autenticacao, accountRepository)
-        val contas = OnboardingContasViewModel(contaRepository, preferencias)
+        val contas = OnboardingContasViewModel(contaRepository, FakeInstrumentoRepository(), preferencias, Clock.systemUTC())
         val permissoesViewModel = OnboardingPermissoesViewModel(
             acessoNotificacoes = FakeAcessoNotificacoes(concedido = false),
             notificacoesDoSistema = FakeNotificacoesDoSistema(habilitadas = false),
@@ -192,8 +195,10 @@ class OnboardingFluxoTest {
 
         override suspend fun buscar(publicId: String): Conta? = null
 
-        override suspend fun criarComInstrumentos(contas: List<NovaConta>, agora: Instant) {
+        override suspend fun criarComInstrumentos(contas: List<NovaConta>, agora: Instant, publicIds: List<String>): List<CadastroSalvo> {
             criadas.add(contas)
+
+            return emptyList()
         }
 
         override suspend fun salvarCadastro(edicao: ContaEditada, agora: Instant): CadastroSalvo = error("nao usado")
@@ -201,6 +206,26 @@ class OnboardingFluxoTest {
         override suspend fun salvar(conta: Conta) = Unit
 
         override suspend fun salvarTodas(contas: List<Conta>) = Unit
+
+        override suspend fun excluir(publicId: String, quando: Instant) = Unit
+
+        override suspend fun arquivar(publicId: String, quando: Instant) = Unit
+
+        override suspend fun reativar(publicId: String, quando: Instant) = Unit
+    }
+
+    private class FakeInstrumentoRepository : InstrumentoRepository {
+        override fun observeInstrumentos(): Flow<List<Instrumento>> = flowOf(emptyList())
+
+        override fun observePorConta(contaPublicId: String): Flow<List<Instrumento>> = flowOf(emptyList())
+
+        override suspend fun buscar(publicId: String): Instrumento? = null
+
+        override suspend fun ativosDaInstituicao(instituicao: InstituicaoFinanceira): List<Instrumento> = emptyList()
+
+        override suspend fun salvar(instrumento: Instrumento) = Unit
+
+        override suspend fun salvarTodos(instrumentos: List<Instrumento>) = Unit
 
         override suspend fun excluir(publicId: String, quando: Instant) = Unit
 
@@ -245,6 +270,10 @@ class OnboardingFluxoTest {
         override suspend fun setContasConfiguradas(configuradas: Boolean) {
             this.configuradas = configuradas
         }
+
+        override suspend fun contasOnboardingPendentes(): List<String> = emptyList()
+
+        override suspend fun setContasOnboardingPendentes(publicIds: List<String>) = Unit
 
         override suspend fun clear() = Unit
     }

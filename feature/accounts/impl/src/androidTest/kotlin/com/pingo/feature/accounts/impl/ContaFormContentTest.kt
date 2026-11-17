@@ -10,6 +10,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -116,6 +117,8 @@ class ContaFormContentTest {
         mostrar(ContaFormUiState(formulario = formulario, salvando = true))
 
         composeRule.onNodeWithText("Salvar conta").performScrollTo().assertIsNotEnabled()
+        composeRule.onNodeWithContentDescription("Apelido da conta").performScrollTo().assertIsNotEnabled()
+        composeRule.onNodeWithText("+ Crédito").performScrollTo().assertIsNotEnabled()
     }
 
     @Test

@@ -150,7 +150,8 @@ internal class FakeContaRepository(contas: List<Conta> = emptyList()) : ContaRep
 
     override suspend fun buscar(publicId: String): Conta? = fluxo.value.firstOrNull { it.publicId == publicId }
 
-    override suspend fun criarComInstrumentos(contas: List<NovaConta>, agora: Instant) = error("nao usado")
+    override suspend fun criarComInstrumentos(contas: List<NovaConta>, agora: Instant, publicIds: List<String>): List<CadastroSalvo> =
+        error("nao usado")
 
     override suspend fun salvarCadastro(edicao: ContaEditada, agora: Instant): CadastroSalvo = error("nao usado")
 

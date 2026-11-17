@@ -125,6 +125,56 @@ class ContaFormularioTest {
     }
 
     @Test
+    fun `recarga opcional recusa valor malformado sem descartar o que foi digitado`() {
+        val formulario = ContaFormulario.nova(InstituicaoFinanceira.CAJU)
+        val chave = formulario.instrumentos.single().chave
+        val voucher = formulario
+            .aplicar(EventoDoFormularioDeConta.AlterarBeneficio(chave, BeneficioVoucher.VR))
+            .aplicar(EventoDoFormularioDeConta.AlterarSaldoInicial(chave, "250,00"))
+
+        val valorInvalido = voucher.aplicar(EventoDoFormularioDeConta.AlterarValorRecarga(chave, "1,234"))
+
+        assertEquals("1,234", valorInvalido.instrumentos.single().valorRecarga)
+        assertFalse(valorInvalido.instrumentos.single().valorRecargaValido())
+        assertFalse(valorInvalido.instrumentos.single().recargaValida())
+        assertFalse(valorInvalido.valida())
+
+        val diaSemValor = voucher.aplicar(EventoDoFormularioDeConta.AlterarDiaRecarga(chave, "10"))
+        assertFalse(diaSemValor.instrumentos.single().recargaValida())
+        assertFalse(diaSemValor.valida())
+
+        val valorZero = diaSemValor.aplicar(EventoDoFormularioDeConta.AlterarValorRecarga(chave, "0,00"))
+        assertFalse(valorZero.instrumentos.single().valorRecargaValido())
+        assertFalse(valorZero.valida())
+
+        val completo = valorZero.aplicar(EventoDoFormularioDeConta.AlterarValorRecarga(chave, "1.000,00"))
+        assertTrue(completo.instrumentos.single().valorRecargaValido())
+        assertTrue(completo.valida())
+        assertEquals(100_000L, completo.instrumentos.single().paraNovoInstrumento().valorRecargaCentavos)
+    }
+
+    @Test
+    fun `recarga opcional aceita dia e valor ausentes ou preenchidos juntos`() {
+        val formulario = ContaFormulario.nova(InstituicaoFinanceira.CAJU)
+        val chave = formulario.instrumentos.single().chave
+        val voucher = formulario
+            .aplicar(EventoDoFormularioDeConta.AlterarBeneficio(chave, BeneficioVoucher.VA))
+            .aplicar(EventoDoFormularioDeConta.AlterarSaldoInicial(chave, "1.000"))
+
+        assertTrue(voucher.instrumentos.single().recargaValida())
+        assertTrue(voucher.valida())
+        assertEquals(100_000L, voucher.instrumentos.single().paraNovoInstrumento().saldoCentavos)
+
+        val soValor = voucher.aplicar(EventoDoFormularioDeConta.AlterarValorRecarga(chave, "50,00"))
+        assertFalse(soValor.instrumentos.single().recargaValida())
+        assertFalse(soValor.valida())
+
+        val diaEValor = soValor.aplicar(EventoDoFormularioDeConta.AlterarDiaRecarga(chave, "5"))
+        assertTrue(diaEValor.instrumentos.single().recargaValida())
+        assertTrue(diaEValor.valida())
+    }
+
+    @Test
     fun `normaliza digitos dias e valores informados`() {
         val formulario = ContaFormulario.nova(InstituicaoFinanceira.NUBANK)
         val chave = formulario.instrumentos.single().chave

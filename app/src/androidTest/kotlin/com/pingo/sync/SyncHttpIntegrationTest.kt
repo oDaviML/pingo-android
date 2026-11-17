@@ -718,6 +718,10 @@ class SyncHttpIntegrationTest {
 
         override suspend fun setContasConfiguradas(configuradas: Boolean) = Unit
 
+        override suspend fun contasOnboardingPendentes(): List<String> = emptyList()
+
+        override suspend fun setContasOnboardingPendentes(publicIds: List<String>) = Unit
+
         override suspend fun clear() {
             pull = null
             push = null

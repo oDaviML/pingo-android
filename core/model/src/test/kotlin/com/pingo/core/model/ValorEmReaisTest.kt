@@ -20,8 +20,18 @@ class ValorEmReaisTest {
     }
 
     @Test
+    fun `interpreta ponto como separador de milhar no padrao brasileiro`() {
+        assertEquals(100_000L, reaisParaCentavos("1.000"))
+        assertEquals(100_000L, reaisParaCentavos("1.000,00"))
+        assertEquals(100_000L, reaisParaCentavos("1000"))
+        assertEquals(100L, reaisParaCentavos("1,00"))
+        assertEquals(1_000_000_00L, reaisParaCentavos("1.000.000,00"))
+    }
+
+    @Test
     fun `aceita prefixo de real e espacos`() {
         assertEquals(4290L, reaisParaCentavos(" R$ 42,90 "))
+        assertEquals(100_000L, reaisParaCentavos("R$ 1.000"))
     }
 
     @Test
@@ -31,5 +41,9 @@ class ValorEmReaisTest {
         assertNull(reaisParaCentavos("-1,00"))
         assertNull(reaisParaCentavos("1,234"))
         assertNull(reaisParaCentavos("abc"))
+        assertNull(reaisParaCentavos("1.0000"))
+        assertNull(reaisParaCentavos("1.2.3"))
+        assertNull(reaisParaCentavos("1,2,3"))
+        assertNull(reaisParaCentavos(",50"))
     }
 }

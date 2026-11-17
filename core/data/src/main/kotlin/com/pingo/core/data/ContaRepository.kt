@@ -15,7 +15,7 @@ interface ContaRepository {
 
     suspend fun buscar(publicId: String): Conta?
 
-    suspend fun criarComInstrumentos(contas: List<NovaConta>, agora: Instant)
+    suspend fun criarComInstrumentos(contas: List<NovaConta>, agora: Instant, publicIds: List<String> = emptyList()): List<CadastroSalvo>
 
     suspend fun salvarCadastro(edicao: ContaEditada, agora: Instant): CadastroSalvo
 

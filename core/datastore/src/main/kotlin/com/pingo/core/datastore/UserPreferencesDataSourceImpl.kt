@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -106,6 +107,19 @@ class UserPreferencesDataSourceImpl @Inject constructor(@param:ApplicationContex
         }
     }
 
+    override suspend fun contasOnboardingPendentes(): List<String> =
+        context.userPreferencesDataStore.data.first()[Keys.CONTAS_ONBOARDING_PENDENTES].orEmpty().toList()
+
+    override suspend fun setContasOnboardingPendentes(publicIds: List<String>) {
+        context.userPreferencesDataStore.edit { preferences ->
+            if (publicIds.isEmpty()) {
+                preferences.remove(Keys.CONTAS_ONBOARDING_PENDENTES)
+            } else {
+                preferences[Keys.CONTAS_ONBOARDING_PENDENTES] = publicIds.toSet()
+            }
+        }
+    }
+
     override suspend fun clear() {
         context.userPreferencesDataStore.edit { preferences -> preferences.clear() }
     }
@@ -121,6 +135,7 @@ class UserPreferencesDataSourceImpl @Inject constructor(@param:ApplicationContex
             val CONSENT_VERSION = stringPreferencesKey("consent_version")
             val CONSENT_AT = stringPreferencesKey("consent_at")
             val CONTAS_CONFIGURADAS = booleanPreferencesKey("contas_configuradas")
+            val CONTAS_ONBOARDING_PENDENTES = stringSetPreferencesKey("contas_onboarding_pendentes")
         }
     }
 }

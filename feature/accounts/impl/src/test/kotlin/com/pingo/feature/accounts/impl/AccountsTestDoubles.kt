@@ -35,10 +35,12 @@ internal class FakeContaRepository : ContaRepository {
 
     override suspend fun buscar(publicId: String): Conta? = contaPorId
 
-    override suspend fun criarComInstrumentos(contas: List<NovaConta>, agora: Instant) {
+    override suspend fun criarComInstrumentos(contas: List<NovaConta>, agora: Instant, publicIds: List<String>): List<CadastroSalvo> {
         gateDeSalvamento?.await()
         falhaAoSalvar?.let { throw it }
         criadas.add(contas)
+
+        return emptyList()
     }
 
     override suspend fun salvarCadastro(edicao: ContaEditada, agora: Instant): CadastroSalvo {

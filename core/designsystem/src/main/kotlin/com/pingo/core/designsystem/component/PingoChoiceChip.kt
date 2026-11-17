@@ -18,7 +18,7 @@ import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
 
 @Composable
-fun PingoChoiceChip(text: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun PingoChoiceChip(text: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
     val colors = PingoTheme.colors
     val shape = RoundedCornerShape(PingoRadius.full)
 
@@ -27,7 +27,7 @@ fun PingoChoiceChip(text: String, selected: Boolean, onClick: () -> Unit, modifi
             .heightIn(min = PingoLayout.minTouchTarget)
             .background(color = if (selected) colors.primaryContainer else colors.surface, shape = shape)
             .border(width = 1.5.dp, color = if (selected) colors.primary else colors.outline, shape = shape)
-            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+            .selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onClick)
             .padding(horizontal = PingoSpacing.md),
         contentAlignment = Alignment.Center,
     ) {

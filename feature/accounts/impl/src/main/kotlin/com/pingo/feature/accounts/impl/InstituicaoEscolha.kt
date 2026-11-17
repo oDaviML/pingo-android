@@ -31,7 +31,11 @@ import com.pingo.core.ui.contas.letrasDeExibicao
 import com.pingo.core.ui.contas.nomeDeExibicao
 
 @Composable
-internal fun InstituicaoEscolha(selecionada: InstituicaoFinanceira, onSelecionar: (InstituicaoFinanceira) -> Unit) {
+internal fun InstituicaoEscolha(
+    selecionada: InstituicaoFinanceira,
+    onSelecionar: (InstituicaoFinanceira) -> Unit,
+    habilitado: Boolean = true,
+) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(PingoSpacing.md),
@@ -61,6 +65,7 @@ internal fun InstituicaoEscolha(selecionada: InstituicaoFinanceira, onSelecionar
                 InstituicaoItem(
                     instituicao = instituicao,
                     selecionada = instituicao == selecionada,
+                    habilitado = habilitado,
                     onSelecionar = { onSelecionar(instituicao) },
                 )
             }
@@ -69,13 +74,13 @@ internal fun InstituicaoEscolha(selecionada: InstituicaoFinanceira, onSelecionar
 }
 
 @Composable
-private fun InstituicaoItem(instituicao: InstituicaoFinanceira, selecionada: Boolean, onSelecionar: () -> Unit) {
+private fun InstituicaoItem(instituicao: InstituicaoFinanceira, selecionada: Boolean, habilitado: Boolean, onSelecionar: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("instituicao-${instituicao.name}")
             .heightIn(min = PingoLayout.minTouchTarget)
-            .selectable(selected = selecionada, role = Role.RadioButton, onClick = onSelecionar)
+            .selectable(selected = selecionada, enabled = habilitado, role = Role.RadioButton, onClick = onSelecionar)
             .padding(horizontal = PingoSpacing.lg, vertical = PingoSpacing.md),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),

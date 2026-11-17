@@ -29,15 +29,18 @@ class ContaRepositoryImpl @Inject constructor(
 
     override suspend fun buscar(publicId: String): Conta? = contaDao.buscar(publicId)?.toModel()
 
-    override suspend fun criarComInstrumentos(contas: List<NovaConta>, agora: Instant) {
+    override suspend fun criarComInstrumentos(contas: List<NovaConta>, agora: Instant, publicIds: List<String>): List<CadastroSalvo> {
         require(contas.all(NovaConta::valida)) { "Conta ou instrumento inválido" }
+        require(publicIds.isEmpty() || publicIds.size == contas.size) { "Identidades incompatíveis com as contas" }
 
-        val criadas = contas.map { it.criar(agora) }
+        val criadas = contas.mapIndexed { indice, conta -> conta.criar(agora, publicIds.getOrNull(indice)) }
 
         transacao.executar {
             contaDao.upsertAll(criadas.map { it.conta.toEntity() })
             instrumentoDao.upsertAll(criadas.flatMap { it.instrumentos }.map { it.toEntity() })
         }
+
+        return criadas.map { CadastroSalvo(conta = it.conta, instrumentos = it.instrumentos) }
     }
 
     override suspend fun salvarCadastro(edicao: ContaEditada, agora: Instant): CadastroSalvo {
