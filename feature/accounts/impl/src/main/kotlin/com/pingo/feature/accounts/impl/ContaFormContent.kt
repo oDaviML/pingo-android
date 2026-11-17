@@ -1,23 +1,20 @@
 package com.pingo.feature.accounts.impl
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -25,13 +22,20 @@ import com.pingo.core.designsystem.component.PingoActionDialog
 import com.pingo.core.designsystem.component.PingoButton
 import com.pingo.core.designsystem.component.PingoButtonSize
 import com.pingo.core.designsystem.component.PingoButtonType
-import com.pingo.core.designsystem.component.PingoIcon
+import com.pingo.core.designsystem.component.PingoCard
+import com.pingo.core.designsystem.component.PingoElevationLevel
+import com.pingo.core.designsystem.component.PingoIconButton
+import com.pingo.core.designsystem.component.PingoIconButtonStyle
+import com.pingo.core.designsystem.component.PingoModalTopBar
 import com.pingo.core.designsystem.component.PingoSpinner
 import com.pingo.core.designsystem.component.PingoText
+import com.pingo.core.designsystem.component.pingoElevation
 import com.pingo.core.designsystem.icon.PingoIcons
+import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
 import com.pingo.core.model.TipoConta
+import com.pingo.core.ui.AvatarDaInstituicao
 import com.pingo.core.ui.contas.ContaFormularioCampos
 import com.pingo.core.ui.contas.EventoDoFormularioDeConta
 import com.pingo.core.ui.contas.InstrumentoFormulario
@@ -48,7 +52,7 @@ internal fun ContaFormContent(state: ContaFormUiState, onEvent: (ContaFormEvent)
             .fillMaxSize()
             .background(PingoTheme.colors.background),
     ) {
-        CabecalhoDoFormulario(edicao = state.edicao, contaArquivada = state.contaArquivada, onVoltar = onVoltar)
+        CabecalhoDoFormulario(state = state, onEvent = onEvent, onVoltar = onVoltar)
         CorpoDoFormulario(state = state, onEvent = onEvent)
     }
 
@@ -124,36 +128,42 @@ private fun DialogoDeConfirmacao(dialogo: DialogoDeArquivamento, processando: Bo
 }
 
 @Composable
-private fun CabecalhoDoFormulario(edicao: Boolean, contaArquivada: Boolean, onVoltar: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = PingoSpacing.lg, vertical = PingoSpacing.md),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
-    ) {
-        Box(
+private fun CabecalhoDoFormulario(state: ContaFormUiState, onEvent: (ContaFormEvent) -> Unit, onVoltar: () -> Unit) {
+    val titulo = when {
+        state.contaArquivada -> "Conta arquivada"
+        state.edicao -> "Editar conta"
+        else -> "Nova conta"
+    }
+
+    if (!state.carregando && !state.falhaDeLeitura && !state.contaArquivada) {
+        PingoModalTopBar(
+            title = titulo,
+            onClose = onVoltar,
+            actionLabel = "Salvar",
+            onAction = { onEvent(ContaFormEvent.Salvar) },
+            actionEnabled = state.podeSalvar,
+            actionLoading = state.salvando,
+        )
+    } else {
+        Row(
             modifier = Modifier
-                .size(48.dp)
-                .clickable(role = Role.Button, onClick = onVoltar),
-            contentAlignment = Alignment.Center,
+                .fillMaxWidth()
+                .padding(start = PingoSpacing.sm, end = PingoSpacing.md, top = PingoSpacing.sm, bottom = PingoSpacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
         ) {
-            PingoIcon(
-                imageVector = PingoIcons.X,
+            PingoIconButton(
+                icon = PingoIcons.X,
                 contentDescription = "Fechar",
-                modifier = Modifier.size(24.dp),
-                tint = PingoTheme.colors.onBackground,
+                onClick = onVoltar,
+                style = PingoIconButtonStyle.Standard,
+            )
+            PingoText(
+                text = titulo,
+                style = PingoTheme.typography.subtitle,
+                color = PingoTheme.colors.onBackground,
             )
         }
-        PingoText(
-            text = when {
-                contaArquivada -> "Conta arquivada"
-                edicao -> "Editar conta"
-                else -> "Nova conta"
-            },
-            style = PingoTheme.typography.subtitle,
-            color = PingoTheme.colors.onBackground,
-        )
     }
 }
 
@@ -168,7 +178,7 @@ private fun FormularioDaConta(state: ContaFormUiState, onEvent: (ContaFormEvent)
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = PingoSpacing.xxl, vertical = PingoSpacing.lg),
+            .padding(horizontal = PingoSpacing.xl, vertical = PingoSpacing.lg),
         verticalArrangement = Arrangement.spacedBy(PingoSpacing.lg),
     ) {
         if (state.edicao) {
@@ -271,11 +281,12 @@ private fun MensagemDeFalha(texto: String) {
 
 @Composable
 private fun ContaArquivada(state: ContaFormUiState, onEvent: (ContaFormEvent) -> Unit) {
+    val shape = RoundedCornerShape(PingoRadius.xl)
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = PingoSpacing.xxl, vertical = PingoSpacing.lg)
+            .padding(horizontal = PingoSpacing.xl, vertical = PingoSpacing.lg)
             .testTag("conta-arquivada"),
         verticalArrangement = Arrangement.spacedBy(PingoSpacing.lg),
     ) {
@@ -286,12 +297,14 @@ private fun ContaArquivada(state: ContaFormUiState, onEvent: (ContaFormEvent) ->
             style = PingoTheme.typography.body,
             color = PingoTheme.colors.onSurfaceVariant,
         )
-        PingoText(
-            text = "Instrumentos",
-            style = PingoTheme.typography.bodyStrong,
-            color = PingoTheme.colors.onBackground,
-        )
-        InstrumentosDaContaArquivada(instrumentos = state.formulario.instrumentos)
+        PingoCard(modifier = Modifier.pingoElevation(level = PingoElevationLevel.Level1, shape = shape)) {
+            PingoText(
+                text = "Instrumentos",
+                style = PingoTheme.typography.bodyStrong,
+                color = PingoTheme.colors.onBackground,
+            )
+            InstrumentosDaContaArquivada(instrumentos = state.formulario.instrumentos)
+        }
 
         if (state.falhouAoArquivar) {
             MensagemDeFalha(texto = MENSAGEM_ERRO_AO_ARQUIVAR_CONTA)
@@ -322,17 +335,24 @@ private fun InstrumentosDaContaArquivada(instrumentos: List<InstrumentoFormulari
 
 @Composable
 private fun ContaCabecalho(state: ContaFormUiState) {
-    Column(verticalArrangement = Arrangement.spacedBy(PingoSpacing.xs)) {
-        PingoText(
-            text = state.formulario.instituicao.nomeDeExibicao(),
-            style = PingoTheme.typography.title,
-            color = PingoTheme.colors.onBackground,
-        )
-        PingoText(
-            text = if (state.formulario.tipoConta == TipoConta.BENEFICIO) "Conta benefício" else "Conta corrente",
-            style = PingoTheme.typography.bodySmall,
-            color = PingoTheme.colors.onSurfaceVariant,
-        )
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AvatarDaInstituicao(instituicao = state.formulario.instituicao, size = 44.dp)
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            PingoText(
+                text = state.formulario.instituicao.nomeDeExibicao(),
+                style = PingoTheme.typography.title,
+                color = PingoTheme.colors.onBackground,
+            )
+            PingoText(
+                text = if (state.formulario.tipoConta == TipoConta.BENEFICIO) "Conta benefício" else "Conta corrente",
+                style = PingoTheme.typography.bodySmall,
+                color = PingoTheme.colors.onSurfaceVariant,
+            )
+        }
     }
 }
 

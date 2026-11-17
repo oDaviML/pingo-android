@@ -18,21 +18,32 @@ import androidx.compose.ui.unit.dp
 import com.pingo.core.designsystem.component.PingoButton
 import com.pingo.core.designsystem.component.PingoButtonSize
 import com.pingo.core.designsystem.component.PingoButtonType
+import com.pingo.core.designsystem.component.PingoCaptureStatus
 import com.pingo.core.designsystem.component.PingoCard
+import com.pingo.core.designsystem.component.PingoElevationLevel
 import com.pingo.core.designsystem.component.PingoIcon
+import com.pingo.core.designsystem.component.PingoStatusTag
 import com.pingo.core.designsystem.component.PingoText
+import com.pingo.core.designsystem.component.pingoElevation
 import com.pingo.core.designsystem.icon.PingoIcons
 import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
-import com.pingo.core.model.InstituicaoFinanceira
+import com.pingo.core.ui.AvatarDaInstituicao
 import java.time.Instant
 import java.time.ZoneId
 
 @Composable
 internal fun StatusDaCapturaCard(state: CaptureStatusUiState, zona: ZoneId) {
-    PingoCard(contentPadding = PingoSpacing.lg, gap = PingoSpacing.md) {
-        StatusBadge(parada = state.parada)
+    val shape = RoundedCornerShape(PingoRadius.xl)
+    PingoCard(
+        modifier = Modifier.pingoElevation(level = PingoElevationLevel.Level1, shape = shape),
+        contentPadding = PingoSpacing.lg,
+        gap = PingoSpacing.md,
+    ) {
+        PingoStatusTag(
+            status = if (state.parada) PingoCaptureStatus.Stopped else PingoCaptureStatus.Active,
+        )
         PingoText(
             text = tituloDoStatus(state, zona),
             style = PingoTheme.typography.subtitle,
@@ -42,31 +53,6 @@ internal fun StatusDaCapturaCard(state: CaptureStatusUiState, zona: ZoneId) {
             text = descricaoDoStatus(state, zona),
             style = PingoTheme.typography.bodySmall,
             color = PingoTheme.colors.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun StatusBadge(parada: Boolean) {
-    val conteudo = if (parada) PingoTheme.colors.expense else PingoTheme.colors.income
-    val fundo = if (parada) PingoTheme.colors.expenseContainer else PingoTheme.colors.incomeContainer
-
-    Row(
-        modifier = Modifier
-            .background(color = fundo, shape = RoundedCornerShape(PingoRadius.full))
-            .padding(horizontal = 10.dp, vertical = 5.dp),
-        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .background(color = conteudo, shape = CircleShape),
-        )
-        PingoText(
-            text = if (parada) "Captura parada" else "Captura ativa",
-            style = PingoTheme.typography.labelSmall,
-            color = conteudo,
         )
     }
 }
@@ -126,7 +112,12 @@ private fun ContadorCard(rotulo: String, valor: Int, fundo: Color, conteudo: Col
 
 @Composable
 internal fun LeiturasPorAppCard(leituras: List<LeituraPorApp>, agora: Instant, zona: ZoneId) {
-    PingoCard(contentPadding = PingoSpacing.lg, gap = PingoSpacing.md) {
+    val shape = RoundedCornerShape(PingoRadius.xl)
+    PingoCard(
+        modifier = Modifier.pingoElevation(level = PingoElevationLevel.Level1, shape = shape),
+        contentPadding = PingoSpacing.lg,
+        gap = PingoSpacing.md,
+    ) {
         leituras.forEach { leitura ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -137,7 +128,7 @@ internal fun LeiturasPorAppCard(leituras: List<LeituraPorApp>, agora: Instant, z
                     horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    InstituicaoAvatar(instituicao = leitura.instituicao)
+                    AvatarDaInstituicao(instituicao = leitura.instituicao, size = 36.dp)
                     PingoText(
                         text = nomeDaInstituicao(leitura.instituicao),
                         style = PingoTheme.typography.bodyStrong,
@@ -155,24 +146,13 @@ internal fun LeiturasPorAppCard(leituras: List<LeituraPorApp>, agora: Instant, z
 }
 
 @Composable
-private fun InstituicaoAvatar(instituicao: InstituicaoFinanceira) {
-    Box(
-        modifier = Modifier
-            .size(36.dp)
-            .background(color = PingoTheme.colors.primaryContainer, shape = CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        PingoText(
-            text = letrasDaInstituicao(instituicao),
-            style = PingoTheme.typography.labelSmall,
-            color = PingoTheme.colors.onPrimaryContainer,
-        )
-    }
-}
-
-@Composable
 internal fun PermissaoDaCapturaCard(permissao: PermissaoDaCaptura, onCorrigir: () -> Unit) {
-    PingoCard(contentPadding = PingoSpacing.lg, gap = PingoSpacing.md) {
+    val shape = RoundedCornerShape(PingoRadius.xl)
+    PingoCard(
+        modifier = Modifier.pingoElevation(level = PingoElevationLevel.Level1, shape = shape),
+        contentPadding = PingoSpacing.lg,
+        gap = PingoSpacing.md,
+    ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
             verticalAlignment = Alignment.CenterVertically,
@@ -217,9 +197,9 @@ private fun PermissaoIcon(concedida: Boolean) {
         contentAlignment = Alignment.Center,
     ) {
         PingoIcon(
-            imageVector = if (concedida) PingoIcons.Check else PingoIcons.TriangleAlert,
+            imageVector = if (concedida) PingoIcons.CircleCheck else PingoIcons.TriangleAlert,
             contentDescription = null,
-            modifier = Modifier.size(18.dp),
+            modifier = Modifier.size(20.dp),
             tint = conteudo,
         )
     }
@@ -227,7 +207,12 @@ private fun PermissaoIcon(concedida: Boolean) {
 
 @Composable
 internal fun RegrasDoParserCard(state: CaptureStatusUiState, zona: ZoneId, onAtualizarRegras: () -> Unit) {
-    PingoCard(contentPadding = PingoSpacing.lg, gap = PingoSpacing.md) {
+    val shape = RoundedCornerShape(PingoRadius.xl)
+    PingoCard(
+        modifier = Modifier.pingoElevation(level = PingoElevationLevel.Level1, shape = shape),
+        contentPadding = PingoSpacing.lg,
+        gap = PingoSpacing.md,
+    ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
             verticalAlignment = Alignment.CenterVertically,

@@ -18,6 +18,7 @@ data class CategoriaDoTopo(val publicId: String, val nome: String, val valorCent
 @Immutable
 data class HomeUiState(
     val carregando: Boolean = true,
+    val saudacao: String = "Olá,",
     val capturaAutomatica: Boolean = true,
     val situacao: SituacaoDaCaptura = SituacaoDaCaptura.ATIVA,
     val motivo: MotivoParada? = null,

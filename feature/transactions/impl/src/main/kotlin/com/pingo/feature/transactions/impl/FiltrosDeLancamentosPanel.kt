@@ -26,13 +26,18 @@ import androidx.compose.ui.unit.dp
 import com.pingo.core.designsystem.component.PingoButton
 import com.pingo.core.designsystem.component.PingoButtonType
 import com.pingo.core.designsystem.component.PingoChoiceChip
+import com.pingo.core.designsystem.component.PingoElevationLevel
 import com.pingo.core.designsystem.component.PingoIcon
+import com.pingo.core.designsystem.component.PingoSheetHandle
 import com.pingo.core.designsystem.component.PingoText
+import com.pingo.core.designsystem.component.pingoElevation
 import com.pingo.core.designsystem.icon.PingoIcons
-import com.pingo.core.designsystem.theme.PingoRadius
+import com.pingo.core.designsystem.theme.PingoLayout
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
 import com.pingo.core.model.TipoLancamento
+
+private val FilterSheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
 
 @Composable
 internal fun PainelDeFiltros(state: TransactionsUiState, onEvent: (TransactionsEvent) -> Unit) {
@@ -50,11 +55,12 @@ internal fun PainelDeFiltros(state: TransactionsUiState, onEvent: (TransactionsE
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.9f)
-                .background(cores.surface, RoundedCornerShape(topStart = PingoRadius.xl, topEnd = PingoRadius.xl))
+                .pingoElevation(level = PingoElevationLevel.Level3, shape = FilterSheetShape, offsetY = (-8).dp)
+                .background(cores.surface, FilterSheetShape)
                 .clickable(interactionSource = interacao, indication = null) {}
-                .padding(horizontal = PingoSpacing.lg, vertical = PingoSpacing.md),
+                .padding(horizontal = PingoSpacing.xl, vertical = PingoSpacing.md),
         ) {
-            PuxadorDePainel()
+            PingoSheetHandle()
             CabecalhoDoPainel(state = state, onEvent = onEvent)
             CorpoDoPainel(state = state, onEvent = onEvent, modifier = Modifier.weight(1f))
             AcoesDoPainel(onEvent = onEvent)
@@ -74,7 +80,7 @@ private fun CabecalhoDoPainel(state: TransactionsUiState, onEvent: (Transactions
         PingoText(text = "Filtros", style = PingoTheme.typography.title)
         Box(
             modifier = Modifier
-                .size(40.dp)
+                .size(PingoLayout.minTouchTarget)
                 .testTag("fechar-filtros")
                 .clickable { onEvent(TransactionsEvent.FecharFiltros) },
             contentAlignment = Alignment.Center,
@@ -224,7 +230,7 @@ private fun AcoesDoPainel(onEvent: (TransactionsEvent) -> Unit) {
             type = PingoButtonType.Text,
         )
         PingoButton(
-            text = "Fechar",
+            text = "Aplicar",
             onClick = { onEvent(TransactionsEvent.FecharFiltros) },
             type = PingoButtonType.Primary,
         )

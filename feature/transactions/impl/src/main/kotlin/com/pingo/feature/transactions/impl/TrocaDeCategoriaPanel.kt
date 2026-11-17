@@ -22,14 +22,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.pingo.core.designsystem.component.CategoryAvatar
 import com.pingo.core.designsystem.component.PingoButton
 import com.pingo.core.designsystem.component.PingoButtonType
+import com.pingo.core.designsystem.component.PingoElevationLevel
 import com.pingo.core.designsystem.component.PingoIcon
+import com.pingo.core.designsystem.component.PingoSheetHandle
 import com.pingo.core.designsystem.component.PingoText
+import com.pingo.core.designsystem.component.pingoElevation
 import com.pingo.core.designsystem.icon.PingoIcons
+import com.pingo.core.designsystem.theme.PingoLayout
 import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.ui.iconeDaCategoria
+
+private val CategorySheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
 
 @Composable
 internal fun PainelDeTrocaDeCategoria(troca: TrocaDeCategoria, onSelecionar: (String) -> Unit, onFechar: () -> Unit) {
@@ -47,14 +55,12 @@ internal fun PainelDeTrocaDeCategoria(troca: TrocaDeCategoria, onSelecionar: (St
                 .fillMaxWidth()
                 .fillMaxHeight(0.75f)
                 .testTag("painel-categoria")
-                .background(
-                    PingoTheme.colors.surface,
-                    RoundedCornerShape(topStart = PingoRadius.xl, topEnd = PingoRadius.xl),
-                )
+                .pingoElevation(level = PingoElevationLevel.Level3, shape = CategorySheetShape, offsetY = (-8).dp)
+                .background(PingoTheme.colors.surface, CategorySheetShape)
                 .clickable(interactionSource = interacao, indication = null) {}
-                .padding(horizontal = PingoSpacing.lg, vertical = PingoSpacing.md),
+                .padding(horizontal = PingoSpacing.xl, vertical = PingoSpacing.md),
         ) {
-            PuxadorDePainel()
+            PingoSheetHandle()
             CabecalhoDaTroca(troca = troca, onFechar = onFechar)
             OpcoesDaTroca(troca = troca, onSelecionar = onSelecionar, modifier = Modifier.weight(1f))
             PingoButton(
@@ -79,7 +85,7 @@ private fun CabecalhoDaTroca(troca: TrocaDeCategoria, onFechar: () -> Unit) {
         PingoText(text = "Trocar categoria", style = PingoTheme.typography.title)
         Box(
             modifier = Modifier
-                .size(40.dp)
+                .size(PingoLayout.minTouchTarget)
                 .testTag("fechar-categoria")
                 .clickable(onClick = onFechar),
             contentAlignment = Alignment.Center,
@@ -125,9 +131,16 @@ private fun OpcaoDeCategoria(nome: String, publicId: String, atual: Boolean, onC
             .fillMaxWidth()
             .testTag("categoria-opcao-$publicId")
             .clickable(onClick = onClick)
-            .padding(vertical = PingoSpacing.md),
+            .padding(vertical = PingoSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        CategoryAvatar(
+            icon = iconeDaCategoria(nome),
+            size = 36.dp,
+            iconSize = 18.dp,
+            cornerRadius = PingoRadius.sm,
+        )
         PingoText(
             text = nome,
             style = PingoTheme.typography.body,

@@ -30,8 +30,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.pingo.core.designsystem.component.PingoButton
 import com.pingo.core.designsystem.component.PingoButtonType
+import com.pingo.core.designsystem.component.PingoElevationLevel
 import com.pingo.core.designsystem.component.PingoIcon
 import com.pingo.core.designsystem.component.PingoText
+import com.pingo.core.designsystem.component.pingoElevation
 import com.pingo.core.designsystem.icon.PingoIcons
 import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
@@ -76,11 +78,14 @@ internal fun CalendarioDoLancamento(data: LocalDate, hoje: LocalDate, onSelecion
 private fun CorpoDoCalendario(mes: YearMonth, selecionada: LocalDate, hoje: LocalDate, gestos: GestosDoCalendario) {
     val interacao = remember { MutableInteractionSource() }
 
+    val forma = RoundedCornerShape(PingoRadius.xl)
+
     Column(
         modifier = Modifier
             .padding(horizontal = PingoSpacing.xxxl)
             .fillMaxWidth()
-            .background(color = PingoTheme.colors.surface, shape = RoundedCornerShape(PingoRadius.xl))
+            .pingoElevation(level = PingoElevationLevel.Level3, shape = forma)
+            .background(color = PingoTheme.colors.surface, shape = forma)
             .clickable(interactionSource = interacao, indication = null) {}
             .padding(PingoSpacing.xxl)
             .testTag("calendario-do-lancamento"),
@@ -117,7 +122,7 @@ private fun CabecalhoDoMes(mes: YearMonth, onAnterior: () -> Unit, onSeguinte: (
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        NavegadorDeMes(icone = PingoIcons.ArrowLeft, descricao = "Mês anterior", testTag = "mes-anterior", onClick = onAnterior)
+        NavegadorDeMes(icone = PingoIcons.ChevronLeft, descricao = "Mês anterior", testTag = "mes-anterior", onClick = onAnterior)
         PingoText(text = RotulosDoNovoLancamento.mes(mes), style = PingoTheme.typography.subtitle)
         NavegadorDeMes(icone = PingoIcons.ChevronRight, descricao = "Próximo mês", testTag = "mes-seguinte", onClick = onSeguinte)
     }

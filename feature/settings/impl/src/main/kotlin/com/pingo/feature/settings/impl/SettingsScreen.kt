@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -20,11 +23,14 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pingo.core.designsystem.component.PingoCard
 import com.pingo.core.designsystem.component.PingoDestructiveDialog
+import com.pingo.core.designsystem.component.PingoElevationLevel
 import com.pingo.core.designsystem.component.PingoTopBar
 import com.pingo.core.designsystem.component.SectionHeader
 import com.pingo.core.designsystem.component.SettingsRow
 import com.pingo.core.designsystem.component.SettingsRowStyle
+import com.pingo.core.designsystem.component.pingoElevation
 import com.pingo.core.designsystem.icon.PingoIcons
+import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
 import com.pingo.core.ui.PrivacyTermDialog
@@ -74,35 +80,43 @@ fun SettingsContent(onBack: () -> Unit, onShowTerm: () -> Unit, onDeleteAccount:
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = PingoSpacing.lg, vertical = PingoSpacing.sm),
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = PingoSpacing.xl, vertical = PingoSpacing.sm),
             verticalArrangement = Arrangement.spacedBy(PingoSpacing.md),
         ) {
             SectionHeader("Privacidade e dados")
-
-            PingoCard(contentPadding = 0.dp, gap = 0.dp) {
-                SettingsRow(
-                    title = "Termo de privacidade",
-                    subtitle = "Como o Pingo trata seus dados",
-                    icon = PingoIcons.FileText,
-                    onClick = onShowTerm,
-                )
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(PingoTheme.colors.outlineVariant),
-                )
-
-                SettingsRow(
-                    title = "Excluir conta e dados",
-                    subtitle = "Apaga tudo no aparelho e na nuvem",
-                    icon = PingoIcons.Trash2,
-                    onClick = onDeleteAccount,
-                    style = SettingsRowStyle.Danger,
-                )
-            }
+            PrivacidadeCartao(onShowTerm = onShowTerm, onDeleteAccount = onDeleteAccount)
         }
+    }
+}
+
+@Composable
+private fun PrivacidadeCartao(onShowTerm: () -> Unit, onDeleteAccount: () -> Unit) {
+    val shape = RoundedCornerShape(PingoRadius.xl)
+    PingoCard(
+        modifier = Modifier.pingoElevation(level = PingoElevationLevel.Level1, shape = shape),
+        contentPadding = 0.dp,
+        gap = 0.dp,
+    ) {
+        SettingsRow(
+            title = "Termo de privacidade",
+            subtitle = "Como o Pingo trata seus dados",
+            icon = PingoIcons.FileText,
+            onClick = onShowTerm,
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(PingoTheme.colors.outlineVariant),
+        )
+        SettingsRow(
+            title = "Excluir conta e dados",
+            subtitle = "Apaga tudo no aparelho e na nuvem",
+            icon = PingoIcons.Trash2,
+            onClick = onDeleteAccount,
+            style = SettingsRowStyle.Danger,
+        )
     }
 }
 

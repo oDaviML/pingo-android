@@ -4,8 +4,10 @@ import android.app.Activity
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
@@ -20,12 +22,15 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.pingo.core.auth.SessionState
 import com.pingo.core.designsystem.component.AbaInferior
+import com.pingo.core.designsystem.component.PingoBottomBar
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.designsystem.theme.rememberReducedMotion
 import com.pingo.core.notifications.NotificacoesDeRevisao
 import com.pingo.feature.accounts.api.AccountsRoute
 import com.pingo.feature.accounts.impl.AccountsScreen
@@ -55,24 +60,54 @@ fun PingoNavHost(session: SessionState, destinoInicial: DestinoInicial?, onConse
     }
 
     val navController = rememberNavController()
-
     RedirectToOnboardingOnLogout(session = session, navController = navController)
-
-    NavHost(
+    NavegacaoComBarraInferior(
         navController = navController,
-        startDestination = destinoInicial.rota(),
-        modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars),
-    ) {
-        onboardingGraph(navController = navController, onConsentAccepted = onConsentAccepted)
-        telasDeAba(navController = navController)
-        telasDeApoio(navController = navController)
-    }
-
+        destinoInicial = destinoInicial,
+        onConsentAccepted = onConsentAccepted,
+    )
     ContextoInicial(
         activity = LocalActivity.current,
         destinoInicial = destinoInicial,
         navController = navController,
     )
+}
+
+@Composable
+private fun NavegacaoComBarraInferior(navController: NavHostController, destinoInicial: DestinoInicial, onConsentAccepted: () -> Unit) {
+    val reducedMotion = rememberReducedMotion()
+    val entradaAtual by navController.currentBackStackEntryAsState()
+    val abaSelecionada = abaParaRota(entradaAtual?.destination?.route)
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(PingoTheme.colors.background)
+            .windowInsetsPadding(WindowInsets.systemBars),
+    ) {
+        NavHost(
+            navController = navController,
+            startDestination = destinoInicial.rota(),
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            enterTransition = { enterEmpurravel(reducedMotion) },
+            exitTransition = { exitEmpurravel(reducedMotion) },
+            popEnterTransition = { popEnterEmpurravel(reducedMotion) },
+            popExitTransition = { popExitEmpurravel(reducedMotion) },
+        ) {
+            onboardingGraph(navController = navController, onConsentAccepted = onConsentAccepted)
+            telasDeAba(navController = navController, reducedMotion = reducedMotion)
+            telasDeLancamento(navController = navController, reducedMotion = reducedMotion)
+            telasDeCadastroDeConta(navController = navController)
+            telasDeApoio(navController = navController)
+        }
+        if (abaSelecionada != null) {
+            PingoBottomBar(
+                selecionada = abaSelecionada,
+                onSelecionar = { aba -> navController.abrirAba(aba) },
+                onNovo = { navController.navigate(TransactionsRoute.NOVO_ROUTE) },
+            )
+        }
+    }
 }
 
 @Composable
@@ -95,28 +130,46 @@ private fun ContextoInicial(activity: Activity?, destinoInicial: DestinoInicial,
     }
 }
 
-private fun NavGraphBuilder.telaDeInicio(navController: NavHostController) {
-    composable(HomeRoute.ROUTE) {
+private fun NavGraphBuilder.telasDeAba(navController: NavHostController, reducedMotion: Boolean) {
+    abaComposable(route = HomeRoute.ROUTE, reducedMotion = reducedMotion) {
         HomeScreen(
             onOpenSettings = { navController.navigate(SettingsRoute.ROUTE) },
             onOpenCaptura = { navController.navigate(CaptureStatusRoute.ROUTE) },
             onOpenRevisao = { navController.navigate(ReviewRoute.ROUTE) },
             onOpenNovo = { navController.navigate(TransactionsRoute.NOVO_ROUTE) },
             onSelecionarAba = { aba -> navController.abrirAba(aba) },
+            mostrarBarraInferior = false,
         )
     }
-}
-
-private fun NavGraphBuilder.telasDeAba(navController: NavHostController) {
-    telaDeInicio(navController = navController)
-    composable(TransactionsRoute.ROUTE) {
+    abaComposable(route = TransactionsRoute.ROUTE, reducedMotion = reducedMotion) {
         TransactionsScreen(
             onOpenDetalhe = { publicId -> navController.navigate(TransactionsRoute.detalhe(publicId)) },
             onOpenNovo = { navController.navigate(TransactionsRoute.NOVO_ROUTE) },
             onSelecionarAba = { aba -> navController.abrirAba(aba) },
+            mostrarBarraInferior = false,
         )
     }
-    composable(TransactionsRoute.NOVO_ROUTE) {
+    abaComposable(route = AccountsRoute.ROUTE, reducedMotion = reducedMotion) {
+        AccountsScreen(
+            onSelecionarAba = { aba -> navController.abrirAba(aba) },
+            onNovaConta = { navController.navigate(AccountsRoute.NOVA_ROUTE) },
+            onAbrirConta = { contaPublicId -> navController.navigate(AccountsRoute.editar(contaPublicId)) },
+            mostrarBarraInferior = false,
+        )
+    }
+    abaComposable(route = ReportsRoute.ROUTE, reducedMotion = reducedMotion) {
+        ReportsScreen(onSelecionarAba = { aba -> navController.abrirAba(aba) }, mostrarBarraInferior = false)
+    }
+}
+
+private fun NavGraphBuilder.telasDeLancamento(navController: NavHostController, reducedMotion: Boolean) {
+    composable(
+        route = TransactionsRoute.NOVO_ROUTE,
+        enterTransition = { enterModal(reducedMotion) },
+        exitTransition = { exitReduzidoOuFade(reducedMotion) },
+        popEnterTransition = { enterReduzidoOuFade(reducedMotion) },
+        popExitTransition = { popExitModal(reducedMotion) },
+    ) {
         NovoLancamentoScreen(onVoltar = { navController.popBackStack() })
     }
     composable(
@@ -129,18 +182,6 @@ private fun NavGraphBuilder.telasDeAba(navController: NavHostController) {
             onBack = { navController.popBackStack() },
         )
     }
-    composable(AccountsRoute.ROUTE) {
-        AccountsScreen(
-            onSelecionarAba = { aba -> navController.abrirAba(aba) },
-            onNovaConta = { navController.navigate(AccountsRoute.NOVA_ROUTE) },
-            onAbrirConta = { contaPublicId -> navController.navigate(AccountsRoute.editar(contaPublicId)) },
-        )
-    }
-    telasDeCadastroDeConta(navController = navController)
-    composable(ReportsRoute.ROUTE) {
-        ReportsScreen(onSelecionarAba = { aba -> navController.abrirAba(aba) })
-    }
-    telaDeRevisao(navController = navController)
 }
 
 private fun NavGraphBuilder.telasDeCadastroDeConta(navController: NavHostController) {
@@ -155,16 +196,13 @@ private fun NavGraphBuilder.telasDeCadastroDeConta(navController: NavHostControl
     }
 }
 
-private fun NavGraphBuilder.telaDeRevisao(navController: NavHostController) {
+private fun NavGraphBuilder.telasDeApoio(navController: NavHostController) {
     composable(ReviewRoute.ROUTE) {
         ReviewScreen(
             onCorrigir = { publicId -> navController.navigate(TransactionsRoute.detalhe(publicId)) },
             onVoltar = { navController.popBackStack() },
         )
     }
-}
-
-private fun NavGraphBuilder.telasDeApoio(navController: NavHostController) {
     composable(CaptureStatusRoute.ROUTE) {
         CaptureStatusScreen(onBack = { navController.popBackStack() })
     }
@@ -174,6 +212,14 @@ private fun NavGraphBuilder.telasDeApoio(navController: NavHostController) {
             onAccountDeleted = { navController.toOnboarding() },
         )
     }
+}
+
+internal fun abaParaRota(rota: String?): AbaInferior? = when (rota) {
+    HomeRoute.ROUTE -> AbaInferior.INICIO
+    TransactionsRoute.ROUTE -> AbaInferior.LANCAMENTOS
+    AccountsRoute.ROUTE -> AbaInferior.CONTAS
+    ReportsRoute.ROUTE -> AbaInferior.RELATORIOS
+    else -> null
 }
 
 private fun DestinoInicial.rota(): String = when (this) {
@@ -195,8 +241,9 @@ private fun NavHostController.abrirAba(aba: AbaInferior) {
     }
 
     navigate(rota) {
-        popUpTo(HomeRoute.ROUTE) { inclusive = false }
+        popUpTo(HomeRoute.ROUTE) { saveState = true }
         launchSingleTop = true
+        restoreState = true
     }
 }
 

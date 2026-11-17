@@ -17,20 +17,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.pingo.core.designsystem.component.PingoButton
 import com.pingo.core.designsystem.component.PingoButtonSize
 import com.pingo.core.designsystem.component.PingoButtonType
 import com.pingo.core.designsystem.component.PingoCard
 import com.pingo.core.designsystem.component.PingoIcon
-import com.pingo.core.designsystem.component.PingoMascot
-import com.pingo.core.designsystem.component.PingoSpinner
+import com.pingo.core.designsystem.component.PingoSkeletonList
 import com.pingo.core.designsystem.component.PingoText
 import com.pingo.core.designsystem.component.PingoTopBar
 import com.pingo.core.designsystem.icon.PingoIcons
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.ui.EstadoVazioCard
 
 @Composable
 fun ReviewContent(
@@ -49,7 +48,7 @@ fun ReviewContent(
         Column(modifier = Modifier.fillMaxSize()) {
             PingoTopBar(title = RotulosDaRevisao.TITULO, onBack = onVoltar, modifier = Modifier.testTag("voltar-revisao"))
             when {
-                state.carregando -> CarregandoDaRevisao(modifier = Modifier.weight(1f))
+                state.carregando -> PingoSkeletonList(count = 4, modifier = Modifier.weight(1f))
                 state.vazia -> EstadoVazioDaRevisao(modifier = Modifier.weight(1f))
                 else -> ListaDePendencias(
                     state = state,
@@ -66,7 +65,7 @@ fun ReviewContent(
                 onDispensar = { onEvent(ReviewEvent.DispensarMensagem) },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(PingoSpacing.lg),
+                    .padding(PingoSpacing.xl),
             )
         }
 
@@ -81,13 +80,6 @@ fun ReviewContent(
 }
 
 @Composable
-private fun CarregandoDaRevisao(modifier: Modifier = Modifier) {
-    Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        PingoSpinner(size = 28.dp)
-    }
-}
-
-@Composable
 private fun ListaDePendencias(
     state: ReviewUiState,
     onEvent: (ReviewEvent) -> Unit,
@@ -98,7 +90,7 @@ private fun ListaDePendencias(
         modifier = modifier
             .fillMaxWidth()
             .testTag("lista-revisao"),
-        contentPadding = PaddingValues(horizontal = PingoSpacing.lg, vertical = PingoSpacing.sm),
+        contentPadding = PaddingValues(horizontal = PingoSpacing.xl, vertical = PingoSpacing.sm),
         verticalArrangement = Arrangement.spacedBy(PingoSpacing.md),
     ) {
         item(key = "cabecalho") {
@@ -125,7 +117,7 @@ private fun CabecalhoDaRevisao(state: ReviewUiState, onEvent: (ReviewEvent) -> U
         Column(modifier = Modifier.weight(1f)) {
             PingoText(
                 text = RotulosDaRevisao.quantidade(state.quantidade),
-                style = PingoTheme.typography.title,
+                style = PingoTheme.typography.headline,
                 color = PingoTheme.colors.onBackground,
             )
             PingoText(
@@ -150,29 +142,14 @@ private fun EstadoVazioDaRevisao(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(PingoSpacing.lg),
+            .padding(PingoSpacing.xl),
         contentAlignment = Alignment.Center,
     ) {
-        PingoCard(modifier = Modifier.testTag("revisao-vazia"), contentPadding = PingoSpacing.xl) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(PingoSpacing.md),
-            ) {
-                PingoMascot(width = 72.dp)
-                PingoText(
-                    text = RotulosDaRevisao.VAZIO,
-                    style = PingoTheme.typography.title,
-                    color = PingoTheme.colors.onBackground,
-                )
-                PingoText(
-                    text = RotulosDaRevisao.VAZIO_DETALHE,
-                    style = PingoTheme.typography.body,
-                    color = PingoTheme.colors.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-            }
-        }
+        EstadoVazioCard(
+            titulo = RotulosDaRevisao.VAZIO,
+            descricao = RotulosDaRevisao.VAZIO_DETALHE,
+            modifier = Modifier.testTag("revisao-vazia"),
+        )
     }
 }
 

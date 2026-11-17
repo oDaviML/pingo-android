@@ -1,71 +1,122 @@
 package com.pingo.feature.home.impl
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import com.pingo.core.designsystem.component.PingoButton
-import com.pingo.core.designsystem.component.PingoButtonSize
-import com.pingo.core.designsystem.component.PingoButtonType
+import com.pingo.core.designsystem.component.CategoryAvatar
 import com.pingo.core.designsystem.component.PingoCard
+import com.pingo.core.designsystem.component.PingoDropAnimation
+import com.pingo.core.designsystem.component.PingoElevationLevel
 import com.pingo.core.designsystem.component.PingoIcon
-import com.pingo.core.designsystem.component.PingoMascot
+import com.pingo.core.designsystem.component.PingoLinearProgress
 import com.pingo.core.designsystem.component.PingoText
 import com.pingo.core.designsystem.component.SectionHeader
+import com.pingo.core.designsystem.component.pingoElevation
+import com.pingo.core.designsystem.icon.PingoIcons
+import com.pingo.core.designsystem.theme.PingoLayout
+import com.pingo.core.designsystem.theme.PingoMotion
 import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.designsystem.theme.rememberReducedMotion
+import com.pingo.core.ui.EstadoVazioCard
 import com.pingo.core.ui.LancamentoItem
 import com.pingo.core.ui.Valores
 import com.pingo.core.ui.iconeDaCategoria
 import java.time.ZoneId
+import kotlin.math.roundToLong
+
+private val SaldoGradienteInicio = Color(0xFF088395)
+private val SaldoGradienteFim = Color(0xFF09637E)
 
 @Composable
 internal fun SaldoDoMes(state: HomeUiState) {
     val mes = state.mes ?: return
+    val shape = RoundedCornerShape(PingoRadius.xl)
+    val saldoAnimado = centavosAnimados(state.saldoCentavos, "saldo-counter")
+    val receitasAnimadas = centavosAnimados(state.receitasCentavos, "receitas-counter")
+    val despesasAnimadas = centavosAnimados(state.despesasCentavos, "despesas-counter")
 
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .pingoElevation(level = PingoElevationLevel.Level2, shape = shape)
+            .clip(shape)
+            .background(
+                brush = Brush.linearGradient(colors = listOf(SaldoGradienteInicio, SaldoGradienteFim)),
+                shape = shape,
+            ),
+    ) {
+        DecoracaoDeOndasDoSaldo(modifier = Modifier.matchParentSize())
+        ConteudoDoSaldo(
+            mesRotulo = RotuloDeMes.emMaiusculas(mes),
+            saldoCentavos = saldoAnimado,
+            receitasCentavos = receitasAnimadas,
+            despesasCentavos = despesasAnimadas,
+        )
+    }
+}
+
+@Composable
+private fun ConteudoDoSaldo(mesRotulo: String, saldoCentavos: Long, receitasCentavos: Long, despesasCentavos: Long) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(PingoTheme.colors.primary, RoundedCornerShape(PingoRadius.xl))
             .padding(PingoSpacing.xl),
         verticalArrangement = Arrangement.spacedBy(PingoSpacing.md),
     ) {
         PingoText(
-            text = "SALDO DE ${RotuloDeMes.emMaiusculas(mes)}",
+            text = "SALDO DE $mesRotulo",
             style = PingoTheme.typography.overline,
-            color = PingoTheme.colors.onPrimary.copy(alpha = 0.8f),
+            color = Color.White.copy(alpha = 0.8f),
         )
         PingoText(
-            text = valorDoSaldo(state.saldoCentavos),
+            text = valorDoSaldo(saldoCentavos),
             style = PingoTheme.typography.amountLarge,
-            color = PingoTheme.colors.onPrimary,
+            color = Color.White,
             maxLines = 1,
             modifier = Modifier.testTag("saldo-do-mes"),
         )
         Row(horizontalArrangement = Arrangement.spacedBy(PingoSpacing.sm)) {
             ResumoDaConta(
                 rotulo = "Receitas",
-                valor = "+ ${Valores.formatar(state.receitasCentavos)}",
+                valor = "+ ${Valores.formatar(receitasCentavos)}",
+                icone = PingoIcons.ArrowDownLeft,
                 modifier = Modifier.weight(1f),
             )
             ResumoDaConta(
                 rotulo = "Despesas",
-                valor = "- ${Valores.formatar(state.despesasCentavos)}",
+                valor = "- ${Valores.formatar(despesasCentavos)}",
+                icone = PingoIcons.ArrowUpRight,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -73,35 +124,90 @@ internal fun SaldoDoMes(state: HomeUiState) {
 }
 
 @Composable
-private fun ResumoDaConta(rotulo: String, valor: String, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .background(PingoTheme.colors.onPrimary.copy(alpha = 0.14f), RoundedCornerShape(PingoRadius.md))
-            .padding(horizontal = PingoSpacing.md, vertical = PingoSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        PingoText(
-            text = rotulo,
-            style = PingoTheme.typography.labelSmall,
-            color = PingoTheme.colors.onPrimary.copy(alpha = 0.8f),
+private fun DecoracaoDeOndasDoSaldo(modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val centro = Offset(x = size.width * 0.92f, y = size.height * 0.18f)
+        val traco = 14.dp.toPx()
+        drawCircle(
+            color = Color.White.copy(alpha = 0.08f),
+            radius = 48.dp.toPx(),
+            center = centro,
+            style = Stroke(width = traco),
         )
-        PingoText(
-            text = valor,
-            style = PingoTheme.typography.amount,
-            color = PingoTheme.colors.onPrimary,
-            maxLines = 1,
+        drawCircle(
+            color = Color.White.copy(alpha = 0.06f),
+            radius = 84.dp.toPx(),
+            center = centro,
+            style = Stroke(width = traco),
         )
     }
 }
 
 @Composable
-internal fun TopCategorias(state: HomeUiState) {
+private fun ResumoDaConta(rotulo: String, valor: String, icone: ImageVector, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .background(Color.White.copy(alpha = 0.14f), RoundedCornerShape(PingoRadius.md))
+            .padding(horizontal = PingoSpacing.md, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        PingoIcon(
+            imageVector = icone,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint = Color.White.copy(alpha = 0.9f),
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            PingoText(
+                text = rotulo,
+                style = PingoTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.8f),
+            )
+            PingoText(
+                text = valor,
+                style = PingoTheme.typography.amount,
+                color = Color.White,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+@Composable
+private fun centavosAnimados(alvo: Long, label: String): Long {
+    val reducedMotion = rememberReducedMotion()
+    val valor by animateFloatAsState(
+        targetValue = alvo.toFloat(),
+        animationSpec = if (reducedMotion) {
+            snap()
+        } else {
+            tween(durationMillis = PingoMotion.MEDIUM_MS, easing = PingoMotion.StandardEasing)
+        },
+        label = label,
+    )
+    return valor.roundToLong()
+}
+
+@Composable
+internal fun TopCategorias(state: HomeUiState, onVerRelatorio: () -> Unit = {}) {
     if (state.topCategorias.isEmpty()) {
         return
     }
 
-    SectionHeader("Top categorias")
-    PingoCard(modifier = Modifier.testTag("top-categorias"), contentPadding = 0.dp, gap = 0.dp) {
+    val shape = RoundedCornerShape(PingoRadius.xl)
+    SectionHeader(
+        title = "Top categorias",
+        actionLabel = "Ver relatório",
+        onAction = onVerRelatorio,
+    )
+    PingoCard(
+        modifier = Modifier
+            .testTag("top-categorias")
+            .pingoElevation(level = PingoElevationLevel.Level1, shape = shape),
+        contentPadding = 0.dp,
+        gap = 0.dp,
+    ) {
         state.topCategorias.forEachIndexed { indice, categoria ->
             LinhaDoTopo(categoria)
             if (indice < state.topCategorias.lastIndex) {
@@ -113,16 +219,48 @@ internal fun TopCategorias(state: HomeUiState) {
 
 @Composable
 private fun LinhaDoTopo(categoria: CategoriaDoTopo) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("top-categoria-${categoria.publicId}")
-            .padding(horizontal = PingoSpacing.md, vertical = PingoSpacing.md),
+            .padding(horizontal = PingoSpacing.lg, vertical = PingoSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
+    ) {
+        ResumoDaCategoria(categoria = categoria)
+        PingoLinearProgress(
+            progress = (categoria.percentual / 100f).coerceIn(0f, 1f),
+            height = 6.dp,
+        )
+    }
+}
+
+@Composable
+private fun ResumoDaCategoria(categoria: CategoriaDoTopo) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconeDaCategoriaDoTopo(categoria.nome)
-        RotulosDaCategoriaDoTopo(categoria)
+        CategoryAvatar(
+            icon = iconeDaCategoria(categoria.nome),
+            size = 40.dp,
+            iconSize = 20.dp,
+            cornerRadius = PingoRadius.md,
+        )
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            PingoText(
+                text = categoria.nome,
+                style = PingoTheme.typography.bodyStrong,
+                color = PingoTheme.colors.onBackground,
+                maxLines = 1,
+            )
+            PingoText(
+                text = "${categoria.percentual}% das despesas",
+                style = PingoTheme.typography.bodySmall,
+                color = PingoTheme.colors.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
         PingoText(
             text = Valores.formatar(categoria.valorCentavos),
             style = PingoTheme.typography.amount,
@@ -133,76 +271,35 @@ private fun LinhaDoTopo(categoria: CategoriaDoTopo) {
 }
 
 @Composable
-private fun IconeDaCategoriaDoTopo(nome: String) {
-    Box(
-        modifier = Modifier
-            .size(36.dp)
-            .background(PingoTheme.colors.primaryContainer, CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        PingoIcon(
-            imageVector = iconeDaCategoria(nome),
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-            tint = PingoTheme.colors.onPrimaryContainer,
-        )
-    }
-}
-
-@Composable
-private fun RowScope.RotulosDaCategoriaDoTopo(categoria: CategoriaDoTopo) {
-    Column(
-        modifier = Modifier.weight(1f),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        PingoText(
-            text = categoria.nome,
-            style = PingoTheme.typography.bodyStrong,
-            color = PingoTheme.colors.onBackground,
-            maxLines = 1,
-        )
-        PingoText(
-            text = "${categoria.percentual}% das despesas",
-            style = PingoTheme.typography.bodySmall,
-            color = PingoTheme.colors.onSurfaceVariant,
-            maxLines = 1,
-        )
-    }
-}
-
-@Composable
-internal fun UltimosLancamentos(state: HomeUiState, onVerTudo: () -> Unit, zona: ZoneId) {
+internal fun UltimosLancamentos(
+    state: HomeUiState,
+    onVerTudo: () -> Unit,
+    zona: ZoneId,
+    animarTopoId: String? = null,
+    onAnimacaoConcluida: () -> Unit = {},
+) {
     if (state.ultimos.isEmpty()) {
         return
     }
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
+    val shape = RoundedCornerShape(PingoRadius.xl)
+    CabecalhoUltimosLancamentos(onVerTudo = onVerTudo)
+    PingoCard(
+        modifier = Modifier
+            .testTag("ultimos-lancamentos")
+            .pingoElevation(level = PingoElevationLevel.Level1, shape = shape),
+        contentPadding = 0.dp,
+        gap = 0.dp,
     ) {
-        PingoText(
-            text = "Últimos lançamentos",
-            style = PingoTheme.typography.subtitle,
-            color = PingoTheme.colors.onBackground,
-            modifier = Modifier.weight(1f),
-        )
-        PingoButton(
-            text = "Ver tudo",
-            onClick = onVerTudo,
-            type = PingoButtonType.Text,
-            size = PingoButtonSize.Small,
-            modifier = Modifier.testTag("ver-tudo-lancamentos"),
-        )
-    }
-    PingoCard(modifier = Modifier.testTag("ultimos-lancamentos"), contentPadding = 0.dp, gap = 0.dp) {
         state.ultimos.forEachIndexed { indice, item ->
-            LancamentoItem(
-                lancamento = item.lancamento,
-                categoria = item.categoria,
-                instrumento = item.instrumento,
-                conta = item.conta,
-                zona = zona,
-            )
+            val animar = indice == 0 && item.lancamento.publicId == animarTopoId
+            if (animar) {
+                PingoDropAnimation(trigger = true, onFinished = onAnimacaoConcluida) {
+                    ItemDaListaInicio(item = item, zona = zona)
+                }
+            } else {
+                ItemDaListaInicio(item = item, zona = zona)
+            }
             if (indice < state.ultimos.lastIndex) {
                 Divisoria()
             }
@@ -211,40 +308,72 @@ internal fun UltimosLancamentos(state: HomeUiState, onVerTudo: () -> Unit, zona:
 }
 
 @Composable
-internal fun InicioVazio(onOpenNovo: () -> Unit) {
-    PingoCard(
+private fun ItemDaListaInicio(item: LancamentoDaInicio, zona: ZoneId) {
+    LancamentoItem(
+        lancamento = item.lancamento,
+        categoria = item.categoria,
+        instrumento = item.instrumento,
+        conta = item.conta,
+        zona = zona,
+    )
+}
+
+@Composable
+private fun CabecalhoUltimosLancamentos(onVerTudo: () -> Unit) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .testTag("inicio-vazio"),
-        contentPadding = PingoSpacing.xl,
-        gap = PingoSpacing.md,
+            .padding(horizontal = PingoSpacing.xs),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
-        ) {
-            PingoMascot(width = 72.dp)
-            PingoText(
-                text = "Nenhum pingo ainda",
-                style = PingoTheme.typography.headline,
-                color = PingoTheme.colors.onBackground,
-                textAlign = TextAlign.Center,
-            )
-            PingoText(
-                text = "Assim que um banco avisar uma compra, ela aparece aqui. Ou lance agora.",
-                style = PingoTheme.typography.bodySmall,
-                color = PingoTheme.colors.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-            PingoButton(
-                text = "Lançar manualmente",
-                onClick = onOpenNovo,
-                fillWidth = true,
-                modifier = Modifier.testTag("lancar-manualmente"),
-            )
-        }
+        PingoText(
+            text = "Últimos lançamentos",
+            style = PingoTheme.typography.subtitle,
+            color = PingoTheme.colors.onBackground,
+            modifier = Modifier.weight(1f),
+        )
+        BotaoVerTudo(onVerTudo = onVerTudo)
     }
+}
+
+@Composable
+private fun BotaoVerTudo(onVerTudo: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .heightIn(min = PingoLayout.minTouchTarget)
+            .testTag("ver-tudo-lancamentos")
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                role = Role.Button,
+                onClick = onVerTudo,
+            )
+            .padding(horizontal = PingoSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        PingoText(text = "Ver tudo", style = PingoTheme.typography.label, color = PingoTheme.colors.brand, maxLines = 1)
+        PingoIcon(
+            imageVector = PingoIcons.ChevronRight,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = PingoTheme.colors.brand,
+        )
+    }
+}
+
+@Composable
+internal fun InicioVazio(onOpenNovo: () -> Unit) {
+    Spacer(modifier = Modifier.height(PingoSpacing.xxl))
+    EstadoVazioCard(
+        titulo = "Nenhum pingo ainda",
+        descricao = "Assim que um banco avisar uma compra, ela aparece aqui. Ou lance agora.",
+        acaoTexto = "Lançar manualmente",
+        onAcao = onOpenNovo,
+        modifier = Modifier.testTag("inicio-vazio"),
+        acaoModifier = Modifier.testTag("lancar-manualmente"),
+    )
 }
 
 @Composable

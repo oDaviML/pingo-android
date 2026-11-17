@@ -24,12 +24,17 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.pingo.core.designsystem.component.PingoButton
 import com.pingo.core.designsystem.component.PingoButtonType
+import com.pingo.core.designsystem.component.PingoElevationLevel
 import com.pingo.core.designsystem.component.PingoIcon
+import com.pingo.core.designsystem.component.PingoSheetHandle
 import com.pingo.core.designsystem.component.PingoText
+import com.pingo.core.designsystem.component.pingoElevation
 import com.pingo.core.designsystem.icon.PingoIcons
-import com.pingo.core.designsystem.theme.PingoRadius
+import com.pingo.core.designsystem.theme.PingoLayout
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
+
+private val SelectionSheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
 
 @Composable
 internal fun PainelDeSelecao(
@@ -55,14 +60,12 @@ internal fun PainelDeSelecao(
                 .fillMaxWidth()
                 .fillMaxHeight(0.6f)
                 .testTag(testTag)
-                .background(
-                    color = PingoTheme.colors.surface,
-                    shape = RoundedCornerShape(topStart = PingoRadius.xl, topEnd = PingoRadius.xl),
-                )
+                .pingoElevation(level = PingoElevationLevel.Level3, shape = SelectionSheetShape, offsetY = (-8).dp)
+                .background(color = PingoTheme.colors.surface, shape = SelectionSheetShape)
                 .clickable(interactionSource = interacao, indication = null) {}
-                .padding(horizontal = PingoSpacing.lg, vertical = PingoSpacing.md),
+                .padding(horizontal = PingoSpacing.xl, vertical = PingoSpacing.md),
         ) {
-            PuxadorDePainel()
+            PingoSheetHandle()
             CabecalhoDoPainel(titulo = titulo, onFechar = onFechar)
             ListaDeOpcoesDoPainel(
                 opcoes = opcoes,
@@ -93,7 +96,7 @@ private fun CabecalhoDoPainel(titulo: String, onFechar: () -> Unit) {
         PingoText(text = titulo, style = PingoTheme.typography.title)
         Box(
             modifier = Modifier
-                .size(40.dp)
+                .size(PingoLayout.minTouchTarget)
                 .clickable(onClick = onFechar),
             contentAlignment = Alignment.Center,
         ) {

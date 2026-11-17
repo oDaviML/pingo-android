@@ -9,9 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,16 +18,25 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.pingo.core.designsystem.component.PingoCard
 import com.pingo.core.designsystem.component.PingoCheckboxMark
+import com.pingo.core.designsystem.component.PingoElevationLevel
 import com.pingo.core.designsystem.component.PingoText
+import com.pingo.core.designsystem.component.pingoElevation
 import com.pingo.core.designsystem.theme.PingoLayout
+import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.ui.AvatarDaInstituicao
 import com.pingo.core.ui.contas.ContaFormulario
 import com.pingo.core.ui.contas.ContaFormularioCampos
 
 @Composable
 internal fun BancosEscolhaCard(state: OnboardingContasUiState, onEvent: (OnboardingContasEvent) -> Unit) {
-    PingoCard(contentPadding = 0.dp, gap = 0.dp) {
+    val shape = RoundedCornerShape(PingoRadius.xl)
+    PingoCard(
+        modifier = Modifier.pingoElevation(level = PingoElevationLevel.Level1, shape = shape),
+        contentPadding = 0.dp,
+        gap = 0.dp,
+    ) {
         BancoOferecido.todos.forEachIndexed { indice, banco ->
             if (indice > 0) {
                 Box(
@@ -91,7 +99,7 @@ private fun BancoCabecalho(banco: BancoOferecido, selecionado: Boolean, habilita
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
     ) {
-        BancoLetras(letras = banco.letras)
+        AvatarDaInstituicao(instituicao = banco.instituicao, size = 40.dp)
 
         Column(modifier = Modifier.weight(1f)) {
             PingoText(
@@ -107,21 +115,5 @@ private fun BancoCabecalho(banco: BancoOferecido, selecionado: Boolean, habilita
         }
 
         PingoCheckboxMark(checked = selecionado)
-    }
-}
-
-@Composable
-private fun BancoLetras(letras: String) {
-    Box(
-        modifier = Modifier
-            .size(40.dp)
-            .background(color = PingoTheme.colors.primaryContainer, shape = CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        PingoText(
-            text = letras,
-            style = PingoTheme.typography.label,
-            color = PingoTheme.colors.onPrimaryContainer,
-        )
     }
 }

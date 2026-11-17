@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -24,14 +25,22 @@ import com.pingo.core.designsystem.component.PingoBottomBar
 import com.pingo.core.designsystem.component.PingoButton
 import com.pingo.core.designsystem.component.PingoButtonType
 import com.pingo.core.designsystem.component.PingoCard
+import com.pingo.core.designsystem.component.PingoElevationLevel
+import com.pingo.core.designsystem.component.PingoLargeTopBar
 import com.pingo.core.designsystem.component.PingoSpinner
 import com.pingo.core.designsystem.component.PingoText
 import com.pingo.core.designsystem.component.SectionHeader
+import com.pingo.core.designsystem.component.pingoElevation
+import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.model.InstituicaoFinanceira
+import com.pingo.core.ui.AvatarDaInstituicao
+import com.pingo.core.ui.EstadoVazioCard
 import com.pingo.core.ui.contas.nomeDeExibicao
 import com.pingo.core.ui.contas.rotuloDeExibicao
 
+@Suppress("LongParameterList")
 @Composable
 internal fun AccountsContent(
     state: AccountsUiState,
@@ -39,6 +48,8 @@ internal fun AccountsContent(
     onAbrirConta: (String) -> Unit,
     onTentarDeNovo: () -> Unit,
     onSelecionarAba: (AbaInferior) -> Unit,
+    onOpenNovo: (() -> Unit)? = null,
+    mostrarBarraInferior: Boolean = true,
 ) {
     Column(
         modifier = Modifier
@@ -48,17 +59,16 @@ internal fun AccountsContent(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth()
-                .padding(horizontal = PingoSpacing.xxl),
+                .fillMaxWidth(),
         ) {
-            PingoText(
-                text = "Contas",
-                style = PingoTheme.typography.headline,
-                color = PingoTheme.colors.onBackground,
-                modifier = Modifier.padding(vertical = PingoSpacing.lg),
-            )
+            PingoLargeTopBar(title = "Contas")
 
-            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(horizontal = PingoSpacing.xl),
+            ) {
                 when {
                     state.carregando -> CarregandoContas()
                     state.falha -> FalhaAoLerContas(onTentarDeNovo = onTentarDeNovo)
@@ -68,7 +78,13 @@ internal fun AccountsContent(
             }
         }
 
-        PingoBottomBar(selecionada = AbaInferior.CONTAS, onSelecionar = onSelecionarAba)
+        if (mostrarBarraInferior) {
+            PingoBottomBar(
+                selecionada = AbaInferior.CONTAS,
+                onSelecionar = onSelecionarAba,
+                onNovo = onOpenNovo,
+            )
+        }
     }
 }
 
@@ -117,25 +133,18 @@ private fun FalhaAoLerContas(onTentarDeNovo: () -> Unit) {
 
 @Composable
 private fun ContasVazias(onNovaConta: () -> Unit) {
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .testTag("contas-vazio"),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+        contentAlignment = Alignment.Center,
     ) {
-        PingoText(
-            text = "Nenhuma conta cadastrada",
-            style = PingoTheme.typography.subtitle,
-            color = PingoTheme.colors.onBackground,
+        EstadoVazioCard(
+            titulo = "Nenhuma conta cadastrada",
+            descricao = "Adicione sua primeira conta para organizar cartões e benefícios.",
+            acaoTexto = "Adicionar conta",
+            onAcao = onNovaConta,
         )
-        PingoText(
-            text = "Adicione sua primeira conta para organizar cartões e benefícios.",
-            style = PingoTheme.typography.body,
-            color = PingoTheme.colors.onSurfaceVariant,
-        )
-        Spacer(modifier = Modifier.height(PingoSpacing.lg))
-        PingoButton(text = "Adicionar conta", onClick = onNovaConta, fillWidth = true)
     }
 }
 
@@ -167,84 +176,92 @@ private fun ListaDeContas(state: AccountsUiState, onNovaConta: () -> Unit, onAbr
             type = PingoButtonType.Outline,
             fillWidth = true,
         )
+        Spacer(modifier = Modifier.height(PingoSpacing.lg))
     }
 }
 
 @Composable
 private fun ContaCard(conta: ContaDaLista, onAbrirConta: (String) -> Unit) {
+    val linhas = if (conta.instrumentos.isEmpty()) {
+        listOf("Nenhum instrumento ativo")
+    } else {
+        conta.instrumentos.map { it.rotuloNaListaDeContas() }
+    }
+
+    CartaoDeConta(
+        instituicao = conta.conta.instituicao,
+        titulo = conta.conta.apelido,
+        selo = conta.conta.tipo.rotuloDeExibicao(),
+        linhas = linhas,
+        testTag = "conta-${conta.conta.publicId}",
+        onClick = { onAbrirConta(conta.conta.publicId) },
+    )
+}
+
+@Composable
+private fun ContaArquivadaCard(conta: ContaArquivadaDaLista, onAbrirConta: (String) -> Unit) {
+    val instrumentosTexto = if (conta.instrumentos.isEmpty()) {
+        "Sem instrumentos"
+    } else {
+        conta.instrumentos.joinToString(" · ") { it.rotuloNaListaDeContas() }
+    }
+
+    CartaoDeConta(
+        instituicao = conta.conta.instituicao,
+        titulo = conta.conta.apelido,
+        selo = "Arquivada",
+        linhas = listOf(conta.conta.instituicao.nomeDeExibicao(), instrumentosTexto),
+        testTag = "conta-arquivada-${conta.conta.publicId}",
+        onClick = { onAbrirConta(conta.conta.publicId) },
+    )
+}
+
+@Composable
+private fun CartaoDeConta(
+    instituicao: InstituicaoFinanceira,
+    titulo: String,
+    selo: String,
+    linhas: List<String>,
+    testTag: String,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(PingoRadius.xl)
     PingoCard(
         modifier = Modifier
-            .testTag("conta-${conta.conta.publicId}")
-            .clickable(role = Role.Button, onClick = { onAbrirConta(conta.conta.publicId) }),
+            .testTag(testTag)
+            .pingoElevation(level = PingoElevationLevel.Level1, shape = shape)
+            .clickable(role = Role.Button, onClick = onClick),
         contentPadding = PingoSpacing.lg,
         gap = PingoSpacing.xs,
     ) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            PingoText(
-                text = conta.conta.apelido,
-                style = PingoTheme.typography.bodyStrong,
-                color = PingoTheme.colors.onBackground,
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            PingoText(
-                text = conta.conta.tipo.rotuloDeExibicao(),
-                style = PingoTheme.typography.caption,
-                color = PingoTheme.colors.onSurfaceVariant,
-            )
-        }
-
-        if (conta.instrumentos.isEmpty()) {
-            PingoText(
-                text = "Nenhum instrumento ativo",
-                style = PingoTheme.typography.bodySmall,
-                color = PingoTheme.colors.onSurfaceVariant,
-            )
-        } else {
-            conta.instrumentos.forEach { instrumento ->
-                PingoText(
-                    text = instrumento.rotuloNaListaDeContas(),
-                    style = PingoTheme.typography.bodySmall,
-                    color = PingoTheme.colors.onSurfaceVariant,
-                )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AvatarDaInstituicao(instituicao = instituicao, size = 40.dp)
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                CabecalhoDoCartaoDeConta(titulo = titulo, selo = selo)
+                linhas.forEach { linha ->
+                    PingoText(text = linha, style = PingoTheme.typography.bodySmall, color = PingoTheme.colors.onSurfaceVariant)
+                }
             }
         }
     }
 }
 
 @Composable
-private fun ContaArquivadaCard(conta: ContaArquivadaDaLista, onAbrirConta: (String) -> Unit) {
-    PingoCard(
-        modifier = Modifier
-            .testTag("conta-arquivada-${conta.conta.publicId}")
-            .clickable(role = Role.Button, onClick = { onAbrirConta(conta.conta.publicId) }),
-        contentPadding = PingoSpacing.lg,
-        gap = PingoSpacing.xs,
-    ) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            PingoText(
-                text = conta.conta.apelido,
-                style = PingoTheme.typography.bodyStrong,
-                color = PingoTheme.colors.onBackground,
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            PingoText(
-                text = "Arquivada",
-                style = PingoTheme.typography.caption,
-                color = PingoTheme.colors.onSurfaceVariant,
-            )
-        }
+private fun CabecalhoDoCartaoDeConta(titulo: String, selo: String) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         PingoText(
-            text = conta.conta.instituicao.nomeDeExibicao(),
-            style = PingoTheme.typography.bodySmall,
-            color = PingoTheme.colors.onSurfaceVariant,
+            text = titulo,
+            style = PingoTheme.typography.bodyStrong,
+            color = PingoTheme.colors.onBackground,
+            modifier = Modifier.weight(1f),
         )
         PingoText(
-            text = if (conta.instrumentos.isEmpty()) {
-                "Sem instrumentos"
-            } else {
-                conta.instrumentos.joinToString(" · ") { it.rotuloNaListaDeContas() }
-            },
-            style = PingoTheme.typography.bodySmall,
+            text = selo,
+            style = PingoTheme.typography.caption,
             color = PingoTheme.colors.onSurfaceVariant,
         )
     }

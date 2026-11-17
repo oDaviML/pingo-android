@@ -13,7 +13,7 @@ import com.pingo.core.designsystem.component.PingoText
 import com.pingo.core.designsystem.theme.PingoTheme
 
 @Composable
-fun ReportsScreen(onSelecionarAba: (AbaInferior) -> Unit) {
+fun ReportsScreen(onSelecionarAba: (AbaInferior) -> Unit, onOpenNovo: (() -> Unit)? = null, mostrarBarraInferior: Boolean = true) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -22,6 +22,12 @@ fun ReportsScreen(onSelecionarAba: (AbaInferior) -> Unit) {
         Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
             PingoText(text = "Relatórios em breve")
         }
-        PingoBottomBar(selecionada = AbaInferior.RELATORIOS, onSelecionar = onSelecionarAba)
+        if (mostrarBarraInferior) {
+            PingoBottomBar(
+                selecionada = AbaInferior.RELATORIOS,
+                onSelecionar = onSelecionarAba,
+                onNovo = onOpenNovo,
+            )
+        }
     }
 }

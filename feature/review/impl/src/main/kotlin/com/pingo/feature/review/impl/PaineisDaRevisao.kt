@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,26 +30,30 @@ import com.pingo.core.designsystem.component.PingoButton
 import com.pingo.core.designsystem.component.PingoButtonType
 import com.pingo.core.designsystem.component.PingoCheckbox
 import com.pingo.core.designsystem.component.PingoChoiceChip
+import com.pingo.core.designsystem.component.PingoElevationLevel
 import com.pingo.core.designsystem.component.PingoIcon
+import com.pingo.core.designsystem.component.PingoSheetHandle
 import com.pingo.core.designsystem.component.PingoText
+import com.pingo.core.designsystem.component.pingoElevation
 import com.pingo.core.designsystem.icon.PingoIcons
 import com.pingo.core.designsystem.theme.PingoLayout
-import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
 import com.pingo.core.ui.Valores
 
+private val ReviewSheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+
 @Composable
 internal fun PainelDeTrocaDeCategoriaDaRevisao(painel: TrocaDeCategoriaDaRevisao, onEvent: (ReviewEvent) -> Unit) {
     SobreposicaoDoPainel(tag = "painel-categoria-revisao", onFechar = { onEvent(ReviewEvent.FecharTrocaDeCategoria) }) {
-        PuxadorDoPainel()
+        PingoSheetHandle()
         LinhaDeTitulo(
             titulo = "Trocar categoria",
             testTag = "fechar-categoria-revisao",
             onFechar = { onEvent(ReviewEvent.FecharTrocaDeCategoria) },
         )
         SubtituloDoPainel(painel.estabelecimento, painel.valorCentavos)
-        OpcoesDaTrocaDeCategoria(painel = painel, onEvent = onEvent, modifier = Modifier.weight(1f))
+        OpcoesDaTrocaDeCategoria(painel = painel, onEvent = onEvent, modifier = Modifier.weight(1f, fill = false))
         PingoCheckbox(
             checked = painel.aplicarATodos,
             onCheckedChange = { onEvent(ReviewEvent.AlternarAplicarATodos) },
@@ -58,10 +64,12 @@ internal fun PainelDeTrocaDeCategoriaDaRevisao(painel: TrocaDeCategoriaDaRevisao
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun OpcoesDaTrocaDeCategoria(painel: TrocaDeCategoriaDaRevisao, onEvent: (ReviewEvent) -> Unit, modifier: Modifier = Modifier) {
-    Column(
+    FlowRow(
         modifier = modifier.verticalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
         verticalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
     ) {
         painel.opcoes.forEach { opcao ->
@@ -100,7 +108,7 @@ private fun AcoesDaTrocaDeCategoria(painel: TrocaDeCategoriaDaRevisao, onEvent: 
 @Composable
 internal fun PainelDeMarcarTransferenciaDaRevisao(painel: MarcarTransferenciaDaRevisao, onEvent: (ReviewEvent) -> Unit) {
     SobreposicaoDoPainel(tag = "painel-transferencia-revisao", onFechar = { onEvent(ReviewEvent.FecharMarcarTransferencia) }) {
-        PuxadorDoPainel()
+        PingoSheetHandle()
         LinhaDeTitulo(
             titulo = "Marcar como transferência",
             testTag = "fechar-transferencia-revisao",
@@ -202,25 +210,12 @@ private fun SobreposicaoDoPainel(tag: String, onFechar: () -> Unit, content: @Co
                 .fillMaxWidth()
                 .fillMaxHeight(0.75f)
                 .testTag(tag)
-                .background(
-                    PingoTheme.colors.surface,
-                    RoundedCornerShape(topStart = PingoRadius.xl, topEnd = PingoRadius.xl),
-                )
+                .pingoElevation(level = PingoElevationLevel.Level3, shape = ReviewSheetShape, offsetY = (-8).dp)
+                .background(PingoTheme.colors.surface, ReviewSheetShape)
                 .clickable(interactionSource = interacao, indication = null) {}
-                .padding(horizontal = PingoSpacing.lg, vertical = PingoSpacing.md),
+                .padding(horizontal = PingoSpacing.xl, vertical = PingoSpacing.md),
             verticalArrangement = Arrangement.spacedBy(PingoSpacing.md),
             content = content,
-        )
-    }
-}
-
-@Composable
-private fun PuxadorDoPainel() {
-    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        Box(
-            modifier = Modifier
-                .size(width = 40.dp, height = 4.dp)
-                .background(color = PingoTheme.colors.outlineVariant, shape = RoundedCornerShape(PingoRadius.full)),
         )
     }
 }

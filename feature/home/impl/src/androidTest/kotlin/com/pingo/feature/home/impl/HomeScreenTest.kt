@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -180,6 +181,14 @@ class HomeScreenTest {
         assertEquals(1, proximos)
     }
 
+    @Test
+    fun barraInferiorOcultaNaoRenderizaAtalhosDuplicados() {
+        mostrar(estadoPadrao(), mostrarBarraInferior = false)
+
+        composeRule.onAllNodesWithTag("aba-inicio").assertCountEquals(0)
+        composeRule.onAllNodesWithTag("novo-lancamento").assertCountEquals(0)
+    }
+
     private fun mostrar(
         state: HomeUiState,
         onOpenCaptura: () -> Unit = {},
@@ -187,6 +196,7 @@ class HomeScreenTest {
         onOpenNovo: () -> Unit = {},
         onMesAnterior: () -> Unit = {},
         onMesProximo: () -> Unit = {},
+        mostrarBarraInferior: Boolean = true,
     ) {
         composeRule.setContent {
             PingoTheme {
@@ -198,6 +208,7 @@ class HomeScreenTest {
                     onOpenNovo = onOpenNovo,
                     onMesAnterior = onMesAnterior,
                     onMesProximo = onMesProximo,
+                    mostrarBarraInferior = mostrarBarraInferior,
                 )
             }
         }

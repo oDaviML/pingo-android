@@ -1,6 +1,7 @@
 package com.pingo.feature.review.impl
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,31 +9,39 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.pingo.core.designsystem.component.CategoryAvatar
 import com.pingo.core.designsystem.component.PingoButton
 import com.pingo.core.designsystem.component.PingoButtonSize
 import com.pingo.core.designsystem.component.PingoButtonType
 import com.pingo.core.designsystem.component.PingoCard
+import com.pingo.core.designsystem.component.PingoCategoryTone
+import com.pingo.core.designsystem.component.PingoElevationLevel
 import com.pingo.core.designsystem.component.PingoIcon
 import com.pingo.core.designsystem.component.PingoText
+import com.pingo.core.designsystem.component.pingoElevation
 import com.pingo.core.designsystem.icon.PingoIcons
 import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.model.TipoLancamento
 import com.pingo.core.ui.Valores
 import com.pingo.core.ui.iconeDaCategoria
 
 @Composable
 internal fun CartaoDaPendencia(pendencia: PendenciaDaRevisao, onEvent: (ReviewEvent) -> Unit, onCorrigir: (String) -> Unit) {
+    val shape = RoundedCornerShape(PingoRadius.xl)
     PingoCard(
-        modifier = Modifier.testTag("pendencia-${pendencia.publicId}"),
+        modifier = Modifier
+            .testTag("pendencia-${pendencia.publicId}")
+            .pingoElevation(level = PingoElevationLevel.Level1, shape = shape),
         contentPadding = PingoSpacing.lg,
         gap = PingoSpacing.md,
     ) {
@@ -55,16 +64,16 @@ internal fun CartaoDaPendencia(pendencia: PendenciaDaRevisao, onEvent: (ReviewEv
 private fun SeloDoMotivo(pendencia: PendenciaDaRevisao) {
     Box(
         modifier = Modifier
-            .background(color = PingoTheme.colors.warningContainer, shape = RoundedCornerShape(PingoRadius.md))
-            .padding(horizontal = PingoSpacing.md, vertical = PingoSpacing.xs)
+            .background(color = PingoTheme.colors.warningContainer, shape = RoundedCornerShape(PingoRadius.sm))
+            .padding(horizontal = 10.dp, vertical = 5.dp)
             .testTag("motivo-${pendencia.publicId}"),
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(PingoSpacing.xs),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             PingoIcon(
-                imageVector = PingoIcons.CircleAlert,
+                imageVector = PingoIcons.Sparkles,
                 contentDescription = null,
                 modifier = Modifier.size(16.dp),
                 tint = PingoTheme.colors.onWarningContainer,
@@ -86,7 +95,14 @@ private fun LinhaDoEstabelecimento(pendencia: PendenciaDaRevisao) {
         horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconeDaCategoria(pendencia = pendencia)
+        CategoryAvatar(
+            icon = iconeDaPendencia(pendencia),
+            contentDescription = pendencia.categoriaNome?.let { "Categoria $it" } ?: "Categoria não identificada",
+            tone = tomDaPendencia(pendencia.tipo),
+            size = 44.dp,
+            iconSize = 22.dp,
+            cornerRadius = PingoRadius.md,
+        )
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             PingoText(
                 text = pendencia.estabelecimento ?: "Lançamento",
@@ -112,31 +128,28 @@ private fun LinhaDoEstabelecimento(pendencia: PendenciaDaRevisao) {
     }
 }
 
-@Composable
-private fun IconeDaCategoria(pendencia: PendenciaDaRevisao) {
-    Box(
-        modifier = Modifier
-            .size(44.dp)
-            .background(color = PingoTheme.colors.primaryContainer, shape = CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        PingoIcon(
-            imageVector = iconeDaCategoria(pendencia.categoriaNome),
-            contentDescription = pendencia.categoriaNome?.let { "Categoria $it" } ?: "Categoria não identificada",
-            modifier = Modifier.size(22.dp),
-            tint = PingoTheme.colors.onPrimaryContainer,
-        )
-    }
+private fun iconeDaPendencia(pendencia: PendenciaDaRevisao): ImageVector = when (pendencia.tipo) {
+    TipoLancamento.TRANSFERENCIA -> PingoIcons.ArrowLeftRight
+    TipoLancamento.RECEITA -> if (pendencia.categoriaNome == null) PingoIcons.ArrowDownLeft else iconeDaCategoria(pendencia.categoriaNome)
+    TipoLancamento.DESPESA, TipoLancamento.AJUSTE -> iconeDaCategoria(pendencia.categoriaNome)
+}
+
+private fun tomDaPendencia(tipo: TipoLancamento): PingoCategoryTone = when (tipo) {
+    TipoLancamento.RECEITA -> PingoCategoryTone.Income
+    TipoLancamento.TRANSFERENCIA, TipoLancamento.AJUSTE -> PingoCategoryTone.Transfer
+    TipoLancamento.DESPESA -> PingoCategoryTone.Default
 }
 
 @Composable
 private fun TrechoInterpretado(pendencia: PendenciaDaRevisao) {
     val disponivel = pendencia.textoInterpretado != null
+    val forma = RoundedCornerShape(PingoRadius.md)
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(color = PingoTheme.colors.surfaceVariant, shape = RoundedCornerShape(PingoRadius.md))
+            .background(color = PingoTheme.colors.surfaceVariant, shape = forma)
+            .border(width = 1.dp, color = PingoTheme.colors.outlineVariant, shape = forma)
             .padding(PingoSpacing.md)
             .testTag("trecho-${pendencia.publicId}"),
     ) {

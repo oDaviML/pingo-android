@@ -1,5 +1,6 @@
 package com.pingo.navigation
 
+import com.pingo.core.designsystem.component.AbaInferior
 import com.pingo.core.notifications.NotificacoesDeRevisao
 import com.pingo.feature.accounts.api.AccountsRoute
 import com.pingo.feature.capturestatus.api.CaptureStatusRoute
@@ -51,5 +52,18 @@ class NavHostRoutesTest {
             "pingo://detalhe/{${TransactionsRoute.ARG_PUBLIC_ID}}",
             NotificacoesDeRevisao.PADRAO_DEEP_LINK_DETALHE,
         )
+    }
+
+    @Test
+    fun abaParaRotaMapeiaApenasAsQuatroAbasPrincipais() {
+        assertEquals(AbaInferior.INICIO, abaParaRota(HomeRoute.ROUTE))
+        assertEquals(AbaInferior.LANCAMENTOS, abaParaRota(TransactionsRoute.ROUTE))
+        assertEquals(AbaInferior.CONTAS, abaParaRota(AccountsRoute.ROUTE))
+        assertEquals(AbaInferior.RELATORIOS, abaParaRota(ReportsRoute.ROUTE))
+        assertEquals(null, abaParaRota(TransactionsRoute.NOVO_ROUTE))
+        assertEquals(null, abaParaRota(TransactionsRoute.DETALHE_ROUTE))
+        assertEquals(null, abaParaRota(ReviewRoute.ROUTE))
+        assertEquals(null, abaParaRota(SettingsRoute.ROUTE))
+        assertEquals(null, abaParaRota(null))
     }
 }

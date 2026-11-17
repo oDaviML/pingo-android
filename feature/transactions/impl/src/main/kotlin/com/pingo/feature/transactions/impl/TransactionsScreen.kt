@@ -12,6 +12,7 @@ fun TransactionsScreen(
     onOpenNovo: () -> Unit,
     onSelecionarAba: (AbaInferior) -> Unit,
     viewModel: TransactionsViewModel = hiltViewModel(),
+    mostrarBarraInferior: Boolean = true,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -21,5 +22,6 @@ fun TransactionsScreen(
         onOpenDetalhe = onOpenDetalhe,
         onOpenNovo = onOpenNovo,
         onSelecionarAba = onSelecionarAba,
+        mostrarBarraInferior = mostrarBarraInferior,
     )
 }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -15,15 +16,23 @@ import com.pingo.core.designsystem.component.PingoButton
 import com.pingo.core.designsystem.component.PingoButtonSize
 import com.pingo.core.designsystem.component.PingoButtonType
 import com.pingo.core.designsystem.component.PingoCard
+import com.pingo.core.designsystem.component.PingoElevationLevel
 import com.pingo.core.designsystem.component.PingoIcon
 import com.pingo.core.designsystem.component.PingoText
+import com.pingo.core.designsystem.component.pingoElevation
 import com.pingo.core.designsystem.icon.PingoIcons
+import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
 
 @Composable
 internal fun PermissaoItem(titulo: String, descricao: String, concedida: Boolean, acao: String?, onAcao: () -> Unit) {
-    PingoCard(contentPadding = PingoSpacing.lg, gap = 0.dp) {
+    val shape = RoundedCornerShape(PingoRadius.xl)
+    PingoCard(
+        modifier = Modifier.pingoElevation(level = PingoElevationLevel.Level1, shape = shape),
+        contentPadding = PingoSpacing.lg,
+        gap = 0.dp,
+    ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
             verticalAlignment = Alignment.CenterVertically,
@@ -72,7 +81,7 @@ private fun EstadoDaPermissao(concedida: Boolean) {
         contentAlignment = Alignment.Center,
     ) {
         PingoIcon(
-            imageVector = if (concedida) PingoIcons.Check else PingoIcons.TriangleAlert,
+            imageVector = if (concedida) PingoIcons.CircleCheck else PingoIcons.TriangleAlert,
             contentDescription = null,
             modifier = Modifier.size(20.dp),
             tint = if (concedida) colors.income else colors.warning,

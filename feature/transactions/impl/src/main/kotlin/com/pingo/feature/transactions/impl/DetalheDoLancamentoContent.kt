@@ -7,20 +7,20 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -28,20 +28,28 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.pingo.core.data.detalhe.CampoDoDetalhe
+import com.pingo.core.designsystem.component.CategoryAvatar
+import com.pingo.core.designsystem.component.PingoBanner
+import com.pingo.core.designsystem.component.PingoBannerTone
 import com.pingo.core.designsystem.component.PingoButton
 import com.pingo.core.designsystem.component.PingoButtonSize
 import com.pingo.core.designsystem.component.PingoButtonType
 import com.pingo.core.designsystem.component.PingoCard
+import com.pingo.core.designsystem.component.PingoCategoryTone
 import com.pingo.core.designsystem.component.PingoCheckbox
-import com.pingo.core.designsystem.component.PingoDestructiveDialog
+import com.pingo.core.designsystem.component.PingoElevationLevel
 import com.pingo.core.designsystem.component.PingoIcon
+import com.pingo.core.designsystem.component.PingoIconButton
+import com.pingo.core.designsystem.component.PingoIconButtonStyle
 import com.pingo.core.designsystem.component.PingoSpinner
+import com.pingo.core.designsystem.component.PingoStatusTag
 import com.pingo.core.designsystem.component.PingoText
+import com.pingo.core.designsystem.component.pingoElevation
 import com.pingo.core.designsystem.icon.PingoIcons
 import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
-import com.pingo.core.ui.Valores
+import com.pingo.core.ui.AvatarDaInstituicao
 import java.time.Instant
 import java.time.ZoneId
 
@@ -85,47 +93,33 @@ private fun CabecalhoDoDetalhe(state: DetalheDoLancamentoUiState, onEvent: (Deta
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = PingoSpacing.lg, vertical = PingoSpacing.md),
-        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
+            .heightIn(min = 56.dp)
+            .padding(horizontal = PingoSpacing.sm, vertical = PingoSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        BotaoDeIcone(icone = PingoIcons.ArrowLeft, descricao = "Voltar", testTag = "voltar-detalhe", onClick = onVoltar)
+        PingoIconButton(
+            icon = PingoIcons.ArrowLeft,
+            contentDescription = "Voltar",
+            onClick = onVoltar,
+            style = PingoIconButtonStyle.Standard,
+            modifier = Modifier.testTag("voltar-detalhe"),
+        )
         PingoText(
             text = "Detalhe do lançamento",
             style = PingoTheme.typography.subtitle,
             color = PingoTheme.colors.onBackground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        BotaoDeIcone(
-            icone = PingoIcons.Trash2,
-            descricao = "Excluir lançamento",
-            testTag = "excluir-detalhe",
-            habilitado = !state.carregando && !state.naoEncontrado && !state.excluindo,
+        PingoIconButton(
+            icon = PingoIcons.Trash2,
+            contentDescription = "Excluir lançamento",
             onClick = { onEvent(DetalheDoLancamentoEvent.SolicitarExclusao) },
-        )
-    }
-}
-
-@Composable
-private fun BotaoDeIcone(
-    icone: androidx.compose.ui.graphics.vector.ImageVector,
-    descricao: String,
-    testTag: String,
-    onClick: () -> Unit,
-    habilitado: Boolean = true,
-) {
-    Box(
-        modifier = Modifier
-            .size(48.dp)
-            .testTag(testTag)
-            .clickable(enabled = habilitado, role = Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        PingoIcon(
-            imageVector = icone,
-            contentDescription = descricao,
-            modifier = Modifier.size(24.dp),
-            tint = if (habilitado) PingoTheme.colors.onBackground else PingoTheme.colors.onDisabled,
+            style = PingoIconButtonStyle.Standard,
+            enabled = !state.carregando && !state.naoEncontrado && !state.excluindo,
+            modifier = Modifier.testTag("excluir-detalhe"),
         )
     }
 }
@@ -161,7 +155,7 @@ private fun CorpoDoDetalhe(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = PingoSpacing.lg),
+                .padding(horizontal = PingoSpacing.xl),
             verticalArrangement = Arrangement.spacedBy(PingoSpacing.md),
         ) {
             BlocoDeValor(state = state, onEvent = onEvent)
@@ -182,6 +176,7 @@ private fun CorpoDoDetalhe(
             }
             state.origem?.let { origem -> CartaoDeOrigem(origem = origem, zona = zona, agora = agora) }
             AcoesDoDetalhe(state = state, onEvent = onEvent)
+            Spacer(modifier = Modifier.height(PingoSpacing.lg))
         }
         if (state.tecladoVisivel) {
             TecladoNumerico(
@@ -196,7 +191,8 @@ private fun CorpoDoDetalhe(
 @Composable
 private fun BlocoDeValor(state: DetalheDoLancamentoUiState, onEvent: (DetalheDoLancamentoEvent) -> Unit) {
     val erro = CampoDoDetalhe.VALOR in state.erros
-    val cor = if (erro) PingoTheme.colors.expense else PingoTheme.colors.onSurfaceVariant
+    val corLegenda = if (erro) PingoTheme.colors.expense else PingoTheme.colors.onSurfaceVariant
+    val corValor = if (erro) PingoTheme.colors.expense else PingoTheme.colors.brand
 
     Column(
         modifier = Modifier
@@ -211,16 +207,12 @@ private fun BlocoDeValor(state: DetalheDoLancamentoUiState, onEvent: (DetalheDoL
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(PingoSpacing.xs),
     ) {
-        PingoText(text = "Valor", style = PingoTheme.typography.bodySmall, color = cor)
-        PingoText(
-            text = Valores.formatar(state.valorCentavos),
-            style = PingoTheme.typography.amountLarge,
-            color = if (erro) PingoTheme.colors.expense else PingoTheme.colors.primary,
-        )
+        PingoText(text = "Valor", style = PingoTheme.typography.bodySmall, color = corLegenda)
+        ValorEmDestaque(valorCentavos = state.valorCentavos, cor = corValor)
         PingoText(
             text = RotulosDoDetalhe.legendaDoValor(erro = erro, transferencia = state.ehTransferencia),
             style = PingoTheme.typography.caption,
-            color = cor,
+            color = corLegenda,
             textAlign = TextAlign.Center,
         )
     }
@@ -233,7 +225,7 @@ private fun CamposDoLancamento(state: DetalheDoLancamentoUiState, onEvent: (Deta
             rotulo = "Instrumento",
             texto = state.instrumento?.rotulo ?: "Escolha um instrumento",
             preenchido = state.instrumento != null,
-            icone = PingoIcons.Wallet,
+            icone = PingoIcons.CreditCard,
             testTag = "campo-instrumento-detalhe",
             erro = CampoDoDetalhe.INSTRUMENTO in state.erros || state.semInstrumentos,
             mensagem = RotulosDoDetalhe.mensagemDoCampo(CampoDoDetalhe.INSTRUMENTO, state)
@@ -301,7 +293,7 @@ private fun CampoDeDataDoDetalhe(state: DetalheDoLancamentoUiState, onEvent: (De
             rotulo = "Data",
             texto = RotulosDoDetalhe.dataEHora(state.dataHora, zona),
             preenchido = true,
-            icone = PingoIcons.Calendar,
+            icone = PingoIcons.CalendarDays,
             testTag = "campo-data-detalhe",
         ),
         onClick = { onEvent(DetalheDoLancamentoEvent.AbrirCalendario) },
@@ -325,6 +317,8 @@ private fun CampoDeEstabelecimentoDoDetalhe(state: DetalheDoLancamentoUiState, o
 
 @Composable
 private fun LinhaDoEstabelecimentoDoDetalhe(state: DetalheDoLancamentoUiState, onEvent: (DetalheDoLancamentoEvent) -> Unit) {
+    val icone = if (state.origem is OrigemDoLancamentoUi.Manual) PingoIcons.Pencil else PingoIcons.Store
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -336,7 +330,7 @@ private fun LinhaDoEstabelecimentoDoDetalhe(state: DetalheDoLancamentoUiState, o
         verticalAlignment = Alignment.CenterVertically,
     ) {
         PingoIcon(
-            imageVector = PingoIcons.Tag,
+            imageVector = icone,
             contentDescription = null,
             modifier = Modifier.size(22.dp),
             tint = PingoTheme.colors.onSurfaceVariant,
@@ -347,13 +341,26 @@ private fun LinhaDoEstabelecimentoDoDetalhe(state: DetalheDoLancamentoUiState, o
             modifier = Modifier.weight(1f),
         )
         if (state.estabelecimento.isNotEmpty()) {
-            BotaoDeIcone(
-                icone = PingoIcons.X,
-                descricao = "Limpar estabelecimento",
-                testTag = "limpar-estabelecimento-detalhe",
-                onClick = { onEvent(DetalheDoLancamentoEvent.EstabelecimentoAlterado("")) },
-            )
+            BotaoLimparDoDetalhe { onEvent(DetalheDoLancamentoEvent.EstabelecimentoAlterado("")) }
         }
+    }
+}
+
+@Composable
+private fun BotaoLimparDoDetalhe(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .testTag("limpar-estabelecimento-detalhe")
+            .clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        PingoIcon(
+            imageVector = PingoIcons.X,
+            contentDescription = "Limpar estabelecimento",
+            modifier = Modifier.size(18.dp),
+            tint = PingoTheme.colors.onSurfaceVariant,
+        )
     }
 }
 
@@ -382,7 +389,13 @@ private fun EntradaDoEstabelecimento(texto: String, onTexto: (String) -> Unit, m
 
 @Composable
 private fun CartaoDeOrigem(origem: OrigemDoLancamentoUi, zona: ZoneId, agora: Instant) {
-    PingoCard(modifier = Modifier.testTag("origem-lancamento")) {
+    val shape = RoundedCornerShape(PingoRadius.xl)
+    PingoCard(
+        modifier = Modifier
+            .testTag("origem-lancamento")
+            .pingoElevation(level = PingoElevationLevel.Level1, shape = shape),
+        gap = PingoSpacing.md,
+    ) {
         PingoText(text = "ORIGEM", style = PingoTheme.typography.overline, color = PingoTheme.colors.onSurfaceVariant)
         when (origem) {
             is OrigemDoLancamentoUi.Manual -> OrigemManual(origem = origem, zona = zona)
@@ -394,19 +407,13 @@ private fun CartaoDeOrigem(origem: OrigemDoLancamentoUi, zona: ZoneId, agora: In
 @Composable
 private fun OrigemManual(origem: OrigemDoLancamentoUi.Manual, zona: ZoneId) {
     Row(horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md), verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .background(PingoTheme.colors.primaryContainer, CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            PingoIcon(
-                imageVector = PingoIcons.FileText,
-                contentDescription = null,
-                modifier = Modifier.size(22.dp),
-                tint = PingoTheme.colors.onPrimaryContainer,
-            )
-        }
+        CategoryAvatar(
+            icon = PingoIcons.Pencil,
+            tone = PingoCategoryTone.Default,
+            size = 44.dp,
+            iconSize = 20.dp,
+            cornerRadius = PingoRadius.md,
+        )
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             PingoText(text = "Manual", style = PingoTheme.typography.bodyStrong, color = PingoTheme.colors.onBackground)
             PingoText(
@@ -421,18 +428,7 @@ private fun OrigemManual(origem: OrigemDoLancamentoUi.Manual, zona: ZoneId) {
 @Composable
 private fun OrigemCapturada(origem: OrigemDoLancamentoUi.Capturado, zona: ZoneId, agora: Instant) {
     Row(horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md), verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .background(PingoTheme.colors.primary, CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            PingoText(
-                text = RotulosDoDetalhe.letrasDaInstituicao(origem.instituicao),
-                style = PingoTheme.typography.label,
-                color = PingoTheme.colors.onPrimary,
-            )
-        }
+        AvatarDaInstituicao(instituicao = origem.instituicao, size = 44.dp)
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             PingoText(
                 text = RotulosDoDetalhe.nomeDaInstituicao(origem.instituicao),
@@ -446,13 +442,20 @@ private fun OrigemCapturada(origem: OrigemDoLancamentoUi.Capturado, zona: ZoneId
                 color = PingoTheme.colors.onSurfaceVariant,
             )
         }
-        SeloDeConfianca(origem = origem)
+        PingoStatusTag(
+            label = RotulosDoDetalhe.confianca(origem.confianca),
+            containerColor = PingoTheme.colors.incomeContainer,
+            contentColor = PingoTheme.colors.income,
+            dotColor = PingoTheme.colors.income,
+            modifier = Modifier.testTag("origem-confianca"),
+        )
     }
     TextoInterpretado(origem = origem)
 }
 
 @Composable
 private fun TextoInterpretado(origem: OrigemDoLancamentoUi.Capturado) {
+    val forma = RoundedCornerShape(PingoRadius.md)
     PingoText(
         text = "Texto interpretado (fica só neste aparelho)",
         style = PingoTheme.typography.bodySmall,
@@ -461,7 +464,8 @@ private fun TextoInterpretado(origem: OrigemDoLancamentoUi.Capturado) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(PingoTheme.colors.surfaceVariant, RoundedCornerShape(PingoRadius.md))
+            .background(PingoTheme.colors.surfaceVariant, forma)
+            .border(width = 1.dp, color = PingoTheme.colors.outlineVariant, shape = forma)
             .padding(PingoSpacing.md)
             .testTag("origem-texto"),
     ) {
@@ -474,31 +478,9 @@ private fun TextoInterpretado(origem: OrigemDoLancamentoUi.Capturado) {
 }
 
 @Composable
-private fun SeloDeConfianca(origem: OrigemDoLancamentoUi.Capturado) {
-    Row(
-        modifier = Modifier
-            .background(PingoTheme.colors.incomeContainer, RoundedCornerShape(PingoRadius.full))
-            .padding(horizontal = PingoSpacing.sm, vertical = 2.dp)
-            .testTag("origem-confianca"),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .background(PingoTheme.colors.income, CircleShape),
-        )
-        PingoText(
-            text = RotulosDoDetalhe.confianca(origem.confianca),
-            style = PingoTheme.typography.labelSmall,
-            color = PingoTheme.colors.income,
-        )
-    }
-}
-
-@Composable
 private fun CartaoDoPar(state: DetalheDoLancamentoUiState, zona: ZoneId) {
-    PingoCard {
+    val shape = RoundedCornerShape(PingoRadius.xl)
+    PingoCard(modifier = Modifier.pingoElevation(level = PingoElevationLevel.Level1, shape = shape)) {
         PingoText(
             text = "PAR DA TRANSFERÊNCIA",
             style = PingoTheme.typography.overline,
@@ -516,6 +498,15 @@ private fun CartaoDoPar(state: DetalheDoLancamentoUiState, zona: ZoneId) {
             LinhaDoPar(par = par, zona = zona)
         }
     }
+    if (state.par != null) {
+        PingoBanner(
+            title = "Duas notificações, um lançamento",
+            description = "O Pingo juntou a saída e a entrada para não contar em dobro.",
+            tone = PingoBannerTone.Info,
+            icon = PingoIcons.Bell,
+            showTrailingChevron = false,
+        )
+    }
 }
 
 @Composable
@@ -525,7 +516,13 @@ private fun LinhaDoPar(par: ParDaTransferenciaUi, zona: ZoneId) {
         horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconeDoPar()
+        CategoryAvatar(
+            icon = PingoIcons.ArrowLeftRight,
+            tone = PingoCategoryTone.Transfer,
+            size = 44.dp,
+            iconSize = 22.dp,
+            cornerRadius = PingoRadius.md,
+        )
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             PingoText(
                 text = RotulosDoDetalhe.tituloDoPar(par.entrada, par.rotuloDoVinculo),
@@ -547,23 +544,6 @@ private fun LinhaDoPar(par: ParDaTransferenciaUi, zona: ZoneId) {
             style = PingoTheme.typography.amount,
             color = PingoTheme.colors.transfer,
             maxLines = 1,
-        )
-    }
-}
-
-@Composable
-private fun IconeDoPar() {
-    Box(
-        modifier = Modifier
-            .size(44.dp)
-            .background(PingoTheme.colors.primaryContainer, RoundedCornerShape(PingoRadius.md)),
-        contentAlignment = Alignment.Center,
-    ) {
-        PingoIcon(
-            imageVector = PingoIcons.ArrowRightLeft,
-            contentDescription = null,
-            modifier = Modifier.size(22.dp),
-            tint = PingoTheme.colors.onPrimaryContainer,
         )
     }
 }

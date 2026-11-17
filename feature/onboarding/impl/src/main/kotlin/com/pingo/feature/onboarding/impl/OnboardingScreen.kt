@@ -41,10 +41,12 @@ import com.pingo.core.designsystem.component.PingoButtonSize
 import com.pingo.core.designsystem.component.PingoButtonType
 import com.pingo.core.designsystem.component.PingoCard
 import com.pingo.core.designsystem.component.PingoCheckbox
+import com.pingo.core.designsystem.component.PingoElevationLevel
 import com.pingo.core.designsystem.component.PingoIcon
 import com.pingo.core.designsystem.component.PingoMascot
 import com.pingo.core.designsystem.component.PingoSpinner
 import com.pingo.core.designsystem.component.PingoText
+import com.pingo.core.designsystem.component.pingoElevation
 import com.pingo.core.designsystem.icon.PingoIcons
 import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
@@ -223,6 +225,7 @@ private fun GoogleSignInButton(loading: Boolean, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
+            .pingoElevation(level = PingoElevationLevel.Level1, shape = shape)
             .background(color = PingoTheme.colors.surface, shape = shape)
             .border(width = 1.5.dp, color = PingoTheme.colors.outline, shape = shape)
             .clickable(
@@ -266,8 +269,8 @@ private fun PrivacyHint() {
         PingoIcon(
             imageVector = PingoIcons.Lock,
             contentDescription = null,
-            modifier = Modifier.size(24.dp),
-            tint = PingoTheme.colors.onBackground,
+            modifier = Modifier.size(18.dp),
+            tint = PingoTheme.colors.onSurfaceVariant,
         )
 
         Spacer(modifier = Modifier.size(PingoSpacing.sm))
@@ -353,7 +356,12 @@ private fun ConsentActions(state: OnboardingUiState, onAcceptConsent: () -> Unit
 
 @Composable
 private fun ConsentInfoCard() {
-    PingoCard {
+    PingoCard(
+        modifier = Modifier.pingoElevation(
+            level = PingoElevationLevel.Level1,
+            shape = RoundedCornerShape(PingoRadius.xl),
+        ),
+    ) {
         InformacaoComIcone(
             icon = PingoIcons.ShieldCheck,
             titulo = "O que o Pingo lê",

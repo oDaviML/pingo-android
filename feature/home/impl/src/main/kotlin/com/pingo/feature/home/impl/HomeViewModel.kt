@@ -127,6 +127,7 @@ class HomeViewModel @Inject constructor(
 
         mutableUiState.value = HomeUiState(
             carregando = !base.carregado,
+            saudacao = saudacaoAtual(),
             capturaAutomatica = capturaAutomatica,
             situacao = situacao,
             motivo = motivo,
@@ -154,6 +155,19 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun mesAtual(): YearMonth = YearMonth.from(clock.instant().atZone(clock.zone))
+
+    private fun saudacaoAtual(): String = when (clock.instant().atZone(clock.zone).hour) {
+        in HORA_INICIO_DIA..HORA_FIM_DIA -> "Bom dia,"
+        in HORA_INICIO_TARDE..HORA_FIM_TARDE -> "Boa tarde,"
+        else -> "Boa noite,"
+    }
+
+    private companion object {
+        const val HORA_INICIO_DIA = 5
+        const val HORA_FIM_DIA = 11
+        const val HORA_INICIO_TARDE = 12
+        const val HORA_FIM_TARDE = 17
+    }
 
     private data class BaseDoInicio(
         val carregado: Boolean = false,

@@ -2,28 +2,31 @@ package com.pingo.feature.home.impl
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.pingo.core.datastore.MotivoParada
-import com.pingo.core.designsystem.component.PingoButton
-import com.pingo.core.designsystem.component.PingoButtonSize
-import com.pingo.core.designsystem.component.PingoButtonType
-import com.pingo.core.designsystem.component.PingoCard
+import com.pingo.core.designsystem.component.PingoBanner
+import com.pingo.core.designsystem.component.PingoBannerTone
 import com.pingo.core.designsystem.component.PingoIcon
 import com.pingo.core.designsystem.component.PingoText
 import com.pingo.core.designsystem.icon.PingoIcons
+import com.pingo.core.designsystem.theme.PingoLayout
 import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
@@ -31,112 +34,85 @@ import com.pingo.core.notifications.SituacaoDaCaptura
 
 @Composable
 internal fun AvisoDeRevisao(quantidade: Int, onAbrir: () -> Unit) {
-    PingoCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag("aviso-revisao")
-            .clickable(role = Role.Button, onClick = onAbrir),
-        contentPadding = PingoSpacing.lg,
-        gap = 0.dp,
-    ) {
-        LinhaDoAvisoDeRevisao(quantidade)
-    }
-}
-
-@Composable
-private fun LinhaDoAvisoDeRevisao(quantidade: Int) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        IconeDoAvisoDeRevisao()
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            PingoText(
-                text = textoDaQuantidade(quantidade),
-                style = PingoTheme.typography.bodyStrong,
-                color = PingoTheme.colors.brand,
-            )
-            PingoText(
-                text = "Toque para conferir o que o Pingo não teve certeza.",
-                style = PingoTheme.typography.bodySmall,
-                color = PingoTheme.colors.onSurfaceVariant,
-            )
-        }
-        PingoIcon(
-            imageVector = PingoIcons.ChevronRight,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            tint = PingoTheme.colors.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun IconeDoAvisoDeRevisao() {
-    Box(
-        modifier = Modifier
-            .size(40.dp)
-            .background(PingoTheme.colors.primaryContainer, RoundedCornerShape(PingoRadius.full)),
-        contentAlignment = Alignment.Center,
-    ) {
-        PingoIcon(
-            imageVector = PingoIcons.CircleAlert,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            tint = PingoTheme.colors.onPrimaryContainer,
-        )
-    }
+    PingoBanner(
+        title = textoDaQuantidade(quantidade),
+        description = "Toque para conferir o que o Pingo não teve certeza.",
+        tone = PingoBannerTone.Info,
+        icon = PingoIcons.Bell,
+        onClick = onAbrir,
+        modifier = Modifier.testTag("aviso-revisao"),
+    )
 }
 
 @Composable
 internal fun AvisoDeCapturaParada(descricao: String, onCorrigir: () -> Unit) {
-    PingoCard(
+    val colors = PingoTheme.colors
+    val shape = RoundedCornerShape(PingoRadius.lg)
+
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .testTag("aviso-captura-parada"),
-        contentPadding = PingoSpacing.lg,
-        gap = PingoSpacing.md,
-    ) {
-        CabecalhoDaCapturaParada(descricao)
-        PingoButton(
-            text = "Corrigir",
-            onClick = onCorrigir,
-            type = PingoButtonType.Tonal,
-            size = PingoButtonSize.Small,
-        )
-    }
-}
-
-@Composable
-private fun CabecalhoDaCapturaParada(descricao: String) {
-    Row(
+            .heightIn(min = PingoLayout.minTouchTarget)
+            .testTag("aviso-captura-parada")
+            .clip(shape)
+            .background(color = colors.warningContainer, shape = shape)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                role = Role.Button,
+                onClick = onCorrigir,
+            )
+            .padding(start = PingoSpacing.lg, end = 14.dp, top = 14.dp, bottom = 14.dp),
         horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         PingoIcon(
             imageVector = PingoIcons.TriangleAlert,
             contentDescription = null,
-            modifier = Modifier.size(24.dp),
-            tint = PingoTheme.colors.warning,
+            modifier = Modifier.size(22.dp),
+            tint = colors.onWarningContainer,
         )
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+        TextosDaCapturaParada(descricao = descricao, modifier = Modifier.weight(1f))
+        AcaoDeCorrigir()
+    }
+}
+
+@Composable
+private fun TextosDaCapturaParada(descricao: String, modifier: Modifier = Modifier) {
+    val colors = PingoTheme.colors
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        PingoText(text = "Captura parada", style = PingoTheme.typography.label, color = colors.onWarningContainer)
+        PingoText(text = descricao, style = PingoTheme.typography.caption, color = colors.onWarningContainer)
+    }
+}
+
+@Composable
+private fun AcaoDeCorrigir() {
+    val colors = PingoTheme.colors
+    val shape = RoundedCornerShape(PingoRadius.sm)
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .background(color = colors.warning.copy(alpha = 0.16f), shape = shape)
+                .padding(horizontal = PingoSpacing.sm, vertical = PingoSpacing.xs),
         ) {
             PingoText(
-                text = "Captura parada",
-                style = PingoTheme.typography.bodyStrong,
-                color = PingoTheme.colors.warning,
-            )
-            PingoText(
-                text = descricao,
-                style = PingoTheme.typography.bodySmall,
-                color = PingoTheme.colors.onSurfaceVariant,
+                text = "Corrigir",
+                style = PingoTheme.typography.labelSmall,
+                color = colors.onWarningContainer,
+                maxLines = 1,
             )
         }
+        PingoIcon(
+            imageVector = PingoIcons.ChevronRight,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint = colors.onWarningContainer,
+        )
     }
 }
 

@@ -280,12 +280,26 @@ class HomeViewModelTest {
         assertFalse(viewModel.uiState.value.capturaParada)
     }
 
+    @Test
+    fun `saudacao segue o horario do relogio`() {
+        val manha = criarViewModel(clock = Clock.fixed(Instant.parse("2026-11-10T09:00:00Z"), ZoneOffset.UTC))
+        val tarde = criarViewModel(clock = Clock.fixed(Instant.parse("2026-11-10T14:00:00Z"), ZoneOffset.UTC))
+        val noite = criarViewModel(clock = Clock.fixed(Instant.parse("2026-11-10T21:00:00Z"), ZoneOffset.UTC))
+        val madrugada = criarViewModel(clock = Clock.fixed(Instant.parse("2026-11-10T03:00:00Z"), ZoneOffset.UTC))
+
+        assertEquals("Bom dia,", manha.uiState.value.saudacao)
+        assertEquals("Boa tarde,", tarde.uiState.value.saudacao)
+        assertEquals("Boa noite,", noite.uiState.value.saudacao)
+        assertEquals("Boa noite,", madrugada.uiState.value.saudacao)
+    }
+
     private fun criarViewModel(
         lancamentos: List<Lancamento> = emptyList(),
         categorias: List<Categoria> = emptyList(),
         instrumentos: List<Instrumento> = listOf(instrumentoDeTeste()),
         acesso: FakeAcessoNotificacoes = FakeAcessoNotificacoes(concedido = true),
         saude: FakeSaudeDaCaptura = FakeSaudeDaCaptura(),
+        clock: Clock = relogio,
     ): HomeViewModel = HomeViewModel(
         acessoNotificacoes = acesso,
         saudeDaCaptura = saude,
@@ -293,7 +307,7 @@ class HomeViewModelTest {
         contaRepository = FakeContaRepository(listOf(contaDeTeste())),
         instrumentoRepository = FakeInstrumentoRepository(instrumentos),
         categoriaRepository = FakeCategoriaRepository(categorias),
-        clock = relogio,
+        clock = clock,
     )
 
     private companion object {

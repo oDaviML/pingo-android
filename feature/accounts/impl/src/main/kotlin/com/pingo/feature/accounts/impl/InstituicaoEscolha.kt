@@ -1,6 +1,7 @@
 package com.pingo.feature.accounts.impl
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,15 +21,17 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.pingo.core.designsystem.component.PingoCard
-import com.pingo.core.designsystem.component.PingoCheckboxMark
+import com.pingo.core.designsystem.component.PingoElevationLevel
 import com.pingo.core.designsystem.component.PingoText
+import com.pingo.core.designsystem.component.pingoElevation
 import com.pingo.core.designsystem.theme.PingoLayout
+import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
 import com.pingo.core.model.InstituicaoFinanceira
+import com.pingo.core.ui.AvatarDaInstituicao
 import com.pingo.core.ui.contas.descricaoDeExibicao
 import com.pingo.core.ui.contas.instituicoesFinanceiras
-import com.pingo.core.ui.contas.letrasDeExibicao
 import com.pingo.core.ui.contas.nomeDeExibicao
 
 @Composable
@@ -51,24 +55,34 @@ internal fun InstituicaoEscolha(
             color = PingoTheme.colors.onSurfaceVariant,
         )
 
-        PingoCard(contentPadding = 0.dp, gap = 0.dp) {
-            instituicoesFinanceiras.forEachIndexed { indice, instituicao ->
-                if (indice > 0) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(1.dp)
-                            .background(PingoTheme.colors.outlineVariant),
-                    )
-                }
+        ListaDeInstituicoes(selecionada = selecionada, habilitado = habilitado, onSelecionar = onSelecionar)
+    }
+}
 
-                InstituicaoItem(
-                    instituicao = instituicao,
-                    selecionada = instituicao == selecionada,
-                    habilitado = habilitado,
-                    onSelecionar = { onSelecionar(instituicao) },
+@Composable
+private fun ListaDeInstituicoes(selecionada: InstituicaoFinanceira, habilitado: Boolean, onSelecionar: (InstituicaoFinanceira) -> Unit) {
+    val shape = RoundedCornerShape(PingoRadius.xl)
+    PingoCard(
+        modifier = Modifier.pingoElevation(level = PingoElevationLevel.Level1, shape = shape),
+        contentPadding = 0.dp,
+        gap = 0.dp,
+    ) {
+        instituicoesFinanceiras.forEachIndexed { indice, instituicao ->
+            if (indice > 0) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(PingoTheme.colors.outlineVariant),
                 )
             }
+
+            InstituicaoItem(
+                instituicao = instituicao,
+                selecionada = instituicao == selecionada,
+                habilitado = habilitado,
+                onSelecionar = { onSelecionar(instituicao) },
+            )
         }
     }
 }
@@ -85,18 +99,7 @@ private fun InstituicaoItem(instituicao: InstituicaoFinanceira, selecionada: Boo
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
     ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .background(color = PingoTheme.colors.primaryContainer, shape = CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            PingoText(
-                text = instituicao.letrasDeExibicao(),
-                style = PingoTheme.typography.label,
-                color = PingoTheme.colors.onPrimaryContainer,
-            )
-        }
+        AvatarDaInstituicao(instituicao = instituicao, size = 40.dp)
 
         Column(modifier = Modifier.weight(1f)) {
             PingoText(
@@ -111,6 +114,30 @@ private fun InstituicaoItem(instituicao: InstituicaoFinanceira, selecionada: Boo
             )
         }
 
-        PingoCheckboxMark(checked = selecionada)
+        RadioCircleMark(selecionada = selecionada)
+    }
+}
+
+@Composable
+private fun RadioCircleMark(selecionada: Boolean) {
+    val colors = PingoTheme.colors
+
+    Box(
+        modifier = Modifier
+            .size(22.dp)
+            .border(
+                width = 2.dp,
+                color = if (selecionada) colors.primary else colors.outline,
+                shape = CircleShape,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (selecionada) {
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .background(color = colors.primary, shape = CircleShape),
+            )
+        }
     }
 }

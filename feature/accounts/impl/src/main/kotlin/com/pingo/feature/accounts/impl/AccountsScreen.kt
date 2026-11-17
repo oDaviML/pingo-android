@@ -12,6 +12,8 @@ fun AccountsScreen(
     onNovaConta: () -> Unit,
     onAbrirConta: (String) -> Unit,
     viewModel: AccountsViewModel = hiltViewModel(),
+    onOpenNovo: (() -> Unit)? = null,
+    mostrarBarraInferior: Boolean = true,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -21,5 +23,7 @@ fun AccountsScreen(
         onAbrirConta = onAbrirConta,
         onTentarDeNovo = viewModel::tentarDeNovo,
         onSelecionarAba = onSelecionarAba,
+        onOpenNovo = onOpenNovo,
+        mostrarBarraInferior = mostrarBarraInferior,
     )
 }

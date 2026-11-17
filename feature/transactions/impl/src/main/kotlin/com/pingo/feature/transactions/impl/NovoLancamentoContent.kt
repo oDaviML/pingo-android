@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -27,13 +26,13 @@ import androidx.compose.ui.unit.dp
 import com.pingo.core.data.manual.CampoDeLancamentoManual
 import com.pingo.core.designsystem.component.PingoButton
 import com.pingo.core.designsystem.component.PingoButtonSize
-import com.pingo.core.designsystem.component.PingoIcon
+import com.pingo.core.designsystem.component.PingoIconButton
+import com.pingo.core.designsystem.component.PingoIconButtonStyle
 import com.pingo.core.designsystem.component.PingoText
 import com.pingo.core.designsystem.icon.PingoIcons
 import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
-import com.pingo.core.ui.Valores
 
 @Composable
 fun NovoLancamentoContent(
@@ -78,24 +77,17 @@ private fun CabecalhoDoNovoLancamento(state: NovoLancamentoUiState, onEvent: (No
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = PingoSpacing.lg, vertical = PingoSpacing.md),
-        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
+            .padding(start = PingoSpacing.sm, end = PingoSpacing.md, top = PingoSpacing.sm, bottom = PingoSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .testTag("fechar-novo-lancamento")
-                .clickable(role = Role.Button, onClick = onFechar),
-            contentAlignment = Alignment.Center,
-        ) {
-            PingoIcon(
-                imageVector = PingoIcons.X,
-                contentDescription = "Fechar",
-                modifier = Modifier.size(24.dp),
-                tint = PingoTheme.colors.onBackground,
-            )
-        }
+        PingoIconButton(
+            icon = PingoIcons.X,
+            contentDescription = "Fechar",
+            onClick = onFechar,
+            style = PingoIconButtonStyle.Standard,
+            modifier = Modifier.testTag("fechar-novo-lancamento"),
+        )
         PingoText(
             text = "Novo lançamento",
             style = PingoTheme.typography.subtitle,
@@ -118,7 +110,7 @@ private fun ColunaDeCampos(state: NovoLancamentoUiState, onEvent: (NovoLancament
     Column(
         modifier = modifier
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = PingoSpacing.lg),
+            .padding(horizontal = PingoSpacing.xl),
         verticalArrangement = Arrangement.spacedBy(PingoSpacing.md),
     ) {
         SeletorDeTipo(tipo = state.tipo, onSelecionar = { onEvent(NovoLancamentoEvent.TipoSelecionado(it)) })
@@ -141,7 +133,7 @@ private fun CamposDeDespesaOuReceita(state: NovoLancamentoUiState, onEvent: (Nov
             rotulo = "Instrumento",
             texto = state.instrumento?.rotulo ?: "Escolha um instrumento",
             preenchido = state.instrumento != null,
-            icone = PingoIcons.Wallet,
+            icone = PingoIcons.CreditCard,
             testTag = "campo-instrumento",
             erro = state.semInstrumentos || CampoDeLancamentoManual.INSTRUMENTO in state.erros,
             mensagem = RotulosDoNovoLancamento.mensagemDoInstrumento(state),
@@ -233,7 +225,12 @@ private fun AbaDeTipo(tipo: TipoDoLancamentoManual, selecionado: Boolean, onClic
 @Composable
 private fun BlocoDeValor(state: NovoLancamentoUiState) {
     val erro = CampoDeLancamentoManual.VALOR in state.erros
-    val cor = if (erro) PingoTheme.colors.expense else PingoTheme.colors.onSurfaceVariant
+    val corLegenda = if (erro) PingoTheme.colors.expense else PingoTheme.colors.onSurfaceVariant
+    val corValor = when {
+        erro -> PingoTheme.colors.expense
+        state.valorCentavos == 0L -> PingoTheme.colors.onSurfaceVariant
+        else -> PingoTheme.colors.brand
+    }
 
     Column(
         modifier = Modifier
@@ -247,16 +244,12 @@ private fun BlocoDeValor(state: NovoLancamentoUiState) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(PingoSpacing.xs),
     ) {
-        PingoText(text = "Valor", style = PingoTheme.typography.bodySmall, color = cor)
-        PingoText(
-            text = Valores.formatar(state.valorCentavos),
-            style = PingoTheme.typography.amountLarge,
-            color = if (erro) PingoTheme.colors.expense else PingoTheme.colors.primary,
-        )
+        PingoText(text = "Valor", style = PingoTheme.typography.bodySmall, color = corLegenda)
+        ValorEmDestaque(valorCentavos = state.valorCentavos, cor = corValor)
         PingoText(
             text = RotulosDoNovoLancamento.valor(state),
             style = PingoTheme.typography.caption,
-            color = cor,
+            color = corLegenda,
             textAlign = TextAlign.Center,
         )
     }

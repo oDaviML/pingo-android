@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,32 +22,41 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.pingo.core.designsystem.component.AbaInferior
 import com.pingo.core.designsystem.component.PingoBottomBar
-import com.pingo.core.designsystem.component.PingoButton
-import com.pingo.core.designsystem.component.PingoButtonType
-import com.pingo.core.designsystem.component.PingoChoiceChip
+import com.pingo.core.designsystem.component.PingoElevationLevel
 import com.pingo.core.designsystem.component.PingoIcon
-import com.pingo.core.designsystem.component.PingoMascot
+import com.pingo.core.designsystem.component.PingoLargeTopBar
+import com.pingo.core.designsystem.component.PingoSkeletonList
 import com.pingo.core.designsystem.component.PingoText
+import com.pingo.core.designsystem.component.pingoElevation
 import com.pingo.core.designsystem.icon.PingoIcons
+import com.pingo.core.designsystem.theme.PingoLayout
 import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.ui.EstadoVazioCard
 import com.pingo.core.ui.LancamentoItem
 import com.pingo.core.ui.Valores
 import kotlinx.coroutines.delay
 
+@Suppress("LongParameterList")
 @Composable
 fun TransactionsContent(
     state: TransactionsUiState,
@@ -55,6 +65,7 @@ fun TransactionsContent(
     onOpenNovo: () -> Unit,
     onSelecionarAba: (AbaInferior) -> Unit,
     modifier: Modifier = Modifier,
+    mostrarBarraInferior: Boolean = true,
 ) {
     Box(
         modifier = modifier
@@ -68,11 +79,13 @@ fun TransactionsContent(
                 onOpenDetalhe = onOpenDetalhe,
                 modifier = Modifier.weight(1f),
             )
-            PingoBottomBar(
-                selecionada = AbaInferior.LANCAMENTOS,
-                onSelecionar = onSelecionarAba,
-                onNovo = onOpenNovo,
-            )
+            if (mostrarBarraInferior) {
+                PingoBottomBar(
+                    selecionada = AbaInferior.LANCAMENTOS,
+                    onSelecionar = onSelecionarAba,
+                    onNovo = onOpenNovo,
+                )
+            }
         }
 
         if (state.filtrosVisiveis) {
@@ -109,7 +122,7 @@ private fun SecaoDaLista(
                     onDispensar = { onEvent(TransactionsEvent.DispensarMensagem) },
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(PingoSpacing.lg),
+                        .padding(PingoSpacing.xl),
                 )
             }
         }
@@ -118,24 +131,22 @@ private fun SecaoDaLista(
 
 @Composable
 private fun CabecalhoDaTela(state: TransactionsUiState, onEvent: (TransactionsEvent) -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = PingoSpacing.lg),
-        verticalArrangement = Arrangement.spacedBy(PingoSpacing.md),
-    ) {
-        PingoText(
-            text = "Lançamentos",
-            style = PingoTheme.typography.display,
-            modifier = Modifier.padding(top = PingoSpacing.md, bottom = PingoSpacing.xs),
-        )
-        CampoDeBusca(
-            texto = state.busca,
-            filtrosAtivos = state.filtrosAtivos,
-            onTexto = { onEvent(TransactionsEvent.BuscaAlterada(it)) },
-            onAbrirFiltros = { onEvent(TransactionsEvent.AbrirFiltros) },
-        )
-        ChipsDeFiltrosAtivos(state = state, onAbrirFiltros = { onEvent(TransactionsEvent.AbrirFiltros) })
+    Column(modifier = Modifier.fillMaxWidth()) {
+        PingoLargeTopBar(title = "Lançamentos")
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = PingoSpacing.xl),
+            verticalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
+        ) {
+            CampoDeBusca(
+                texto = state.busca,
+                filtrosAtivos = state.filtrosAtivos,
+                onTexto = { onEvent(TransactionsEvent.BuscaAlterada(it)) },
+                onAbrirFiltros = { onEvent(TransactionsEvent.AbrirFiltros) },
+            )
+            ChipsDeFiltrosAtivos(state = state, onAbrirFiltros = { onEvent(TransactionsEvent.AbrirFiltros) })
+        }
     }
 }
 
@@ -157,12 +168,16 @@ private fun CampoDeBusca(texto: String, filtrosAtivos: Int, onTexto: (String) ->
 private fun CampoDeTextoDeBusca(texto: String, onTexto: (String) -> Unit, modifier: Modifier = Modifier) {
     val cores = PingoTheme.colors
     val forma = RoundedCornerShape(PingoRadius.md)
+    var emFoco by remember { mutableStateOf(false) }
+    val fundo = if (emFoco || texto.isNotEmpty()) cores.surface else cores.surfaceVariant
+    val borda = if (emFoco) cores.primary else Color.Transparent
 
     Row(
         modifier = modifier
             .heightIn(min = 48.dp)
-            .background(color = cores.surface, shape = forma)
-            .border(width = 1.5.dp, color = cores.outline, shape = forma)
+            .clip(forma)
+            .background(color = fundo, shape = forma)
+            .then(if (borda == Color.Transparent) Modifier else Modifier.border(width = 1.5.dp, color = borda, shape = forma))
             .padding(horizontal = PingoSpacing.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -170,9 +185,14 @@ private fun CampoDeTextoDeBusca(texto: String, onTexto: (String) -> Unit, modifi
             imageVector = PingoIcons.Search,
             contentDescription = null,
             modifier = Modifier.size(20.dp),
-            tint = cores.onSurfaceVariant,
+            tint = if (emFoco) cores.primary else cores.onSurfaceVariant,
         )
-        CampoDeTexto(texto = texto, onTexto = onTexto, modifier = Modifier.weight(1f))
+        CampoDeTexto(
+            texto = texto,
+            onTexto = onTexto,
+            onFoco = { emFoco = it },
+            modifier = Modifier.weight(1f),
+        )
         if (texto.isNotEmpty()) {
             BotaoLimparBusca(onLimpar = { onTexto("") })
         }
@@ -180,13 +200,14 @@ private fun CampoDeTextoDeBusca(texto: String, onTexto: (String) -> Unit, modifi
 }
 
 @Composable
-private fun CampoDeTexto(texto: String, onTexto: (String) -> Unit, modifier: Modifier = Modifier) {
+private fun CampoDeTexto(texto: String, onTexto: (String) -> Unit, onFoco: (Boolean) -> Unit, modifier: Modifier = Modifier) {
     val cores = PingoTheme.colors
 
     BasicTextField(
         value = texto,
         onValueChange = onTexto,
         modifier = modifier
+            .onFocusChanged { onFoco(it.isFocused) }
             .padding(horizontal = PingoSpacing.sm)
             .semantics { contentDescription = "Buscar lançamentos" },
         textStyle = PingoTheme.typography.body.copy(color = cores.onBackground),
@@ -228,14 +249,20 @@ private fun BotaoLimparBusca(onLimpar: () -> Unit) {
 @Composable
 private fun BotaoDeFiltros(filtrosAtivos: Int, onAbrirFiltros: () -> Unit, forma: Shape) {
     val cores = PingoTheme.colors
+    val ativo = filtrosAtivos > 0
 
     Box(
         modifier = Modifier
             .size(48.dp)
             .testTag("filtros-botao")
-            .background(color = if (filtrosAtivos > 0) cores.primaryContainer else cores.surface, shape = forma)
-            .border(width = 1.5.dp, color = if (filtrosAtivos > 0) cores.primary else cores.outline, shape = forma)
-            .clickable(onClick = onAbrirFiltros)
+            .clip(forma)
+            .background(color = if (ativo) cores.primaryContainer else cores.surfaceVariant, shape = forma)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                role = Role.Button,
+                onClick = onAbrirFiltros,
+            )
             .semantics { contentDescription = "Filtros" },
         contentAlignment = Alignment.Center,
     ) {
@@ -243,14 +270,14 @@ private fun BotaoDeFiltros(filtrosAtivos: Int, onAbrirFiltros: () -> Unit, forma
             imageVector = PingoIcons.SlidersHorizontal,
             contentDescription = null,
             modifier = Modifier.size(20.dp),
-            tint = if (filtrosAtivos > 0) cores.onPrimaryContainer else cores.onBackground,
+            tint = if (ativo) cores.onPrimaryContainer else cores.onSurfaceVariant,
         )
     }
 }
 
 @Composable
 private fun ChipsDeFiltrosAtivos(state: TransactionsUiState, onAbrirFiltros: () -> Unit) {
-    val rotulos = rotulosDosFiltros(state)
+    val itens = chipsDosFiltros(state)
 
     Row(
         modifier = Modifier
@@ -258,28 +285,82 @@ private fun ChipsDeFiltrosAtivos(state: TransactionsUiState, onAbrirFiltros: () 
             .horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
     ) {
-        rotulos.forEach { rotulo ->
-            PingoChoiceChip(text = rotulo, selected = true, onClick = onAbrirFiltros)
+        itens.forEach { item ->
+            ChipDeFiltroAtivo(rotulo = item.rotulo, comSeta = item.comSeta, onClick = onAbrirFiltros)
         }
     }
 }
 
-private fun rotulosDosFiltros(state: TransactionsUiState): List<String> = buildList {
-    add(state.filtros.mes?.let(RotuloDeMes::de) ?: "Todos os meses")
-    rotuloDoTipo(state.filtros.tipo)?.let(::add)
+@Composable
+private fun ChipDeFiltroAtivo(rotulo: String, comSeta: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .heightIn(min = PingoLayout.minTouchTarget)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                role = Role.Button,
+                onClick = onClick,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        ConteudoDoChipDeFiltro(rotulo = rotulo, comSeta = comSeta)
+    }
+}
+
+@Composable
+private fun ConteudoDoChipDeFiltro(rotulo: String, comSeta: Boolean) {
+    val colors = PingoTheme.colors
+    val shape = RoundedCornerShape(PingoRadius.full)
+
+    Row(
+        modifier = Modifier
+            .background(color = colors.primaryContainer, shape = shape)
+            .border(width = 1.5.dp, color = colors.primary, shape = shape)
+            .padding(horizontal = PingoSpacing.md, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        PingoIcon(
+            imageVector = PingoIcons.Check,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = colors.onPrimaryContainer,
+        )
+        PingoText(text = rotulo, style = PingoTheme.typography.label, color = colors.onPrimaryContainer, maxLines = 1)
+        if (comSeta) {
+            PingoIcon(
+                imageVector = PingoIcons.ChevronDown,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = colors.onPrimaryContainer,
+            )
+        }
+    }
+}
+
+private data class ChipDeFiltroItem(val rotulo: String, val comSeta: Boolean = false)
+
+private fun chipsDosFiltros(state: TransactionsUiState): List<ChipDeFiltroItem> = buildList {
+    add(ChipDeFiltroItem(rotulo = state.filtros.mes?.let(RotuloDeMes::de) ?: "Todos os meses", comSeta = true))
+    rotuloDoTipo(state.filtros.tipo)?.let { add(ChipDeFiltroItem(rotulo = it)) }
     state.filtros.vinculo?.let { vinculo ->
-        state.opcoesDeVinculo.firstOrNull { it.filtro == vinculo }?.rotulo?.let(::add)
+        state.opcoesDeVinculo.firstOrNull { it.filtro == vinculo }?.rotulo?.let {
+            add(ChipDeFiltroItem(rotulo = it, comSeta = true))
+        }
     }
     state.filtros.categoriaPublicId?.let { publicId ->
-        state.opcoesDeCategoria.firstOrNull { it.publicId == publicId }?.nome?.let(::add)
+        state.opcoesDeCategoria.firstOrNull { it.publicId == publicId }?.nome?.let {
+            add(ChipDeFiltroItem(rotulo = it))
+        }
     }
-    state.filtros.status?.let { add(rotuloDoStatus(it)) }
+    state.filtros.status?.let { add(ChipDeFiltroItem(rotulo = rotuloDoStatus(it))) }
 }
 
 @Composable
 private fun ConteudoDaLista(state: TransactionsUiState, onEvent: (TransactionsEvent) -> Unit, onOpenDetalhe: (String) -> Unit) {
     when {
-        state.carregando -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { PingoText(text = "Carregando…") }
+        state.carregando -> PingoSkeletonList(count = 6)
         state.estadoVazio != null -> EstadoVazio(estado = state.estadoVazio, onEvent = onEvent)
         else -> ListaDeDias(state = state, onEvent = onEvent, onOpenDetalhe = onOpenDetalhe)
     }
@@ -289,7 +370,7 @@ private fun ConteudoDaLista(state: TransactionsUiState, onEvent: (TransactionsEv
 private fun ListaDeDias(state: TransactionsUiState, onEvent: (TransactionsEvent) -> Unit, onOpenDetalhe: (String) -> Unit) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = PingoSpacing.lg, vertical = PingoSpacing.sm),
+        contentPadding = PaddingValues(horizontal = PingoSpacing.xl, vertical = PingoSpacing.sm),
         verticalArrangement = Arrangement.spacedBy(PingoSpacing.md),
     ) {
         state.dias.forEach { dia ->
@@ -333,6 +414,7 @@ private fun GrupoDoDia(dia: DiaDeLancamentos, onEvent: (TransactionsEvent) -> Un
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .pingoElevation(level = PingoElevationLevel.Level1, shape = forma)
             .clip(forma)
             .background(PingoTheme.colors.surface)
             .border(width = 1.dp, color = PingoTheme.colors.outlineVariant, shape = forma),
@@ -369,50 +451,24 @@ private fun GrupoDoDia(dia: DiaDeLancamentos, onEvent: (TransactionsEvent) -> Un
 @Composable
 private fun EstadoVazio(estado: EstadoVazioDosLancamentos, onEvent: (TransactionsEvent) -> Unit) {
     val nadaComFiltros = estado == EstadoVazioDosLancamentos.NADA_COM_OS_FILTROS
-    val forma = RoundedCornerShape(PingoRadius.xl)
 
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = PingoSpacing.xxxl)
-                .background(color = PingoTheme.colors.surface, shape = forma)
-                .border(width = 1.dp, color = PingoTheme.colors.outlineVariant, shape = forma)
-                .padding(PingoSpacing.xxl),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(PingoSpacing.md),
-        ) {
-            PingoMascot(width = 64.dp)
-            TextosDoEstadoVazio(nadaComFiltros = nadaComFiltros)
-            if (nadaComFiltros) {
-                PingoButton(
-                    text = "Limpar filtros",
-                    onClick = { onEvent(TransactionsEvent.LimparFiltros) },
-                    type = PingoButtonType.Tonal,
-                    fillWidth = true,
-                )
-            }
-        }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = PingoSpacing.xl),
+        contentAlignment = Alignment.Center,
+    ) {
+        EstadoVazioCard(
+            titulo = if (nadaComFiltros) "Nada com esses filtros" else "Nenhum lançamento ainda",
+            descricao = if (nadaComFiltros) {
+                "Tente outro mês ou limpe os filtros."
+            } else {
+                "Quando o Pingo capturar uma transação, ela aparece aqui."
+            },
+            acaoTexto = if (nadaComFiltros) "Limpar filtros" else null,
+            onAcao = if (nadaComFiltros) ({ onEvent(TransactionsEvent.LimparFiltros) }) else null,
+        )
     }
-}
-
-@Composable
-private fun TextosDoEstadoVazio(nadaComFiltros: Boolean) {
-    PingoText(
-        text = if (nadaComFiltros) "Nada com esses filtros" else "Nenhum lançamento ainda",
-        style = PingoTheme.typography.title,
-        textAlign = TextAlign.Center,
-    )
-    PingoText(
-        text = if (nadaComFiltros) {
-            "Tente outro mês ou limpe os filtros."
-        } else {
-            "Quando o Pingo capturar uma transação, ela aparece aqui."
-        },
-        style = PingoTheme.typography.bodySmall,
-        color = PingoTheme.colors.onSurfaceVariant,
-        textAlign = TextAlign.Center,
-    )
 }
 
 @Composable
@@ -423,6 +479,8 @@ private fun SnackbarDeExclusao(
     modifier: Modifier = Modifier,
 ) {
     val cores = PingoTheme.colors
+    val fundo = if (cores.isLight) cores.onBackground else Color(0xFF04222A)
+    val forma = RoundedCornerShape(PingoRadius.md)
 
     LaunchedEffect(mensagem.publicId) {
         delay(6000)
@@ -433,7 +491,8 @@ private fun SnackbarDeExclusao(
         modifier = modifier
             .fillMaxWidth()
             .testTag("snackbar-exclusao")
-            .background(color = cores.brand, shape = RoundedCornerShape(PingoRadius.md))
+            .pingoElevation(level = PingoElevationLevel.Level2, shape = forma)
+            .background(color = fundo, shape = forma)
             .padding(horizontal = PingoSpacing.lg, vertical = PingoSpacing.md),
         horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
         verticalAlignment = Alignment.CenterVertically,
@@ -441,23 +500,28 @@ private fun SnackbarDeExclusao(
         PingoText(
             text = "Lançamento excluído",
             style = PingoTheme.typography.bodySmall,
-            color = cores.onPrimary,
+            color = Color.White,
             modifier = Modifier.weight(1f),
         )
-        Row(
-            modifier = Modifier
-                .clickable(onClick = onDesfazer)
-                .padding(horizontal = PingoSpacing.sm, vertical = PingoSpacing.xs),
-            horizontalArrangement = Arrangement.spacedBy(PingoSpacing.xs),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            PingoIcon(
-                imageVector = PingoIcons.Undo,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = cores.onPrimary,
+        BotaoDesfazerExclusao(onDesfazer = onDesfazer, cor = cores.secondary)
+    }
+}
+
+@Composable
+private fun BotaoDesfazerExclusao(onDesfazer: () -> Unit, cor: Color) {
+    Row(
+        modifier = Modifier
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                role = Role.Button,
+                onClick = onDesfazer,
             )
-            PingoText(text = "Desfazer", style = PingoTheme.typography.label, color = cores.onPrimary)
-        }
+            .padding(horizontal = PingoSpacing.sm, vertical = PingoSpacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        PingoIcon(imageVector = PingoIcons.Undo, contentDescription = null, modifier = Modifier.size(16.dp), tint = cor)
+        PingoText(text = "Desfazer", style = PingoTheme.typography.label, color = cor)
     }
 }

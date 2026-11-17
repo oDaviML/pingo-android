@@ -1,23 +1,22 @@
 package com.pingo.core.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.pingo.core.designsystem.component.CategoryAvatar
+import com.pingo.core.designsystem.component.PingoCategoryTone
 import com.pingo.core.designsystem.component.PingoIcon
+import com.pingo.core.designsystem.component.PingoTag
 import com.pingo.core.designsystem.component.PingoText
 import com.pingo.core.designsystem.icon.PingoIcons
 import com.pingo.core.designsystem.theme.PingoRadius
@@ -48,11 +47,18 @@ fun LancamentoItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = PingoSpacing.md, vertical = PingoSpacing.md),
+            .padding(horizontal = PingoSpacing.lg, vertical = PingoSpacing.md),
         horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconeDaCategoria(nome = categoria?.nome)
+        CategoryAvatar(
+            icon = iconeDoLancamento(tipo = lancamento.tipo, categoria = categoria),
+            contentDescription = categoria?.nome?.let { "Categoria $it" } ?: "Categoria não identificada",
+            tone = tomDoLancamento(lancamento.tipo),
+            size = 44.dp,
+            iconSize = 22.dp,
+            cornerRadius = PingoRadius.md,
+        )
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -69,27 +75,26 @@ fun LancamentoItem(
     }
 }
 
-@Composable
-private fun IconeDaCategoria(nome: String?) {
-    val descricao = nome?.let { "Categoria $it" } ?: "Categoria não identificada"
-
-    Box(
-        modifier = Modifier
-            .size(44.dp)
-            .background(color = PingoTheme.colors.primaryContainer, shape = CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        PingoIcon(
-            imageVector = iconeDaCategoria(nome),
-            contentDescription = descricao,
-            modifier = Modifier.size(22.dp),
-            tint = PingoTheme.colors.onPrimaryContainer,
-        )
+private fun iconeDoLancamento(tipo: TipoLancamento, categoria: Categoria?): ImageVector = when (tipo) {
+    TipoLancamento.TRANSFERENCIA -> PingoIcons.ArrowLeftRight
+    TipoLancamento.RECEITA -> if (categoria == null || categoria.nome.equals("outros", ignoreCase = true)) {
+        PingoIcons.ArrowDownLeft
+    } else {
+        iconeDaCategoria(categoria.nome)
     }
+    TipoLancamento.DESPESA, TipoLancamento.AJUSTE -> iconeDaCategoria(categoria?.nome)
+}
+
+private fun tomDoLancamento(tipo: TipoLancamento): PingoCategoryTone = when (tipo) {
+    TipoLancamento.RECEITA -> PingoCategoryTone.Income
+    TipoLancamento.TRANSFERENCIA, TipoLancamento.AJUSTE -> PingoCategoryTone.Transfer
+    TipoLancamento.DESPESA -> PingoCategoryTone.Default
 }
 
 @Composable
 private fun TituloDoLancamento(lancamento: Lancamento) {
+    val cores = PingoTheme.colors
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(PingoSpacing.xs),
@@ -98,28 +103,25 @@ private fun TituloDoLancamento(lancamento: Lancamento) {
         PingoText(
             text = lancamento.estabelecimento ?: tituloPadrao(lancamento.tipo),
             style = PingoTheme.typography.bodyStrong,
-            color = PingoTheme.colors.onBackground,
+            color = cores.onBackground,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f, fill = false),
         )
         if (lancamento.status == StatusLancamento.PENDENTE) {
-            Selo(texto = "Pendente", fundo = PingoTheme.colors.warningContainer, conteudo = PingoTheme.colors.onWarningContainer)
+            PingoTag(
+                label = "Pendente",
+                containerColor = cores.warningContainer,
+                contentColor = cores.onWarningContainer,
+            )
         }
         if (lancamento.origem == OrigemLancamento.MANUAL) {
-            Selo(texto = "Manual", fundo = PingoTheme.colors.surfaceVariant, conteudo = PingoTheme.colors.onSurfaceVariant)
+            PingoTag(
+                label = "Manual",
+                containerColor = cores.surfaceVariant,
+                contentColor = cores.onSurfaceVariant,
+            )
         }
-    }
-}
-
-@Composable
-private fun Selo(texto: String, fundo: Color, conteudo: Color) {
-    Box(
-        modifier = Modifier
-            .background(color = fundo, shape = RoundedCornerShape(PingoRadius.full))
-            .padding(horizontal = 8.dp, vertical = 2.dp),
-    ) {
-        PingoText(text = texto, style = PingoTheme.typography.labelSmall, color = conteudo, maxLines = 1)
     }
 }
 
@@ -137,12 +139,14 @@ private fun DescricaoDoVinculo(lancamento: Lancamento, instrumento: Instrumento?
         horizontalArrangement = Arrangement.spacedBy(PingoSpacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        PingoIcon(
-            imageVector = if (identificado) PingoIcons.Landmark else PingoIcons.CircleAlert,
-            contentDescription = null,
-            modifier = Modifier.size(12.dp),
-            tint = PingoTheme.colors.onSurfaceVariant,
-        )
+        if (!identificado) {
+            PingoIcon(
+                imageVector = PingoIcons.CircleAlert,
+                contentDescription = null,
+                modifier = Modifier.size(12.dp),
+                tint = PingoTheme.colors.warning,
+            )
+        }
         PingoText(
             text = texto,
             style = PingoTheme.typography.bodySmall,

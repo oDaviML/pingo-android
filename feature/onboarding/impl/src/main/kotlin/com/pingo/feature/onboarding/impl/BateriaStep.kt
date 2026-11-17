@@ -2,11 +2,17 @@ package com.pingo.feature.onboarding.impl
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import com.pingo.core.designsystem.component.PingoCard
 import com.pingo.core.designsystem.component.PingoChoiceChip
+import com.pingo.core.designsystem.component.PingoElevationLevel
 import com.pingo.core.designsystem.component.PingoText
+import com.pingo.core.designsystem.component.pingoElevation
+import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
 import com.pingo.core.notifications.FabricanteDoSistema
@@ -55,7 +61,12 @@ internal fun BateriaBody(state: OnboardingPermissoesUiState, onEvent: (Onboardin
 
 @Composable
 private fun InstrucoesCard(state: OnboardingPermissoesUiState) {
-    PingoCard {
+    PingoCard(
+        modifier = Modifier.pingoElevation(
+            level = PingoElevationLevel.Level1,
+            shape = RoundedCornerShape(PingoRadius.xl),
+        ),
+    ) {
         PingoText(
             text = state.instrucoes.titulo.uppercase(),
             style = PingoTheme.typography.overline,
@@ -65,23 +76,20 @@ private fun InstrucoesCard(state: OnboardingPermissoesUiState) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun FabricantesEscolha(selecionado: FabricanteDoSistema, onSelecionar: (FabricanteDoSistema) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(PingoSpacing.sm)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(PingoSpacing.sm)) {
-            listOf(FabricanteDoSistema.SAMSUNG, FabricanteDoSistema.XIAOMI, FabricanteDoSistema.MOTOROLA).forEach { fabricante ->
-                PingoChoiceChip(
-                    text = fabricante.rotulo,
-                    selected = selecionado == fabricante,
-                    onClick = { onSelecionar(fabricante) },
-                )
-            }
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
+    ) {
+        FabricanteDoSistema.entries.forEach { fabricante ->
+            PingoChoiceChip(
+                text = fabricante.rotulo,
+                selected = selecionado == fabricante,
+                onClick = { onSelecionar(fabricante) },
+            )
         }
-        PingoChoiceChip(
-            text = FabricanteDoSistema.OUTRO.rotulo,
-            selected = selecionado == FabricanteDoSistema.OUTRO,
-            onClick = { onSelecionar(FabricanteDoSistema.OUTRO) },
-        )
     }
 }
 

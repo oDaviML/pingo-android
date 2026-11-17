@@ -12,21 +12,46 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.pingo.core.designsystem.component.PingoIcon
 import com.pingo.core.designsystem.component.PingoText
 import com.pingo.core.designsystem.icon.PingoIcons
 import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.ui.Valores
+
+@Composable
+internal fun ValorEmDestaque(valorCentavos: Long, cor: Color) {
+    val semPrefixo = Valores.formatar(valorCentavos).removePrefix("R$ ")
+    val texto = buildAnnotatedString {
+        withStyle(SpanStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold)) {
+            append("R$ ")
+        }
+        append(semPrefixo)
+    }
+
+    BasicText(
+        text = texto,
+        style = PingoTheme.typography.amountLarge.copy(color = cor),
+        maxLines = 1,
+    )
+}
 
 @Composable
 internal fun CampoDeSelecao(campo: CampoSelecionavel, onClick: () -> Unit) {
@@ -97,7 +122,7 @@ internal fun CampoDeData(state: NovoLancamentoUiState, onEvent: (NovoLancamentoE
             rotulo = "Data",
             texto = RotulosDoNovoLancamento.data(state.data, state.hoje),
             preenchido = true,
-            icone = PingoIcons.Calendar,
+            icone = PingoIcons.CalendarDays,
             testTag = "campo-data",
         ),
         onClick = { onEvent(NovoLancamentoEvent.AbrirCalendario) },
@@ -106,7 +131,8 @@ internal fun CampoDeData(state: NovoLancamentoUiState, onEvent: (NovoLancamentoE
 
 @Composable
 internal fun CampoDeEstabelecimento(state: NovoLancamentoUiState, onEvent: (NovoLancamentoEvent) -> Unit) {
-    val rotulo = if (state.tipo == TipoDoLancamentoManual.TRANSFERENCIA) "Descrição" else "Estabelecimento ou descrição"
+    val transferencia = state.tipo == TipoDoLancamentoManual.TRANSFERENCIA
+    val rotulo = if (transferencia) "Descrição" else "Estabelecimento ou descrição"
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -117,12 +143,20 @@ internal fun CampoDeEstabelecimento(state: NovoLancamentoUiState, onEvent: (Novo
             style = PingoTheme.typography.bodySmall,
             color = PingoTheme.colors.onSurfaceVariant,
         )
-        LinhaDoEstabelecimento(state = state, onEvent = onEvent)
+        LinhaDoEstabelecimento(
+            state = state,
+            icone = if (transferencia) PingoIcons.Pencil else PingoIcons.Store,
+            onEvent = onEvent,
+        )
     }
 }
 
 @Composable
-private fun LinhaDoEstabelecimento(state: NovoLancamentoUiState, onEvent: (NovoLancamentoEvent) -> Unit) {
+private fun LinhaDoEstabelecimento(
+    state: NovoLancamentoUiState,
+    icone: androidx.compose.ui.graphics.vector.ImageVector,
+    onEvent: (NovoLancamentoEvent) -> Unit,
+) {
     val forma = RoundedCornerShape(PingoRadius.md)
 
     Row(
@@ -136,7 +170,7 @@ private fun LinhaDoEstabelecimento(state: NovoLancamentoUiState, onEvent: (NovoL
         verticalAlignment = Alignment.CenterVertically,
     ) {
         PingoIcon(
-            imageVector = PingoIcons.Tag,
+            imageVector = icone,
             contentDescription = null,
             modifier = Modifier.size(22.dp),
             tint = PingoTheme.colors.onSurfaceVariant,

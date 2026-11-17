@@ -17,8 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.pingo.core.designsystem.component.PingoElevationLevel
 import com.pingo.core.designsystem.component.PingoIcon
 import com.pingo.core.designsystem.component.PingoText
+import com.pingo.core.designsystem.component.pingoElevation
 import com.pingo.core.designsystem.icon.PingoIcons
 import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
@@ -98,6 +100,7 @@ private fun TeclaNumerica(
     Box(
         modifier = modifier
             .height(48.dp)
+            .pingoElevation(level = PingoElevationLevel.Level1, shape = forma)
             .background(color = PingoTheme.colors.surface, shape = forma)
             .testTag(tecla.tag)
             .clickable(
