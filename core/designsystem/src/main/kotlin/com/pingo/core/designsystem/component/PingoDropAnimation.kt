@@ -189,7 +189,7 @@ private fun rememberPingarProgress(
             return@LaunchedEffect
         }
         progress.snapTo(0f)
-        val duration = if (reducedMotion) PingoMotion.ReducedFadeMs else PingoMotion.LongMs
+        val duration = if (reducedMotion) PingoMotion.REDUCED_FADE_MS else PingoMotion.LONG_MS
         val easing = if (reducedMotion) LinearEasing else PingoMotion.StandardEasing
         progress.animateTo(
             targetValue = 1f,

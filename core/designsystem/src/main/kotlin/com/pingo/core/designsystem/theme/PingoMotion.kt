@@ -13,13 +13,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 
 object PingoMotion {
-    const val ShortMs: Int = 150
-    const val MediumMs: Int = 250
-    const val LongMs: Int = 400
-    const val ReducedFadeMs: Int = 100
-    const val SHORT: Int = ShortMs
-    const val MEDIUM: Int = MediumMs
-    const val LONG: Int = LongMs
+    const val SHORT_MS: Int = 150
+    const val MEDIUM_MS: Int = 250
+    const val LONG_MS: Int = 400
+    const val REDUCED_FADE_MS: Int = 100
+    const val SHORT: Int = SHORT_MS
+    const val MEDIUM: Int = MEDIUM_MS
+    const val LONG: Int = LONG_MS
 
     val StandardEasing: Easing = CubicBezierEasing(0.2f, 0f, 0f, 1f)
     val DecelerateEasing: Easing = CubicBezierEasing(0f, 0f, 0f, 1f)

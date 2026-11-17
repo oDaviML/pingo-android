@@ -147,7 +147,7 @@ private fun AbaPill(aba: AbaInferior, selecionada: Boolean, highlighted: Boolean
         animationSpec = if (reducedMotion) {
             snap()
         } else {
-            tween(durationMillis = PingoMotion.ShortMs, easing = PingoMotion.StandardEasing)
+            tween(durationMillis = PingoMotion.SHORT_MS, easing = PingoMotion.StandardEasing)
         },
         label = "aba-pill-color",
     )

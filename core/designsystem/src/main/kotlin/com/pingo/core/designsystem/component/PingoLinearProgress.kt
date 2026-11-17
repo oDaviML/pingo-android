@@ -40,7 +40,7 @@ fun PingoLinearProgress(
         animationSpec = if (!animate || reducedMotion) {
             snap()
         } else {
-            tween(durationMillis = PingoMotion.MediumMs, easing = PingoMotion.StandardEasing)
+            tween(durationMillis = PingoMotion.MEDIUM_MS, easing = PingoMotion.StandardEasing)
         },
         label = "linear-progress",
     )

@@ -12,13 +12,13 @@ import org.junit.Test
 class PingoMotionAndTokensTest {
     @Test
     fun motionTokensMatchPrototypeSpec() {
-        assertEquals(150, PingoMotion.ShortMs)
-        assertEquals(250, PingoMotion.MediumMs)
-        assertEquals(400, PingoMotion.LongMs)
-        assertEquals(100, PingoMotion.ReducedFadeMs)
-        assertEquals(PingoMotion.ShortMs, PingoMotion.SHORT)
-        assertEquals(PingoMotion.MediumMs, PingoMotion.MEDIUM)
-        assertEquals(PingoMotion.LongMs, PingoMotion.LONG)
+        assertEquals(150, PingoMotion.SHORT_MS)
+        assertEquals(250, PingoMotion.MEDIUM_MS)
+        assertEquals(400, PingoMotion.LONG_MS)
+        assertEquals(100, PingoMotion.REDUCED_FADE_MS)
+        assertEquals(PingoMotion.SHORT_MS, PingoMotion.SHORT)
+        assertEquals(PingoMotion.MEDIUM_MS, PingoMotion.MEDIUM)
+        assertEquals(PingoMotion.LONG_MS, PingoMotion.LONG)
         assertEquals(0.8f, PingoMotion.GentleSpring.dampingRatio)
         assertEquals(380f, PingoMotion.GentleSpring.stiffness)
         assertTrue(PingoMotion.StandardEasing.transform(0.5f) > 0.5f)
