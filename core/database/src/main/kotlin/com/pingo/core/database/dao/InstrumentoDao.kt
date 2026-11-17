@@ -32,6 +32,9 @@ interface InstrumentoDao {
     )
     suspend fun ativosDaInstituicao(instituicao: InstituicaoFinanceira): List<InstrumentoEntity>
 
+    @Query("SELECT * FROM instrumentos WHERE contaPublicId = :contaPublicId AND excluidoEm IS NULL ORDER BY apelido")
+    suspend fun listarPorConta(contaPublicId: String): List<InstrumentoEntity>
+
     @Query("SELECT * FROM instrumentos WHERE atualizadoEm >= :desde")
     suspend fun atualizadosDesde(desde: Instant): List<InstrumentoEntity>
 
@@ -43,4 +46,28 @@ interface InstrumentoDao {
 
     @Query("UPDATE instrumentos SET excluidoEm = :quando, atualizadoEm = :quando WHERE publicId = :publicId")
     suspend fun marcarExcluido(publicId: String, quando: Instant)
+
+    @Query("UPDATE instrumentos SET arquivado = 1, atualizadoEm = :quando WHERE publicId = :publicId")
+    suspend fun marcarArquivado(publicId: String, quando: Instant)
+
+    @Query("UPDATE instrumentos SET arquivado = 0, arquivadoPorCascata = 0, atualizadoEm = :quando WHERE publicId = :publicId")
+    suspend fun marcarReativado(publicId: String, quando: Instant)
+
+    @Query(
+        """
+        UPDATE instrumentos
+        SET arquivado = 1, arquivadoPorCascata = 1, atualizadoEm = :quando
+        WHERE contaPublicId = :contaPublicId AND excluidoEm IS NULL AND arquivado = 0
+        """,
+    )
+    suspend fun arquivarAtivosPorCascata(contaPublicId: String, quando: Instant)
+
+    @Query(
+        """
+        UPDATE instrumentos
+        SET arquivado = 0, arquivadoPorCascata = 0, atualizadoEm = :quando
+        WHERE contaPublicId = :contaPublicId AND excluidoEm IS NULL AND arquivado = 1 AND arquivadoPorCascata = 1
+        """,
+    )
+    suspend fun reativarArquivadosPorCascata(contaPublicId: String, quando: Instant)
 }

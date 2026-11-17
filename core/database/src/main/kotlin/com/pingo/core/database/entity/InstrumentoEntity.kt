@@ -27,6 +27,7 @@ data class InstrumentoEntity(
     val apelido: String,
     val ultimosDigitos: String?,
     val arquivado: Boolean,
+    val arquivadoPorCascata: Boolean = false,
     val fechamentoDia: Int?,
     val vencimentoDia: Int?,
     val beneficio: BeneficioVoucher?,

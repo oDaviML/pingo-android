@@ -1,5 +1,6 @@
 package com.pingo.feature.transactions.impl
 
+import com.pingo.core.data.CadastroSalvo
 import com.pingo.core.data.CategoriaRepository
 import com.pingo.core.data.ContaRepository
 import com.pingo.core.data.InstrumentoRepository
@@ -7,6 +8,7 @@ import com.pingo.core.data.LancamentoRepository
 import com.pingo.core.data.ResultadoCategoria
 import com.pingo.core.model.Categoria
 import com.pingo.core.model.Conta
+import com.pingo.core.model.ContaEditada
 import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.Instrumento
 import com.pingo.core.model.Lancamento
@@ -89,6 +91,8 @@ class FakeContaRepository(iniciais: List<Conta> = emptyList()) : ContaRepository
 
     override suspend fun criarComInstrumentos(contas: List<NovaConta>, agora: Instant) = Unit
 
+    override suspend fun salvarCadastro(edicao: ContaEditada, agora: Instant): CadastroSalvo = error("nao usado")
+
     override suspend fun salvar(conta: Conta) {
         contas.update { atuais -> atuais.filterNot { it.publicId == conta.publicId } + conta }
     }
@@ -96,6 +100,10 @@ class FakeContaRepository(iniciais: List<Conta> = emptyList()) : ContaRepository
     override suspend fun salvarTodas(contas: List<Conta>) = Unit
 
     override suspend fun excluir(publicId: String, quando: Instant) = Unit
+
+    override suspend fun arquivar(publicId: String, quando: Instant) = Unit
+
+    override suspend fun reativar(publicId: String, quando: Instant) = Unit
 }
 
 class FakeInstrumentoRepository(iniciais: List<Instrumento> = emptyList()) : InstrumentoRepository {
@@ -116,6 +124,10 @@ class FakeInstrumentoRepository(iniciais: List<Instrumento> = emptyList()) : Ins
     override suspend fun salvarTodos(instrumentos: List<Instrumento>) = Unit
 
     override suspend fun excluir(publicId: String, quando: Instant) = Unit
+
+    override suspend fun arquivar(publicId: String, quando: Instant) = Unit
+
+    override suspend fun reativar(publicId: String, quando: Instant) = Unit
 }
 
 class FakeCategoriaRepository(iniciais: List<Categoria> = emptyList()) : CategoriaRepository {

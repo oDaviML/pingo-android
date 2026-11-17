@@ -49,8 +49,37 @@ class OnboardingContasViewModel @Inject constructor(
                 it.copy(ultimosDigitos = apenasDigitos(event.digitos))
             }
 
+            is OnboardingContasEvent.ConfiguracaoDeInstrumento -> alterarConfiguracao(event)
             OnboardingContasEvent.Continuar -> continuar()
             OnboardingContasEvent.Pular -> pular()
+        }
+    }
+
+    private fun alterarConfiguracao(event: OnboardingContasEvent.ConfiguracaoDeInstrumento) {
+        when (event) {
+            is OnboardingContasEvent.AlterarFechamento -> atualizarInstrumento(event.instituicao, event.tipo) {
+                it.copy(fechamentoDia = apenasDigitos(event.dia).take(2))
+            }
+
+            is OnboardingContasEvent.AlterarVencimento -> atualizarInstrumento(event.instituicao, event.tipo) {
+                it.copy(vencimentoDia = apenasDigitos(event.dia).take(2))
+            }
+
+            is OnboardingContasEvent.AlterarBeneficio -> atualizarInstrumento(event.instituicao, event.tipo) {
+                it.copy(beneficio = event.beneficio)
+            }
+
+            is OnboardingContasEvent.AlterarSaldoInicial -> atualizarInstrumento(event.instituicao, event.tipo) {
+                it.copy(saldoInicial = valorInformado(event.saldo))
+            }
+
+            is OnboardingContasEvent.AlterarDiaRecarga -> atualizarInstrumento(event.instituicao, event.tipo) {
+                it.copy(diaRecarga = apenasDigitos(event.dia).take(2))
+            }
+
+            is OnboardingContasEvent.AlterarValorRecarga -> atualizarInstrumento(event.instituicao, event.tipo) {
+                it.copy(valorRecarga = valorInformado(event.valor))
+            }
         }
     }
 
@@ -147,4 +176,10 @@ class OnboardingContasViewModel @Inject constructor(
     }
 
     private fun apenasDigitos(digitos: String): String = digitos.filter { it in '0'..'9' }.take(TAMANHO_ULTIMOS_DIGITOS)
+
+    private fun valorInformado(valor: String): String = valor.filter { it in '0'..'9' || it == ',' || it == '.' }.take(TAMANHO_MAXIMO_VALOR)
+
+    private companion object {
+        const val TAMANHO_MAXIMO_VALOR = 12
+    }
 }

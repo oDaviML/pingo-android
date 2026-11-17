@@ -126,6 +126,16 @@ internal class FakeInstrumentoRepository(iniciais: List<Instrumento> = emptyList
         val atual = buscar(publicId) ?: return
         salvar(atual.copy(excluidoEm = quando, atualizadoEm = quando))
     }
+
+    override suspend fun arquivar(publicId: String, quando: Instant) {
+        val atual = buscar(publicId) ?: return
+        salvar(atual.copy(arquivado = true, atualizadoEm = quando))
+    }
+
+    override suspend fun reativar(publicId: String, quando: Instant) {
+        val atual = buscar(publicId) ?: return
+        salvar(atual.copy(arquivado = false, arquivadoPorCascata = false, atualizadoEm = quando))
+    }
 }
 
 internal data class PostagemDeTeste(val pendencia: PendenciaParaNotificar, val precisaCorrigir: Boolean)

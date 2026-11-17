@@ -1,9 +1,12 @@
 package com.pingo.feature.onboarding.impl
 
+import com.pingo.core.data.CadastroSalvo
 import com.pingo.core.data.ContaRepository
 import com.pingo.core.datastore.SyncStatus
 import com.pingo.core.datastore.UserPreferencesDataSource
+import com.pingo.core.model.BeneficioVoucher
 import com.pingo.core.model.Conta
+import com.pingo.core.model.ContaEditada
 import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.NovaConta
 import com.pingo.core.model.TipoConta
@@ -46,7 +49,41 @@ class OnboardingContasViewModelTest {
         assertEquals(TipoConta.CORRENTE, escolha.tipoConta)
         assertEquals(listOf(TipoInstrumento.CREDITO), escolha.instrumentos.map { it.tipo })
         assertEquals("Cartão de crédito", escolha.instrumentos.single().apelido)
+        assertFalse(viewModel.uiState.value.podeContinuar)
+
+        preencherCredito(InstituicaoFinanceira.NUBANK)
         assertTrue(viewModel.uiState.value.podeContinuar)
+    }
+
+    @Test
+    fun `credito sem fechamento ou vencimento impede continuar`() {
+        viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.NUBANK))
+
+        viewModel.onEvent(OnboardingContasEvent.AlterarFechamento(InstituicaoFinanceira.NUBANK, TipoInstrumento.CREDITO, "5"))
+        assertFalse(viewModel.uiState.value.podeContinuar)
+
+        viewModel.onEvent(OnboardingContasEvent.AlterarVencimento(InstituicaoFinanceira.NUBANK, TipoInstrumento.CREDITO, "32"))
+        assertFalse(viewModel.uiState.value.podeContinuar)
+
+        viewModel.onEvent(OnboardingContasEvent.AlterarVencimento(InstituicaoFinanceira.NUBANK, TipoInstrumento.CREDITO, "31"))
+        assertTrue(viewModel.uiState.value.podeContinuar)
+    }
+
+    @Test
+    fun `voucher exige beneficio e saldo inicial`() {
+        viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.CAJU))
+
+        assertFalse(viewModel.uiState.value.podeContinuar)
+
+        viewModel.onEvent(OnboardingContasEvent.AlterarBeneficio(InstituicaoFinanceira.CAJU, TipoInstrumento.VOUCHER, BeneficioVoucher.VR))
+        assertFalse(viewModel.uiState.value.podeContinuar)
+
+        viewModel.onEvent(OnboardingContasEvent.AlterarSaldoInicial(InstituicaoFinanceira.CAJU, TipoInstrumento.VOUCHER, "250,00"))
+        assertTrue(viewModel.uiState.value.podeContinuar)
+
+        val instrumento = viewModel.uiState.value.escolhas.single().instrumentos.single()
+        assertEquals(BeneficioVoucher.VR, instrumento.beneficio)
+        assertEquals(25000L, instrumento.paraNovoInstrumento().saldoCentavos)
     }
 
     @Test
@@ -105,6 +142,7 @@ class OnboardingContasViewModelTest {
     fun `nao desmarca o ultimo tipo de instrumento do banco`() {
         viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.NUBANK))
         viewModel.onEvent(OnboardingContasEvent.AlternarInstrumento(InstituicaoFinanceira.NUBANK, TipoInstrumento.CREDITO))
+        preencherCredito(InstituicaoFinanceira.NUBANK)
 
         val instrumentos = viewModel.uiState.value.escolhas.single().instrumentos
         assertEquals(listOf(TipoInstrumento.CREDITO), instrumentos.map { it.tipo })
@@ -123,6 +161,7 @@ class OnboardingContasViewModelTest {
     @Test
     fun `apelido em branco ou ultimos digitos incompletos impedem continuar`() {
         viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.NUBANK))
+        preencherCredito(InstituicaoFinanceira.NUBANK)
 
         viewModel.onEvent(OnboardingContasEvent.AlterarApelidoConta(InstituicaoFinanceira.NUBANK, "   "))
         assertFalse(viewModel.uiState.value.podeContinuar)
@@ -140,6 +179,7 @@ class OnboardingContasViewModelTest {
         viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.NUBANK))
         viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.ITAU))
         viewModel.onEvent(OnboardingContasEvent.AlterarUltimosDigitos(InstituicaoFinanceira.NUBANK, TipoInstrumento.CREDITO, "1084"))
+        preencherCredito(InstituicaoFinanceira.NUBANK)
 
         viewModel.onEvent(OnboardingContasEvent.Continuar)
 
@@ -175,6 +215,7 @@ class OnboardingContasViewModelTest {
     fun `falha ao criar contas mostra erro e permite tentar de novo`() {
         contaRepository.failure = IllegalStateException("disco cheio")
         viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.NUBANK))
+        preencherCredito(InstituicaoFinanceira.NUBANK)
 
         viewModel.onEvent(OnboardingContasEvent.Continuar)
 
@@ -194,6 +235,7 @@ class OnboardingContasViewModelTest {
     fun `falha ao marcar o passo nao duplica as contas ao tentar de novo`() {
         preferences.failure = IOException("sem espaco")
         viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.NUBANK))
+        preencherCredito(InstituicaoFinanceira.NUBANK)
 
         viewModel.onEvent(OnboardingContasEvent.Continuar)
 
@@ -212,6 +254,7 @@ class OnboardingContasViewModelTest {
     fun `continuar durante o salvamento nao grava as contas de novo`() {
         contaRepository.gate = CompletableDeferred()
         viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.NUBANK))
+        preencherCredito(InstituicaoFinanceira.NUBANK)
         viewModel.onEvent(OnboardingContasEvent.Continuar)
 
         viewModel.onEvent(OnboardingContasEvent.Continuar)
@@ -219,6 +262,11 @@ class OnboardingContasViewModelTest {
 
         assertEquals(1, contaRepository.criadas.size)
         assertTrue(viewModel.uiState.value.concluido)
+    }
+
+    private fun preencherCredito(instituicao: InstituicaoFinanceira) {
+        viewModel.onEvent(OnboardingContasEvent.AlterarFechamento(instituicao, TipoInstrumento.CREDITO, "5"))
+        viewModel.onEvent(OnboardingContasEvent.AlterarVencimento(instituicao, TipoInstrumento.CREDITO, "12"))
     }
 
     private class FakeContaRepository : ContaRepository {
@@ -236,11 +284,17 @@ class OnboardingContasViewModelTest {
             criadas.add(contas)
         }
 
+        override suspend fun salvarCadastro(edicao: ContaEditada, agora: Instant): CadastroSalvo = error("nao usado")
+
         override suspend fun salvar(conta: Conta) = Unit
 
         override suspend fun salvarTodas(contas: List<Conta>) = Unit
 
         override suspend fun excluir(publicId: String, quando: Instant) = Unit
+
+        override suspend fun arquivar(publicId: String, quando: Instant) = Unit
+
+        override suspend fun reativar(publicId: String, quando: Instant) = Unit
     }
 
     private class FakeUserPreferences : UserPreferencesDataSource {

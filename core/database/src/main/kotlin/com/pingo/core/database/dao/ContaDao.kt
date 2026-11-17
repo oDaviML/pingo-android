@@ -26,4 +26,7 @@ interface ContaDao {
 
     @Query("UPDATE contas SET excluidoEm = :quando, atualizadoEm = :quando WHERE publicId = :publicId")
     suspend fun marcarExcluida(publicId: String, quando: Instant)
+
+    @Query("UPDATE contas SET arquivada = :arquivada, atualizadoEm = :quando WHERE publicId = :publicId")
+    suspend fun definirArquivamento(publicId: String, arquivada: Boolean, quando: Instant)
 }

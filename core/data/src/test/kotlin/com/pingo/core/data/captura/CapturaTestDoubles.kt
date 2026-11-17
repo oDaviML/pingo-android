@@ -106,6 +106,24 @@ internal class FakeInstrumentos(private val contas: FakeContas) : InstrumentoRep
             instrumentos[posicao] = instrumentos[posicao].copy(excluidoEm = quando, atualizadoEm = quando)
         }
     }
+
+    override suspend fun arquivar(publicId: String, quando: Instant) {
+        val posicao = instrumentos.indexOfFirst { it.publicId == publicId }
+        if (posicao >= 0) {
+            instrumentos[posicao] = instrumentos[posicao].copy(arquivado = true, atualizadoEm = quando)
+        }
+    }
+
+    override suspend fun reativar(publicId: String, quando: Instant) {
+        val posicao = instrumentos.indexOfFirst { it.publicId == publicId }
+        if (posicao >= 0) {
+            instrumentos[posicao] = instrumentos[posicao].copy(
+                arquivado = false,
+                arquivadoPorCascata = false,
+                atualizadoEm = quando,
+            )
+        }
+    }
 }
 
 internal class FakeLancamentos(private val instrumentos: FakeInstrumentos) : LancamentoRepository {

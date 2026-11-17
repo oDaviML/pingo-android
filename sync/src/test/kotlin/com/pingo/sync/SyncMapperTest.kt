@@ -1,10 +1,14 @@
 package com.pingo.sync
 
+import com.pingo.core.database.entity.InstrumentoEntity
 import com.pingo.core.database.entity.LancamentoEntity
 import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.OrigemLancamento
 import com.pingo.core.model.StatusLancamento
+import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.network.sync.InstrumentoChangeDto
+import com.pingo.core.network.sync.InstrumentoSnapshotDto
 import com.pingo.core.network.sync.LancamentoChangeDto
 import com.pingo.core.network.sync.LancamentoSnapshotDto
 import kotlinx.serialization.json.Json
@@ -89,6 +93,41 @@ class SyncMapperTest {
     }
 
     @Test
+    fun `push de instrumento arquivado por cascata leva a procedencia`() {
+        val entidade = instrumentoEntity(arquivado = true, arquivadoPorCascata = true)
+
+        val json = Json.encodeToString(InstrumentoChangeDto.serializer(), entidade.toChangeDto())
+
+        assertTrue(json.contains("\"arquivadoPorCascata\":true"))
+        assertEquals(true, entidade.toChangeDto().arquivadoPorCascata)
+    }
+
+    @Test
+    fun `pull de instrumento aplica a procedencia de cascata`() {
+        val arquivado = instrumentoSnapshot(arquivado = true, arquivadoPorCascata = true).toEntity()
+        val reativado = instrumentoSnapshot(arquivado = false, arquivadoPorCascata = false).toEntity()
+
+        assertTrue(arquivado.arquivado)
+        assertTrue(arquivado.arquivadoPorCascata)
+
+        assertFalse(reativado.arquivado)
+        assertFalse(reativado.arquivadoPorCascata)
+    }
+
+    @Test
+    fun `pull de instrumento legado sem procedencia nao inventa cascata`() {
+        val json = """
+            {"publicId":"instrumento-1","contaPublicId":"conta-1","tipo":"Credito","apelido":"Cartão",
+            "arquivado":false,"criadoEm":"2026-11-10T12:00:00Z","atualizadoEm":"2026-11-10T12:00:00Z"}
+        """.trimIndent()
+
+        val snapshot = Json.decodeFromString(InstrumentoSnapshotDto.serializer(), json)
+
+        assertNull(snapshot.arquivadoPorCascata)
+        assertFalse(snapshot.toEntity().arquivadoPorCascata)
+    }
+
+    @Test
     fun `pull de lancamento nao preenche o texto bruto local`() {
         val lancamento = LancamentoSnapshotDto(
             publicId = "lancamento-1",
@@ -134,6 +173,41 @@ class SyncMapperTest {
         assertNull(invalida.tipoSemTransferencia)
         assertNull(ausente.tipoSemTransferencia)
     }
+
+    private fun instrumentoSnapshot(arquivado: Boolean, arquivadoPorCascata: Boolean?): InstrumentoSnapshotDto = InstrumentoSnapshotDto(
+        publicId = "instrumento-1",
+        contaPublicId = "conta-1",
+        tipo = "Credito",
+        apelido = "Cartão",
+        ultimosDigitos = "1084",
+        arquivado = arquivado,
+        arquivadoPorCascata = arquivadoPorCascata,
+        fechamentoDia = 5,
+        vencimentoDia = 12,
+        limiteCredito = 5000.0,
+        criadoEm = "2026-11-10T12:00:00Z",
+        atualizadoEm = "2026-11-10T12:00:00Z",
+    )
+
+    private fun instrumentoEntity(arquivado: Boolean, arquivadoPorCascata: Boolean): InstrumentoEntity = InstrumentoEntity(
+        publicId = "instrumento-1",
+        contaPublicId = "conta-1",
+        tipo = TipoInstrumento.CREDITO,
+        apelido = "Cartão",
+        ultimosDigitos = "1084",
+        arquivado = arquivado,
+        arquivadoPorCascata = arquivadoPorCascata,
+        fechamentoDia = 5,
+        vencimentoDia = 12,
+        beneficio = null,
+        saldoCentavos = null,
+        diaRecarga = null,
+        valorRecargaCentavos = null,
+        limiteCreditoCentavos = 500000,
+        criadoEm = Instant.parse("2026-11-10T12:00:00Z"),
+        atualizadoEm = Instant.parse("2026-11-10T12:00:00Z"),
+        excluidoEm = null,
+    )
 
     private fun snapshot(tipo: String, tipoSemTransferencia: String?): LancamentoSnapshotDto = LancamentoSnapshotDto(
         publicId = "lancamento-1",

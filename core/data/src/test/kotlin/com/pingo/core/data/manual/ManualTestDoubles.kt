@@ -74,6 +74,22 @@ internal class FakeInstrumentosManual : InstrumentoRepository {
             if (atual.publicId == publicId) atual.copy(excluidoEm = quando, atualizadoEm = quando) else atual
         }
     }
+
+    override suspend fun arquivar(publicId: String, quando: Instant) {
+        tabela.value = tabela.value.map { atual ->
+            if (atual.publicId == publicId) atual.copy(arquivado = true, atualizadoEm = quando) else atual
+        }
+    }
+
+    override suspend fun reativar(publicId: String, quando: Instant) {
+        tabela.value = tabela.value.map { atual ->
+            if (atual.publicId == publicId) {
+                atual.copy(arquivado = false, arquivadoPorCascata = false, atualizadoEm = quando)
+            } else {
+                atual
+            }
+        }
+    }
 }
 
 internal class FakeLancamentosManual : LancamentoRepository {

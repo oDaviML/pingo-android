@@ -39,7 +39,11 @@ internal class SyncApplier(private val database: PingoDatabase) {
         for (snapshot in snapshots) {
             val local = database.instrumentoDao().buscar(snapshot.publicId)
             if (local == null || !local.atualizadoEm.isAfter(snapshot.atualizadoEm.toInstantValue())) {
-                database.instrumentoDao().upsert(snapshot.toEntity())
+                database.instrumentoDao().upsert(
+                    snapshot.toEntity().copy(
+                        arquivadoPorCascata = snapshot.arquivadoPorCascata ?: local?.arquivadoPorCascata ?: false,
+                    ),
+                )
             }
         }
     }

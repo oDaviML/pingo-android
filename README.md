@@ -73,6 +73,10 @@ O banco fica em `core:database`: Room sobre SQLCipher, com as entidades do model
 
 Transferências guardam a direção financeira de cada linha em `tipoSemTransferencia` (`DESPESA`, `RECEITA` ou nulo quando desconhecida), inclusive depois que as duas linhas passam a `TRANSFERENCIA`. O schema 4 adiciona a coluna nullable pela migration 3→4, sem backfill: registros antigos continuam nulos e o Desfazer desses pares é recusado com aviso, em vez de inferir a direção por categoria, lado aberto, horário ou UUID. O campo é opcional no push/pull; ausência ou `null` na mesma `transferenciaId` preserva o valor local conhecido, enquanto outra transferência ou uma linha que deixou de ser transferência não herda a direção.
 
+O cadastro compartilhado de contas e instrumentos exige fechamento e vencimento entre 1 e 31 para crédito, aceita últimos quatro dígitos opcionais e, para voucher, exige benefício e saldo inicial com recarga opcional apenas quando dia e valor são informados juntos. A edição preserva `publicId` e `criadoEm` de conta e instrumentos e grava tudo numa única transação, sem deixar grafo parcial.
+
+O schema 5 adiciona `instrumentos.arquivadoPorCascata` pela migration 4→5, `INTEGER NOT NULL DEFAULT 0`, sem backfill: registros legados não ganham procedência inventada. Arquivar a conta marca só os instrumentos ativos; reativar restaura apenas os arquivados por essa cascata, e instrumentos arquivados antes continuam arquivados. No push o campo vai explícito; no pull, um payload legado sem o campo preserva o valor local conhecido e um snapshot com valor explícito aplica a reativação.
+
 ## Design system
 
 O `core:designsystem` traduz o design system do FigCraft (`design/design-system.md` e `design/pingo.figcraft`) para Compose, sem Material 3: tema próprio (`PingoTheme`) com tokens de cor, tipografia Nunito, raios, espaçamento, elevação e movimento, além dos componentes `Pingo*` e do stepper do onboarding.

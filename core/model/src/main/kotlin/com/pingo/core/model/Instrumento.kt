@@ -11,6 +11,7 @@ data class Instrumento(
     val apelido: String,
     val ultimosDigitos: String? = null,
     val arquivado: Boolean = false,
+    val arquivadoPorCascata: Boolean = false,
     val fechamentoDia: Int? = null,
     val vencimentoDia: Int? = null,
     val beneficio: BeneficioVoucher? = null,

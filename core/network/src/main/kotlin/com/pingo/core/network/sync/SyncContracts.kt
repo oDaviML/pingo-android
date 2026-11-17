@@ -47,6 +47,7 @@ data class InstrumentoChangeDto(
     val diaRecarga: Int? = null,
     val valorRecarga: Double? = null,
     val limiteCredito: Double? = null,
+    val arquivadoPorCascata: Boolean? = null,
     val excluidoEm: String? = null,
 )
 
@@ -179,6 +180,7 @@ data class InstrumentoSnapshotDto(
     val diaRecarga: Int? = null,
     val valorRecarga: Double? = null,
     val limiteCredito: Double? = null,
+    val arquivadoPorCascata: Boolean? = null,
     val criadoEm: String,
     val atualizadoEm: String,
     val excluidoEm: String? = null,

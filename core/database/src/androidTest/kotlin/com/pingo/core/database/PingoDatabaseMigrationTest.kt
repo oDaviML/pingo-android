@@ -6,6 +6,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -128,7 +129,40 @@ class PingoDatabaseMigrationTest {
     }
 
     @Test
-    fun cadeiaDaVersao1Para4PreservaDadosEVinculos() {
+    fun migracaoDaVersao4Para5PreservaInstrumentosELegadosSemCascata() {
+        helper.createDatabase(DATABASE_NAME, 4).use { database ->
+            database.execSQL(INSERCAO_NA_VERSAO_4_CONTA)
+            database.execSQL(INSERCAO_NA_VERSAO_4_INSTRUMENTO)
+        }
+
+        val migrado = helper.runMigrationsAndValidate(DATABASE_NAME, 5, true, PingoMigrations.MIGRACAO_4_5)
+
+        migrado
+            .query(
+                "SELECT publicId, contaPublicId, tipo, apelido, ultimosDigitos, arquivado, arquivadoPorCascata, " +
+                    "fechamentoDia, vencimentoDia, limiteCreditoCentavos, criadoEm FROM instrumentos",
+            )
+            .use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals("instrumento-credito", cursor.getString(0))
+                assertEquals("conta-1", cursor.getString(1))
+                assertEquals("CREDITO", cursor.getString(2))
+                assertEquals("Cartão", cursor.getString(3))
+                assertEquals("1084", cursor.getString(4))
+                assertEquals(1, cursor.getInt(5))
+                assertEquals(0, cursor.getInt(6))
+                assertEquals(5, cursor.getInt(7))
+                assertEquals(12, cursor.getInt(8))
+                assertEquals(500000L, cursor.getLong(9))
+                assertEquals(1762788000000L, cursor.getLong(10))
+                assertFalse(cursor.moveToNext())
+            }
+
+        migrado.close()
+    }
+
+    @Test
+    fun cadeiaDaVersao1Para5PreservaDadosEVinculos() {
         helper.createDatabase(DATABASE_NAME, 1).use { database ->
             database.execSQL(INSERCAO_NA_VERSAO_1)
             database.execSQL(INSERCAO_NA_VERSAO_1_FILHO)
@@ -141,6 +175,7 @@ class PingoDatabaseMigrationTest {
             PingoMigrations.MIGRACAO_1_2,
             PingoMigrations.MIGRACAO_2_3,
             PingoMigrations.MIGRACAO_3_4,
+            PingoMigrations.MIGRACAO_4_5,
         )
 
         migrado
@@ -252,6 +287,21 @@ class PingoDatabaseMigrationTest {
                 'LOJA', 'CONFIRMADO', 'NOTIFICACAO', 'ITAU', 1.0, NULL, 'hash-legado',
                 NULL, 1, 1, NULL, 1762788000000, 1762788000000,
                 NULL, 'texto local'
+            )
+        """
+        const val INSERCAO_NA_VERSAO_4_CONTA = """
+            INSERT INTO contas (publicId, instituicao, apelido, tipo, arquivada, criadoEm, atualizadoEm, excluidoEm)
+            VALUES ('conta-1', 'NUBANK', 'Nubank', 'CORRENTE', 0, 1762788000000, 1762788000000, NULL)
+        """
+        const val INSERCAO_NA_VERSAO_4_INSTRUMENTO = """
+            INSERT INTO instrumentos (
+                publicId, contaPublicId, tipo, apelido, ultimosDigitos, arquivado, fechamentoDia, vencimentoDia,
+                beneficio, saldoCentavos, diaRecarga, valorRecargaCentavos, limiteCreditoCentavos,
+                criadoEm, atualizadoEm, excluidoEm
+            ) VALUES (
+                'instrumento-credito', 'conta-1', 'CREDITO', 'Cartão', '1084', 1, 5, 12,
+                NULL, NULL, NULL, NULL, 500000,
+                1762788000000, 1762788000000, NULL
             )
         """
         val INDICES_DE_LANCAMENTOS = listOf(

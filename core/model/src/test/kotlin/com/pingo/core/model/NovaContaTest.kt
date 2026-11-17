@@ -100,5 +100,5 @@ class NovaContaTest {
         tipo: TipoInstrumento = TipoInstrumento.CREDITO,
         apelido: String = "Crédito",
         ultimosDigitos: String? = "1234",
-    ) = NovoInstrumento(tipo = tipo, apelido = apelido, ultimosDigitos = ultimosDigitos)
+    ) = NovoInstrumento(tipo = tipo, apelido = apelido, ultimosDigitos = ultimosDigitos, fechamentoDia = 5, vencimentoDia = 12)
 }

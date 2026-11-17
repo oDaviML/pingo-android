@@ -13,7 +13,9 @@ import com.pingo.core.designsystem.component.PingoText
 import com.pingo.core.designsystem.component.PingoTextField
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.model.BeneficioVoucher
 import com.pingo.core.model.InstituicaoFinanceira
+import com.pingo.core.model.MENSAGEM_DIA_INVALIDO
 import com.pingo.core.model.TAMANHO_MAXIMO_APELIDO
 import com.pingo.core.model.TAMANHO_ULTIMOS_DIGITOS
 import com.pingo.core.model.TipoConta
@@ -21,6 +23,8 @@ import com.pingo.core.model.TipoInstrumento
 
 private const val MENSAGEM_APELIDO = "Use de 1 a $TAMANHO_MAXIMO_APELIDO caracteres."
 private const val MENSAGEM_ULTIMOS_DIGITOS = "Use $TAMANHO_ULTIMOS_DIGITOS números ou deixe em branco."
+private const val MENSAGEM_VALOR = "Informe um valor em reais."
+private const val MENSAGEM_RECARGA_INCOMPLETA = "Informe dia e valor da recarga juntos."
 
 @Composable
 internal fun ContaEscolhaCampos(escolha: EscolhaBanco, onEvent: (OnboardingContasEvent) -> Unit) {
@@ -118,6 +122,133 @@ private fun InstrumentoEscolhidoCampos(
             supportingText = if (digitosOk) null else MENSAGEM_ULTIMOS_DIGITOS,
             isError = !digitosOk,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        )
+
+        when (instrumento.tipo) {
+            TipoInstrumento.CREDITO -> CreditoCampos(instituicao = instituicao, instrumento = instrumento, onEvent = onEvent)
+            TipoInstrumento.VOUCHER -> VoucherCampos(instituicao = instituicao, instrumento = instrumento, onEvent = onEvent)
+            TipoInstrumento.DEBITO -> Unit
+        }
+    }
+}
+
+@Composable
+private fun CreditoCampos(
+    instituicao: InstituicaoFinanceira,
+    instrumento: InstrumentoEscolhido,
+    onEvent: (OnboardingContasEvent) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
+    ) {
+        PingoTextField(
+            value = instrumento.fechamentoDia,
+            onValueChange = { onEvent(OnboardingContasEvent.AlterarFechamento(instituicao, instrumento.tipo, it)) },
+            label = "Fechamento",
+            modifier = Modifier.weight(1f),
+            supportingText = if (instrumento.fechamentoEhValido()) null else MENSAGEM_DIA_INVALIDO,
+            isError = !instrumento.fechamentoEhValido(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        )
+        PingoTextField(
+            value = instrumento.vencimentoDia,
+            onValueChange = { onEvent(OnboardingContasEvent.AlterarVencimento(instituicao, instrumento.tipo, it)) },
+            label = "Vencimento",
+            modifier = Modifier.weight(1f),
+            supportingText = if (instrumento.vencimentoEhValido()) null else MENSAGEM_DIA_INVALIDO,
+            isError = !instrumento.vencimentoEhValido(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        )
+    }
+}
+
+@Composable
+private fun VoucherCampos(
+    instituicao: InstituicaoFinanceira,
+    instrumento: InstrumentoEscolhido,
+    onEvent: (OnboardingContasEvent) -> Unit,
+) {
+    BeneficioCampos(instituicao, instrumento, onEvent)
+    SaldoInicialCampo(instituicao, instrumento, onEvent)
+    RecargaCampos(instituicao, instrumento, onEvent)
+}
+
+@Composable
+private fun BeneficioCampos(
+    instituicao: InstituicaoFinanceira,
+    instrumento: InstrumentoEscolhido,
+    onEvent: (OnboardingContasEvent) -> Unit,
+) {
+    EscolhaRotulo(texto = "Benefício")
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
+    ) {
+        BeneficioVoucher.entries.forEach { beneficio ->
+            PingoChoiceChip(
+                text = beneficio.name,
+                selected = instrumento.beneficio == beneficio,
+                onClick = { onEvent(OnboardingContasEvent.AlterarBeneficio(instituicao, instrumento.tipo, beneficio)) },
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SaldoInicialCampo(
+    instituicao: InstituicaoFinanceira,
+    instrumento: InstrumentoEscolhido,
+    onEvent: (OnboardingContasEvent) -> Unit,
+) {
+    val saldoOk = instrumento.saldoEhValido()
+
+    PingoTextField(
+        value = instrumento.saldoInicial,
+        onValueChange = { onEvent(OnboardingContasEvent.AlterarSaldoInicial(instituicao, instrumento.tipo, it)) },
+        label = "Saldo inicial (R$)",
+        supportingText = if (saldoOk) null else MENSAGEM_VALOR,
+        isError = !saldoOk,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+    )
+}
+
+@Composable
+private fun RecargaCampos(
+    instituicao: InstituicaoFinanceira,
+    instrumento: InstrumentoEscolhido,
+    onEvent: (OnboardingContasEvent) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
+    ) {
+        PingoTextField(
+            value = instrumento.diaRecarga,
+            onValueChange = { onEvent(OnboardingContasEvent.AlterarDiaRecarga(instituicao, instrumento.tipo, it)) },
+            label = "Dia da recarga (opcional)",
+            modifier = Modifier.weight(1f),
+            supportingText = if (instrumento.diaRecargaEhValido()) null else MENSAGEM_DIA_INVALIDO,
+            isError = !instrumento.diaRecargaEhValido(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        )
+        PingoTextField(
+            value = instrumento.valorRecarga,
+            onValueChange = { onEvent(OnboardingContasEvent.AlterarValorRecarga(instituicao, instrumento.tipo, it)) },
+            label = "Valor da recarga (R$)",
+            modifier = Modifier.weight(1f),
+            supportingText = if (instrumento.valorRecargaEhValido()) null else MENSAGEM_VALOR,
+            isError = !instrumento.valorRecargaEhValido(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        )
+    }
+
+    if (!instrumento.recargaEhValida()) {
+        PingoText(
+            text = MENSAGEM_RECARGA_INCOMPLETA,
+            style = PingoTheme.typography.caption,
+            color = PingoTheme.colors.expense,
         )
     }
 }

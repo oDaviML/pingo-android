@@ -26,6 +26,12 @@ object PingoMigrations {
         }
     }
 
+    val MIGRACAO_4_5: Migration = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE instrumentos ADD COLUMN arquivadoPorCascata INTEGER NOT NULL DEFAULT 0")
+        }
+    }
+
     private const val CREATE_LANCAMENTOS_V3 = """
         CREATE TABLE IF NOT EXISTS `lancamentos_novo` (
             `publicId` TEXT NOT NULL,

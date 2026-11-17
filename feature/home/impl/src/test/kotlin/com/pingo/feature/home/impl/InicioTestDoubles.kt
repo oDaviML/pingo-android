@@ -1,5 +1,6 @@
 package com.pingo.feature.home.impl
 
+import com.pingo.core.data.CadastroSalvo
 import com.pingo.core.data.CategoriaRepository
 import com.pingo.core.data.ContaRepository
 import com.pingo.core.data.InstrumentoRepository
@@ -7,6 +8,7 @@ import com.pingo.core.data.LancamentoRepository
 import com.pingo.core.data.ResultadoCategoria
 import com.pingo.core.model.Categoria
 import com.pingo.core.model.Conta
+import com.pingo.core.model.ContaEditada
 import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.Instrumento
 import com.pingo.core.model.Lancamento
@@ -150,11 +152,17 @@ internal class FakeContaRepository(contas: List<Conta> = emptyList()) : ContaRep
 
     override suspend fun criarComInstrumentos(contas: List<NovaConta>, agora: Instant) = error("nao usado")
 
+    override suspend fun salvarCadastro(edicao: ContaEditada, agora: Instant): CadastroSalvo = error("nao usado")
+
     override suspend fun salvar(conta: Conta) = error("nao usado")
 
     override suspend fun salvarTodas(contas: List<Conta>) = error("nao usado")
 
     override suspend fun excluir(publicId: String, quando: Instant) = error("nao usado")
+
+    override suspend fun arquivar(publicId: String, quando: Instant) = error("nao usado")
+
+    override suspend fun reativar(publicId: String, quando: Instant) = error("nao usado")
 }
 
 internal class FakeInstrumentoRepository(instrumentos: List<Instrumento> = emptyList()) : InstrumentoRepository {
@@ -173,6 +181,10 @@ internal class FakeInstrumentoRepository(instrumentos: List<Instrumento> = empty
     override suspend fun salvarTodos(instrumentos: List<Instrumento>) = error("nao usado")
 
     override suspend fun excluir(publicId: String, quando: Instant) = error("nao usado")
+
+    override suspend fun arquivar(publicId: String, quando: Instant) = error("nao usado")
+
+    override suspend fun reativar(publicId: String, quando: Instant) = error("nao usado")
 }
 
 internal class FakeAcessoNotificacoes(var concedido: Boolean) : AcessoNotificacoes {

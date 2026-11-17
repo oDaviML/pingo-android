@@ -18,6 +18,7 @@ internal fun InstrumentoEntity.toChangeDto(): InstrumentoChangeDto = Instrumento
     diaRecarga = diaRecarga,
     valorRecarga = valorRecargaCentavos?.toApiReais(),
     limiteCredito = limiteCreditoCentavos?.toApiReais(),
+    arquivadoPorCascata = arquivadoPorCascata,
     excluidoEm = excluidoEm?.toApiValue(),
 )
 
@@ -35,6 +36,7 @@ internal fun InstrumentoSnapshotDto.toEntity(): InstrumentoEntity = InstrumentoE
     diaRecarga = diaRecarga,
     valorRecargaCentavos = valorRecarga?.toCentavos(),
     limiteCreditoCentavos = limiteCredito?.toCentavos(),
+    arquivadoPorCascata = arquivadoPorCascata ?: false,
     criadoEm = criadoEm.toInstantValue(),
     atualizadoEm = atualizadoEm.toInstantValue(),
     excluidoEm = excluidoEm?.toInstantValue(),

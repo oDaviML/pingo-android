@@ -29,6 +29,12 @@ private fun NovoInstrumento.criar(contaPublicId: String, agora: Instant): Instru
     tipo = tipo,
     apelido = apelido.trim(),
     ultimosDigitos = ultimosDigitos,
+    fechamentoDia = fechamentoDia,
+    vencimentoDia = vencimentoDia,
+    beneficio = beneficio,
+    saldoCentavos = saldoCentavos,
+    diaRecarga = diaRecarga,
+    valorRecargaCentavos = valorRecargaCentavos,
     criadoEm = agora,
     atualizadoEm = agora,
 )

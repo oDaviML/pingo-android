@@ -13,6 +13,8 @@ import java.time.Instant
 
 internal val INSTANTE_DA_CRIACAO: Instant = Instant.parse("2026-11-10T12:00:00Z")
 
+internal val INSTANTE_DA_EDICAO: Instant = Instant.parse("2026-11-10T12:01:00Z")
+
 internal class FakeTransacaoLocal : TransacaoLocal {
     var execucoes = 0
         private set
@@ -47,6 +49,10 @@ internal class FakeContaDao : ContaDao {
     override suspend fun marcarExcluida(publicId: String, quando: Instant) {
         tabela.value = tabela.value.map { if (it.publicId == publicId) it.copy(excluidoEm = quando, atualizadoEm = quando) else it }
     }
+
+    override suspend fun definirArquivamento(publicId: String, arquivada: Boolean, quando: Instant) {
+        tabela.value = tabela.value.map { if (it.publicId == publicId) it.copy(arquivada = arquivada, atualizadoEm = quando) else it }
+    }
 }
 
 internal class FakeInstrumentoDao : InstrumentoDao {
@@ -67,6 +73,9 @@ internal class FakeInstrumentoDao : InstrumentoDao {
 
     override suspend fun atualizadosDesde(desde: Instant): List<InstrumentoEntity> = tabela.value.filter { it.atualizadoEm >= desde }
 
+    override suspend fun listarPorConta(contaPublicId: String): List<InstrumentoEntity> =
+        tabela.value.filter { it.contaPublicId == contaPublicId && it.excluidoEm == null }.sortedBy { it.apelido }
+
     override suspend fun upsert(instrumento: InstrumentoEntity) {
         upsertAll(listOf(instrumento))
     }
@@ -78,4 +87,37 @@ internal class FakeInstrumentoDao : InstrumentoDao {
     override suspend fun marcarExcluido(publicId: String, quando: Instant) {
         tabela.value = tabela.value.map { if (it.publicId == publicId) it.copy(excluidoEm = quando, atualizadoEm = quando) else it }
     }
+
+    override suspend fun marcarArquivado(publicId: String, quando: Instant) {
+        tabela.value = tabela.value.map { if (it.publicId == publicId) it.copy(arquivado = true, atualizadoEm = quando) else it }
+    }
+
+    override suspend fun marcarReativado(publicId: String, quando: Instant) {
+        tabela.value = tabela.value.map {
+            if (it.publicId == publicId) it.copy(arquivado = false, arquivadoPorCascata = false, atualizadoEm = quando) else it
+        }
+    }
+
+    override suspend fun arquivarAtivosPorCascata(contaPublicId: String, quando: Instant) {
+        tabela.value = tabela.value.map {
+            if (it.contaPublicId == contaPublicId && it.excluidoEm == null && !it.arquivado) {
+                it.copy(arquivado = true, arquivadoPorCascata = true, atualizadoEm = quando)
+            } else {
+                it
+            }
+        }
+    }
+
+    override suspend fun reativarArquivadosPorCascata(contaPublicId: String, quando: Instant) {
+        tabela.value = tabela.value.map {
+            if (it.contaPublicId == contaPublicId && arquivadoPorCascata(it)) {
+                it.copy(arquivado = false, arquivadoPorCascata = false, atualizadoEm = quando)
+            } else {
+                it
+            }
+        }
+    }
+
+    private fun arquivadoPorCascata(instrumento: InstrumentoEntity): Boolean =
+        instrumento.excluidoEm == null && instrumento.arquivado && instrumento.arquivadoPorCascata
 }

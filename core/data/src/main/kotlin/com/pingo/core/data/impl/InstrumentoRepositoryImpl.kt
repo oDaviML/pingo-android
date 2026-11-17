@@ -34,4 +34,12 @@ class InstrumentoRepositoryImpl @Inject constructor(private val instrumentoDao: 
     override suspend fun excluir(publicId: String, quando: Instant) {
         instrumentoDao.marcarExcluido(publicId, quando)
     }
+
+    override suspend fun arquivar(publicId: String, quando: Instant) {
+        instrumentoDao.marcarArquivado(publicId, quando)
+    }
+
+    override suspend fun reativar(publicId: String, quando: Instant) {
+        instrumentoDao.marcarReativado(publicId, quando)
+    }
 }

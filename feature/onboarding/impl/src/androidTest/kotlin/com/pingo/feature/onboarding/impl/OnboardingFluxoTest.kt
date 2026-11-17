@@ -8,13 +8,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.pingo.core.auth.AuthRepository
 import com.pingo.core.auth.LoginResult
 import com.pingo.core.auth.SessionState
 import com.pingo.core.data.AccountRepository
+import com.pingo.core.data.CadastroSalvo
 import com.pingo.core.data.ContaRepository
 import com.pingo.core.datastore.PermissaoDoPingo
 import com.pingo.core.datastore.PermissoesDataSource
@@ -23,6 +26,7 @@ import com.pingo.core.datastore.UserPreferencesDataSource
 import com.pingo.core.designsystem.component.PingoText
 import com.pingo.core.designsystem.theme.PingoTheme
 import com.pingo.core.model.Conta
+import com.pingo.core.model.ContaEditada
 import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.NovaConta
 import com.pingo.core.model.TipoInstrumento
@@ -78,6 +82,8 @@ class OnboardingFluxoTest {
 
         composeRule.onNodeWithText("Passo 7 de 8").assertIsDisplayed()
         composeRule.onNodeWithText("Nubank").performClick()
+        composeRule.onNodeWithContentDescription("Fechamento").performTextInput("5")
+        composeRule.onNodeWithContentDescription("Vencimento").performTextInput("12")
         composeRule.onNodeWithText("Continuar").performClick()
         composeRule.onNodeWithText("Home").assertIsDisplayed()
 
@@ -190,11 +196,17 @@ class OnboardingFluxoTest {
             criadas.add(contas)
         }
 
+        override suspend fun salvarCadastro(edicao: ContaEditada, agora: Instant): CadastroSalvo = error("nao usado")
+
         override suspend fun salvar(conta: Conta) = Unit
 
         override suspend fun salvarTodas(contas: List<Conta>) = Unit
 
         override suspend fun excluir(publicId: String, quando: Instant) = Unit
+
+        override suspend fun arquivar(publicId: String, quando: Instant) = Unit
+
+        override suspend fun reativar(publicId: String, quando: Instant) = Unit
     }
 
     private class FakeUserPreferences : UserPreferencesDataSource {

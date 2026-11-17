@@ -19,4 +19,8 @@ interface InstrumentoRepository {
     suspend fun salvarTodos(instrumentos: List<Instrumento>)
 
     suspend fun excluir(publicId: String, quando: Instant)
+
+    suspend fun arquivar(publicId: String, quando: Instant)
+
+    suspend fun reativar(publicId: String, quando: Instant)
 }
