@@ -8,4 +8,16 @@ sealed interface ContaFormEvent {
     data object Salvar : ContaFormEvent
 
     data object TentarDeNovo : ContaFormEvent
+
+    data object SolicitarArquivamentoDaConta : ContaFormEvent
+
+    data class SolicitarArquivamentoDoInstrumento(val chave: String) : ContaFormEvent
+
+    data object ConfirmarArquivamento : ContaFormEvent
+
+    data object CancelarArquivamento : ContaFormEvent
+
+    data object ReativarConta : ContaFormEvent
+
+    data class ReativarInstrumento(val chave: String) : ContaFormEvent
 }

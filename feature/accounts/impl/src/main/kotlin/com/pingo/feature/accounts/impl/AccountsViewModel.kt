@@ -43,14 +43,18 @@ class AccountsViewModel @Inject constructor(
                     combine(
                         contaRepository.observeContas(),
                         instrumentoRepository.observeInstrumentos(),
-                    ) { contas, instrumentos -> agruparContas(contas, instrumentos) }
+                    ) { contas, instrumentos -> ListaDeContas(agruparContas(contas, instrumentos), contasArquivadas(contas, instrumentos)) }
                         .catch {
                             mutableUiState.update { it.copy(carregando = false, falha = true) }
                         }
                 }
-                .collect { grupos ->
-                    mutableUiState.update { it.copy(carregando = false, falha = false, grupos = grupos) }
+                .collect { lista ->
+                    mutableUiState.update {
+                        it.copy(carregando = false, falha = false, grupos = lista.grupos, arquivadas = lista.arquivadas)
+                    }
                 }
         }
     }
+
+    private data class ListaDeContas(val grupos: List<GrupoDeContas>, val arquivadas: List<ContaArquivadaDaLista>)
 }

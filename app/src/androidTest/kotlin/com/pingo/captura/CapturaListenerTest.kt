@@ -227,6 +227,29 @@ class CapturaListenerTest {
     }
 
     @Test
+    fun capturaIgnoraInstrumentoArquivadoEVoltaAElegiLoAposReativar() {
+        runBlocking { captura.instrumentoRepository().arquivar(INSTRUMENTO_PUBLIC_ID, Instant.now()) }
+
+        val valorArquivado = valorUnico()
+        val inicioArquivado = Instant.now()
+        postar("Sua compra foi aprovada", "pingo-teste-ITAU", textoCompra(valorArquivado))
+
+        val pendente = aguardarLancamento(valorArquivado, inicioArquivado)
+        assertNull(pendente.instrumentoPublicId)
+        assertEquals(StatusLancamento.PENDENTE, pendente.status)
+        assertEquals(MotivoPendencia.INSTRUMENTO_NAO_ENCONTRADO.name, pendente.motivoPendencia)
+
+        runBlocking { captura.instrumentoRepository().reativar(INSTRUMENTO_PUBLIC_ID, Instant.now()) }
+        val valorReativado = valorUnico().let { valor -> if (valor == valorArquivado) valor + 1 else valor }
+        val inicioReativado = Instant.now()
+        postar("Sua compra foi aprovada", "pingo-teste-ITAU", textoCompra(valorReativado))
+
+        val vinculado = aguardarLancamento(valorReativado, inicioReativado)
+        assertEquals(INSTRUMENTO_PUBLIC_ID, vinculado.instrumentoPublicId)
+        assertEquals(StatusLancamento.CONFIRMADO, vinculado.status)
+    }
+
+    @Test
     fun capturaComTagOutraNaoAssociaInstrumentoManualmenteCadastrado() {
         val agora = Instant.now()
         val contaPublicId = "conta-outra-${System.nanoTime()}"

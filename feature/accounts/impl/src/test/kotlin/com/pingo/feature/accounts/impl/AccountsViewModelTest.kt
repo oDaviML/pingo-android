@@ -53,6 +53,44 @@ class AccountsViewModelTest {
     }
 
     @Test
+    fun `conta arquivada aparece na secao propria com seus instrumentos`() {
+        contas.contas.value = listOf(
+            conta("conta-nu", InstituicaoFinanceira.NUBANK, "Nubank"),
+            conta("conta-antiga", InstituicaoFinanceira.INTER, "Inter antiga", arquivada = true),
+        )
+        instrumentos.instrumentos.value = listOf(
+            instrumento("nu-credito", "conta-nu", TipoInstrumento.CREDITO, "Cartão", arquivado = false),
+            instrumento("antigo-credito", "conta-antiga", TipoInstrumento.CREDITO, "Cartão antigo", arquivado = true),
+            instrumento("antigo-debito", "conta-antiga", TipoInstrumento.DEBITO, "Débito antigo", arquivado = false),
+        )
+
+        val viewModel = AccountsViewModel(contas, instrumentos)
+
+        assertEquals(
+            listOf("conta-nu"),
+            viewModel.uiState.value.grupos.flatMap { grupo -> grupo.contas.map { it.conta.publicId } },
+        )
+        val arquivada = viewModel.uiState.value.arquivadas.single()
+        assertEquals("conta-antiga", arquivada.conta.publicId)
+        assertEquals(listOf("Cartão antigo", "Débito antigo"), arquivada.instrumentos.map { it.apelido })
+        assertFalse(viewModel.uiState.value.vazia)
+    }
+
+    @Test
+    fun `so contas arquivadas nao mostram o estado vazio de primeiro cadastro`() {
+        contas.contas.value = listOf(conta("conta-antiga", InstituicaoFinanceira.NUBANK, "Antiga", arquivada = true))
+        instrumentos.instrumentos.value = listOf(
+            instrumento("antigo", "conta-antiga", TipoInstrumento.DEBITO, "Débito", arquivado = true),
+        )
+
+        val viewModel = AccountsViewModel(contas, instrumentos)
+
+        assertTrue(viewModel.uiState.value.grupos.isEmpty())
+        assertEquals(1, viewModel.uiState.value.arquivadas.size)
+        assertFalse(viewModel.uiState.value.vazia)
+    }
+
+    @Test
     fun `falha de leitura mostra erro e tentar de novo recarrega`() {
         contas.falhaAoObservar = IllegalStateException("banco indisponível")
 

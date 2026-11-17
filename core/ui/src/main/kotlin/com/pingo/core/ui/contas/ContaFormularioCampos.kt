@@ -21,6 +21,7 @@ fun ContaFormularioCampos(
     onEvento: (EventoDoFormularioDeConta) -> Unit,
     modifier: Modifier = Modifier,
     rotuloApelido: String = "Apelido da conta",
+    acaoDoInstrumento: (@Composable (InstrumentoFormulario) -> Unit)? = null,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -56,6 +57,7 @@ fun ContaFormularioCampos(
                 instrumento = instrumento,
                 podeRemover = formulario.podeRemoverInstrumento(),
                 onEvento = onEvento,
+                acao = acaoDoInstrumento?.let { acao -> { acao(instrumento) } },
             )
         }
 

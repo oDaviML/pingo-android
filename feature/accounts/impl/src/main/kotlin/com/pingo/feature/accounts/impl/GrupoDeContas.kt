@@ -14,6 +14,9 @@ data class GrupoDeContas(val instituicao: InstituicaoFinanceira, val contas: Lis
 @Immutable
 data class ContaDaLista(val conta: Conta, val instrumentos: List<Instrumento>)
 
+@Immutable
+data class ContaArquivadaDaLista(val conta: Conta, val instrumentos: List<Instrumento>)
+
 internal fun agruparContas(contas: List<Conta>, instrumentos: List<Instrumento>): List<GrupoDeContas> = contas
     .filter { conta -> !conta.arquivada && conta.excluidoEm == null }
     .sortedBy { conta -> instituicoesFinanceiras.indexOf(conta.instituicao) }
@@ -32,6 +35,18 @@ private fun instrumentosDaConta(conta: Conta, instrumentos: List<Instrumento>): 
         instrumento.contaPublicId == conta.publicId && !instrumento.arquivado && instrumento.excluidoEm == null
     }
     .sortedWith(compareBy({ it.tipo }, { it.apelido }))
+
+internal fun contasArquivadas(contas: List<Conta>, instrumentos: List<Instrumento>): List<ContaArquivadaDaLista> = contas
+    .filter { conta -> conta.arquivada && conta.excluidoEm == null }
+    .sortedWith(compareBy({ conta -> instituicoesFinanceiras.indexOf(conta.instituicao) }, { conta -> conta.apelido }))
+    .map { conta ->
+        ContaArquivadaDaLista(
+            conta = conta,
+            instrumentos = instrumentos
+                .filter { instrumento -> instrumento.contaPublicId == conta.publicId && instrumento.excluidoEm == null }
+                .sortedWith(compareBy({ it.tipo }, { it.apelido })),
+        )
+    }
 
 internal fun Instrumento.rotuloNaListaDeContas(): String = when (tipo) {
     TipoInstrumento.VOUCHER -> listOfNotNull(beneficio?.rotuloDeExibicao() ?: "Voucher", apelido).joinToString(" · ")

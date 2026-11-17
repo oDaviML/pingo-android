@@ -417,6 +417,42 @@ class ReviewViewModelTest {
     }
 
     @Test
+    fun `destinos de transferencia ignoram instrumento arquivado e conta arquivada`() = runTest {
+        val instrumentoArquivado = instrumentoInter.copy(
+            publicId = "inst-arquivado",
+            apelido = "Débito antigo",
+            arquivado = true,
+        )
+        val contaArquivada = contaInter.copy(publicId = "conta-arquivada", arquivada = true)
+        val instrumentoDeContaArquivada = instrumentoInter.copy(
+            publicId = "inst-conta-arquivada",
+            contaPublicId = contaArquivada.publicId,
+            apelido = "Débito da conta arquivada",
+        )
+        val ambigua = pendenciaDeTeste(
+            publicId = "ambigua",
+            dataHora = agora.minus(Duration.ofMinutes(5)),
+            valorCentavos = 15000,
+            instrumentoPublicId = instrumentoNubank.publicId,
+            estabelecimento = "Conta própria",
+            motivoPendencia = MotivoPendencia.TRANSFERENCIA_AMBIGUA.name,
+            textoBruto = "Pix enviado R$ 150,00",
+        )
+        val cenario = criarViewModel(
+            listOf(ambigua),
+            contas = listOf(contaNubank, contaInter, contaArquivada),
+            instrumentos = listOf(instrumentoNubank, instrumentoInter, instrumentoArquivado, instrumentoDeContaArquivada),
+        )
+        advanceUntilIdle()
+
+        cenario.viewModel.onEvent(ReviewEvent.AbrirMarcarTransferencia("ambigua"))
+        advanceUntilIdle()
+
+        val painel = cenario.viewModel.uiState.value.painelDeTransferencia
+        assertEquals(listOf(instrumentoInter.publicId), painel?.opcoes?.map { it.publicId })
+    }
+
+    @Test
     fun `estado vazio quando nao ha pendentes`() = runTest {
         val cenario = criarViewModel(listOf(confirmado))
         advanceUntilIdle()
@@ -427,9 +463,13 @@ class ReviewViewModelTest {
         assertFalse(estado.podeConfirmarTodos)
     }
 
-    private fun criarViewModel(lancamentos: List<Lancamento>): Cenario {
+    private fun criarViewModel(
+        lancamentos: List<Lancamento>,
+        contas: List<Conta> = listOf(contaNubank, contaInter),
+        instrumentos: List<Instrumento> = listOf(instrumentoNubank, instrumentoInter),
+    ): Cenario {
         val repositorioLancamentos = FakeLancamentoRepository(lancamentos)
-        val repositorioInstrumentos = FakeInstrumentoRepository(listOf(instrumentoNubank, instrumentoInter))
+        val repositorioInstrumentos = FakeInstrumentoRepository(instrumentos)
         val repositorioCategorias = FakeCategoriaRepository(listOf(alimentacao, mercado, salario))
         val repositorioRegras = FakeRegraCategoriaRepository()
         val transacao = FakeTransacaoLocal()
@@ -441,7 +481,7 @@ class ReviewViewModelTest {
 
         val viewModel = ReviewViewModel(
             lancamentoRepository = repositorioLancamentos,
-            contaRepository = FakeContaRepository(listOf(contaNubank, contaInter)),
+            contaRepository = FakeContaRepository(contas),
             instrumentoRepository = repositorioInstrumentos,
             categoriaRepository = repositorioCategorias,
             confirmarPendencias = ConfirmarPendencias(repositorioLancamentos, repositorioInstrumentos, clock),

@@ -11,6 +11,19 @@ import java.time.Instant
 @Dao
 interface InstrumentoDao {
     @Query("SELECT * FROM instrumentos WHERE excluidoEm IS NULL ORDER BY apelido")
+    fun observeNaoExcluidos(): Flow<List<InstrumentoEntity>>
+
+    @Query(
+        """
+        SELECT instrumentos.* FROM instrumentos
+        INNER JOIN contas ON contas.publicId = instrumentos.contaPublicId
+        WHERE contas.arquivada = 0
+        AND contas.excluidoEm IS NULL
+        AND instrumentos.excluidoEm IS NULL
+        AND instrumentos.arquivado = 0
+        ORDER BY instrumentos.apelido
+        """,
+    )
     fun observeAtivos(): Flow<List<InstrumentoEntity>>
 
     @Query("SELECT * FROM instrumentos WHERE publicId = :publicId")
@@ -25,6 +38,7 @@ interface InstrumentoDao {
         INNER JOIN contas ON contas.publicId = instrumentos.contaPublicId
         WHERE contas.instituicao = :instituicao
         AND contas.excluidoEm IS NULL
+        AND contas.arquivada = 0
         AND instrumentos.excluidoEm IS NULL
         AND instrumentos.arquivado = 0
         ORDER BY instrumentos.apelido

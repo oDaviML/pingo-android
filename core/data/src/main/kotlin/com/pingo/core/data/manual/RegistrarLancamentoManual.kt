@@ -46,10 +46,7 @@ class RegistrarLancamentoManual @Inject constructor(
         }
     }
 
-    private suspend fun instrumentosAtivos(): List<Instrumento> =
-        instrumentoRepository.observeInstrumentos().first().filter { instrumento ->
-            instrumento.excluidoEm == null && !instrumento.arquivado
-        }
+    private suspend fun instrumentosAtivos(): List<Instrumento> = instrumentoRepository.observeInstrumentosAtivos().first()
 
     private fun validar(novo: NovoLancamentoManual, ativos: Map<String, Instrumento>): Set<CampoDeLancamentoManual> = buildSet {
         if (novo.valorCentavos <= 0) {

@@ -19,11 +19,14 @@ import com.pingo.core.data.categoria.CategoriaSeeder
 import com.pingo.core.data.detalhe.ResultadoDaTransferencia
 import com.pingo.core.data.di.CapturaEntryPoint
 import com.pingo.core.data.di.DetalheEntryPoint
+import com.pingo.core.data.impl.ContaRepositoryImpl
+import com.pingo.core.data.impl.RoomTransacaoLocal
 import com.pingo.core.database.PingoDatabase
 import com.pingo.core.datastore.CapturaDataSource
 import com.pingo.core.datastore.CapturaDataSourceImpl
 import com.pingo.core.datastore.SyncStatus
 import com.pingo.core.datastore.UserPreferencesDataSource
+import com.pingo.core.model.BeneficioVoucher
 import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.Lancamento
 import com.pingo.core.model.MotivoPendencia
@@ -315,7 +318,7 @@ class SyncHttpIntegrationTest {
     }
 
     @Test
-    fun arquivamentoEmCascataSincronizaRestauraEPreservaAProcedencia() = runBlocking {
+    fun arquivamentoEmCascataCompletoSincronizaRestauraReativaERepeteSemDuplicar() = runBlocking {
         assumeTrue("informe -e $ARG_HOST=<url do Pingo.Api.TestHost>", !host.isNullOrBlank())
 
         withTimeout(TEMPO_TOTAL) {
@@ -330,65 +333,157 @@ class SyncHttpIntegrationTest {
                 listOf(
                     NovaConta(
                         instituicao = InstituicaoFinanceira.NUBANK,
-                        apelido = "Nubank",
+                        apelido = "Nubank pessoal",
                         tipo = TipoConta.CORRENTE,
                         instrumentos = listOf(
                             NovoInstrumento(
                                 tipo = TipoInstrumento.CREDITO,
-                                apelido = "Crédito Nubank",
+                                apelido = "Crédito principal",
+                                ultimosDigitos = "1234",
                                 fechamentoDia = 5,
                                 vencimentoDia = 12,
                             ),
-                            NovoInstrumento(tipo = TipoInstrumento.DEBITO, apelido = "Débito Nubank"),
+                            NovoInstrumento(
+                                tipo = TipoInstrumento.CREDITO,
+                                apelido = "Crédito sem dígitos",
+                                fechamentoDia = 28,
+                                vencimentoDia = 5,
+                            ),
+                            NovoInstrumento(tipo = TipoInstrumento.DEBITO, apelido = "Débito antigo"),
                         ),
+                    ),
+                    NovaConta(
+                        instituicao = InstituicaoFinanceira.CAJU,
+                        apelido = "Caju benefícios",
+                        tipo = TipoConta.BENEFICIO,
+                        instrumentos = listOf(
+                            NovoInstrumento(
+                                tipo = TipoInstrumento.VOUCHER,
+                                apelido = "Caju VR",
+                                beneficio = BeneficioVoucher.VR,
+                                saldoCentavos = 48620,
+                                diaRecarga = 5,
+                                valorRecargaCentavos = 30000,
+                            ),
+                        ),
+                    ),
+                    NovaConta(
+                        instituicao = InstituicaoFinanceira.OUTRA,
+                        apelido = "Conta manual",
+                        tipo = TipoConta.CORRENTE,
+                        instrumentos = listOf(NovoInstrumento(tipo = TipoInstrumento.DEBITO, apelido = "Débito manual")),
                     ),
                 ),
                 Instant.now(),
             )
 
-            val conta = captura.contaRepository().observeContas().first().single()
-            val instrumentos = captura.instrumentoRepository().observePorConta(conta.publicId).first()
-            val credito = instrumentos.first { it.tipo == TipoInstrumento.CREDITO }
-            val debito = instrumentos.first { it.tipo == TipoInstrumento.DEBITO }
+            val contas = captura.contaRepository().observeContas().first()
+            val nubank = contas.single { it.instituicao == InstituicaoFinanceira.NUBANK }
+            val caju = contas.single { it.instituicao == InstituicaoFinanceira.CAJU }
+            val outra = contas.single { it.instituicao == InstituicaoFinanceira.OUTRA }
+            val instrumentosNubank = captura.instrumentoRepository().observePorConta(nubank.publicId).first()
+            val credito = instrumentosNubank.single { it.apelido == "Crédito principal" }
+            val creditoSemDigitos = instrumentosNubank.single { it.apelido == "Crédito sem dígitos" }
+            val debito = instrumentosNubank.single { it.apelido == "Débito antigo" }
+            val voucher = captura.instrumentoRepository().observePorConta(caju.publicId).first().single()
+            val debitoManual = captura.instrumentoRepository().observePorConta(outra.publicId).first().single()
 
             captura.instrumentoRepository().arquivar(debito.publicId, Instant.now())
-            captura.contaRepository().arquivar(conta.publicId, Instant.now())
+            captura.contaRepository().arquivar(nubank.publicId, Instant.now())
 
             val engine = motor(api, fonte, FakePreferences(), token)
             engine.run()
 
-            val arquivados = api.pullChanges(null).instrumentos
-            val creditoArquivado = arquivados.single { it.publicId == credito.publicId }
-            val debitoArquivado = arquivados.single { it.publicId == debito.publicId }
+            val remotos = api.pullChanges(null)
+            val nubankRemota = remotos.contas.single { it.publicId == nubank.publicId }
+            val cajuRemota = remotos.contas.single { it.publicId == caju.publicId }
+            val outraRemota = remotos.contas.single { it.publicId == outra.publicId }
+            assertTrue(nubankRemota.arquivada)
+            assertEquals("Nubank pessoal", nubankRemota.apelido)
+            assertEquals("Nubank", nubankRemota.instituicao)
+            assertEquals("Corrente", nubankRemota.tipo)
+            assertEquals("Caju", cajuRemota.instituicao)
+            assertEquals("Beneficio", cajuRemota.tipo)
+            assertEquals("Outra", outraRemota.instituicao)
+            assertFalse(cajuRemota.arquivada)
 
-            assertTrue(creditoArquivado.arquivado)
-            assertEquals(true, creditoArquivado.arquivadoPorCascata)
-            assertTrue(debitoArquivado.arquivado)
-            assertEquals(false, debitoArquivado.arquivadoPorCascata)
+            val creditoRemoto = remotos.instrumentos.single { it.publicId == credito.publicId }
+            val semDigitosRemoto = remotos.instrumentos.single { it.publicId == creditoSemDigitos.publicId }
+            val debitoRemoto = remotos.instrumentos.single { it.publicId == debito.publicId }
+            val voucherRemoto = remotos.instrumentos.single { it.publicId == voucher.publicId }
+            val manualRemoto = remotos.instrumentos.single { it.publicId == debitoManual.publicId }
+            assertTrue(creditoRemoto.arquivado)
+            assertEquals(true, creditoRemoto.arquivadoPorCascata)
+            assertEquals("1234", creditoRemoto.ultimosDigitos)
+            assertEquals(5, creditoRemoto.fechamentoDia)
+            assertEquals(12, creditoRemoto.vencimentoDia)
+            assertEquals("Crédito sem dígitos", semDigitosRemoto.apelido)
+            assertNull(semDigitosRemoto.ultimosDigitos)
+            assertEquals(28, semDigitosRemoto.fechamentoDia)
+            assertEquals(5, semDigitosRemoto.vencimentoDia)
+            assertTrue(debitoRemoto.arquivado)
+            assertEquals(false, debitoRemoto.arquivadoPorCascata)
+            assertEquals("VR", voucherRemoto.beneficio)
+            assertEquals(486.20, voucherRemoto.saldo ?: 0.0, 0.001)
+            assertEquals(5, voucherRemoto.diaRecarga)
+            assertEquals(300.0, voucherRemoto.valorRecarga ?: 0.0, 0.001)
+            assertFalse(manualRemoto.arquivado)
 
-            captura.contaRepository().reativar(conta.publicId, Instant.now())
-            engine.run()
-
-            val reativados = api.pullChanges(null).instrumentos
-            val creditoReativado = reativados.single { it.publicId == credito.publicId }
-            val debitoMantido = reativados.single { it.publicId == debito.publicId }
-
-            assertFalse(creditoReativado.arquivado)
-            assertEquals(false, creditoReativado.arquivadoPorCascata)
-            assertTrue(debitoMantido.arquivado)
-            assertEquals(false, debitoMantido.arquivadoPorCascata)
+            val outroUsuario = HttpPingoApiClient(
+                PingoApiConfig(host),
+                FixtureAuth("auth0|isolado-${UUID.randomUUID()}"),
+                dispatchers,
+            )
+            val pullDoOutro = outroUsuario.pullChanges(null)
+            assertTrue(pullDoOutro.contas.isEmpty())
+            assertTrue(pullDoOutro.instrumentos.isEmpty())
 
             val restauracao = bancoEmMemoria()
             try {
                 motor(api, restauracao, FakePreferences(), token).run()
+                motor(api, restauracao, FakePreferences(), token).run()
+
+                assertEquals(3, restauracao.contaDao().observeNaoExcluidas().first().size)
+                assertEquals(5, restauracao.instrumentoDao().observeNaoExcluidos().first().size)
+                val nubankRestaurada = restauracao.contaDao().buscar(nubank.publicId)
+                assertTrue(nubankRestaurada?.arquivada == true)
+                assertEquals("Nubank pessoal", nubankRestaurada?.apelido)
+                assertEquals(InstituicaoFinanceira.NUBANK, nubankRestaurada?.instituicao)
+                assertEquals(TipoConta.CORRENTE, nubankRestaurada?.tipo)
+                assertEquals(caju.publicId, restauracao.contaDao().buscar(caju.publicId)?.publicId)
+                assertEquals(outra.publicId, restauracao.contaDao().buscar(outra.publicId)?.publicId)
 
                 val creditoRestaurado = restauracao.instrumentoDao().buscar(credito.publicId)
+                val semDigitosRestaurado = restauracao.instrumentoDao().buscar(creditoSemDigitos.publicId)
                 val debitoRestaurado = restauracao.instrumentoDao().buscar(debito.publicId)
-
-                assertEquals(false, creditoRestaurado?.arquivado)
-                assertEquals(false, creditoRestaurado?.arquivadoPorCascata)
+                val voucherRestaurado = restauracao.instrumentoDao().buscar(voucher.publicId)
+                assertEquals(true, creditoRestaurado?.arquivado)
+                assertEquals(true, creditoRestaurado?.arquivadoPorCascata)
+                assertEquals("1234", creditoRestaurado?.ultimosDigitos)
+                assertEquals(5, creditoRestaurado?.fechamentoDia)
+                assertEquals(12, creditoRestaurado?.vencimentoDia)
+                assertEquals(null, semDigitosRestaurado?.ultimosDigitos)
+                assertEquals(28, semDigitosRestaurado?.fechamentoDia)
+                assertEquals(5, semDigitosRestaurado?.vencimentoDia)
                 assertEquals(true, debitoRestaurado?.arquivado)
                 assertEquals(false, debitoRestaurado?.arquivadoPorCascata)
+                assertEquals(BeneficioVoucher.VR, voucherRestaurado?.beneficio)
+                assertEquals(48620L, voucherRestaurado?.saldoCentavos)
+                assertEquals(5, voucherRestaurado?.diaRecarga)
+                assertEquals(30000L, voucherRestaurado?.valorRecargaCentavos)
+
+                val repositorioRestaurado = ContaRepositoryImpl(
+                    restauracao.contaDao(),
+                    restauracao.instrumentoDao(),
+                    RoomTransacaoLocal(restauracao),
+                )
+                repositorioRestaurado.reativar(nubank.publicId, Instant.now())
+
+                assertEquals(false, restauracao.contaDao().buscar(nubank.publicId)?.arquivada)
+                assertEquals(false, restauracao.instrumentoDao().buscar(credito.publicId)?.arquivado)
+                assertEquals(false, restauracao.instrumentoDao().buscar(creditoSemDigitos.publicId)?.arquivado)
+                assertEquals(true, restauracao.instrumentoDao().buscar(debito.publicId)?.arquivado)
+                assertEquals(false, restauracao.instrumentoDao().buscar(debito.publicId)?.arquivadoPorCascata)
             } finally {
                 restauracao.close()
             }

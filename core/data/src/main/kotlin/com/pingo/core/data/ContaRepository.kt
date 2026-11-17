@@ -4,10 +4,14 @@ import com.pingo.core.model.Conta
 import com.pingo.core.model.ContaEditada
 import com.pingo.core.model.NovaConta
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import java.time.Instant
 
 interface ContaRepository {
     fun observeContas(): Flow<List<Conta>>
+
+    fun observeContasAtivas(): Flow<List<Conta>> =
+        observeContas().map { contas -> contas.filter { conta -> conta.excluidoEm == null && !conta.arquivada } }
 
     suspend fun buscar(publicId: String): Conta?
 

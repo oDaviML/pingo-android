@@ -23,7 +23,10 @@ internal class FakeContaRepository : ContaRepository {
     var contaPorId: Conta? = null
     var falhaAoObservar: Throwable? = null
     var falhaAoSalvar: Throwable? = null
+    var falhaAoArquivar: Throwable? = null
     var gateDeSalvamento: CompletableDeferred<Unit>? = null
+    val arquivadas = mutableListOf<String>()
+    val reativadas = mutableListOf<String>()
 
     override fun observeContas(): Flow<List<Conta>> = flow {
         falhaAoObservar?.let { throw it }
@@ -62,14 +65,30 @@ internal class FakeContaRepository : ContaRepository {
 
     override suspend fun excluir(publicId: String, quando: Instant) = Unit
 
-    override suspend fun arquivar(publicId: String, quando: Instant) = Unit
+    override suspend fun arquivar(publicId: String, quando: Instant) {
+        falhaAoArquivar?.let { throw it }
+        arquivadas.add(publicId)
+        atualizarArquivamento(publicId, arquivada = true)
+    }
 
-    override suspend fun reativar(publicId: String, quando: Instant) = Unit
+    override suspend fun reativar(publicId: String, quando: Instant) {
+        falhaAoArquivar?.let { throw it }
+        reativadas.add(publicId)
+        atualizarArquivamento(publicId, arquivada = false)
+    }
+
+    private fun atualizarArquivamento(publicId: String, arquivada: Boolean) {
+        contaPorId = contaPorId?.takeIf { it.publicId == publicId }?.copy(arquivada = arquivada) ?: contaPorId
+        contas.value = contas.value.map { if (it.publicId == publicId) it.copy(arquivada = arquivada) else it }
+    }
 }
 
 internal class FakeInstrumentoRepository : InstrumentoRepository {
     val instrumentos = MutableStateFlow<List<Instrumento>>(emptyList())
     var porConta: List<Instrumento> = emptyList()
+    var falhaAoArquivar: Throwable? = null
+    val arquivados = mutableListOf<String>()
+    val reativados = mutableListOf<String>()
 
     override fun observeInstrumentos(): Flow<List<Instrumento>> = instrumentos
 
@@ -87,7 +106,20 @@ internal class FakeInstrumentoRepository : InstrumentoRepository {
 
     override suspend fun excluir(publicId: String, quando: Instant) = Unit
 
-    override suspend fun arquivar(publicId: String, quando: Instant) = Unit
+    override suspend fun arquivar(publicId: String, quando: Instant) {
+        falhaAoArquivar?.let { throw it }
+        arquivados.add(publicId)
+        atualizar(publicId) { it.copy(arquivado = true) }
+    }
 
-    override suspend fun reativar(publicId: String, quando: Instant) = Unit
+    override suspend fun reativar(publicId: String, quando: Instant) {
+        falhaAoArquivar?.let { throw it }
+        reativados.add(publicId)
+        atualizar(publicId) { it.copy(arquivado = false, arquivadoPorCascata = false) }
+    }
+
+    private fun atualizar(publicId: String, transformar: (Instrumento) -> Instrumento) {
+        instrumentos.value = instrumentos.value.map { if (it.publicId == publicId) transformar(it) else it }
+        porConta = porConta.map { if (it.publicId == publicId) transformar(it) else it }
+    }
 }

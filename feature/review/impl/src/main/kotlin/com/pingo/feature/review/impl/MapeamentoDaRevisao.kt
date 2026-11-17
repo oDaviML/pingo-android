@@ -113,6 +113,7 @@ internal fun instrumentosParaTransferencia(base: BaseDaRevisao, lancamento: Lanc
 
     return base.instrumentos
         .filter { it.excluidoEm == null && !it.arquivado && it.contaPublicId != contaOrigem }
+        .filter { instrumento -> contasPorId[instrumento.contaPublicId]?.let { it.excluidoEm == null && !it.arquivada } == true }
         .map { OpcaoDaRevisao(it.publicId, rotuloDoInstrumento(contasPorId, it)) }
 }
 

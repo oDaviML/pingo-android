@@ -373,6 +373,25 @@ class NovoLancamentoViewModelTest {
     }
 
     @Test
+    fun `seletores ignoram instrumento arquivado e instrumento de conta arquivada`() = runTest {
+        val contaArquivada = contaInter.copy(arquivada = true)
+        val instrumentoArquivado = instrumentoNubank.copy(
+            publicId = "inst-arquivado",
+            apelido = "Cartão antigo",
+            arquivado = true,
+        )
+        val cenario = criarViewModel(
+            contas = listOf(contaNubank, contaArquivada),
+            instrumentos = listOf(instrumentoNubank, instrumentoInter, instrumentoArquivado),
+            lancamentos = listOf(capturadoRecente),
+        )
+        advanceUntilIdle()
+
+        assertEquals(listOf("inst-nubank"), cenario.viewModel.uiState.value.instrumentos.map { it.publicId })
+        assertEquals("inst-nubank", cenario.viewModel.uiState.value.instrumento?.publicId)
+    }
+
+    @Test
     fun `segundo toque em salvar nao duplica o lancamento`() = runTest {
         val cenario = criarViewModel(lancamentos = listOf(capturadoRecente))
         advanceUntilIdle()

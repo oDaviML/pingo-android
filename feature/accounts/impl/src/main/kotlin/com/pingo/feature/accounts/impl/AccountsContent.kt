@@ -154,6 +154,13 @@ private fun ListaDeContas(state: AccountsUiState, onNovaConta: () -> Unit, onAbr
             }
         }
 
+        if (state.arquivadas.isNotEmpty()) {
+            SectionHeader(title = "Contas arquivadas")
+            state.arquivadas.forEach { item ->
+                ContaArquivadaCard(conta = item, onAbrirConta = onAbrirConta)
+            }
+        }
+
         PingoButton(
             text = "Adicionar conta",
             onClick = onNovaConta,
@@ -201,5 +208,44 @@ private fun ContaCard(conta: ContaDaLista, onAbrirConta: (String) -> Unit) {
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun ContaArquivadaCard(conta: ContaArquivadaDaLista, onAbrirConta: (String) -> Unit) {
+    PingoCard(
+        modifier = Modifier
+            .testTag("conta-arquivada-${conta.conta.publicId}")
+            .clickable(role = Role.Button, onClick = { onAbrirConta(conta.conta.publicId) }),
+        contentPadding = PingoSpacing.lg,
+        gap = PingoSpacing.xs,
+    ) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            PingoText(
+                text = conta.conta.apelido,
+                style = PingoTheme.typography.bodyStrong,
+                color = PingoTheme.colors.onBackground,
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            PingoText(
+                text = "Arquivada",
+                style = PingoTheme.typography.caption,
+                color = PingoTheme.colors.onSurfaceVariant,
+            )
+        }
+        PingoText(
+            text = conta.conta.instituicao.nomeDeExibicao(),
+            style = PingoTheme.typography.bodySmall,
+            color = PingoTheme.colors.onSurfaceVariant,
+        )
+        PingoText(
+            text = if (conta.instrumentos.isEmpty()) {
+                "Sem instrumentos"
+            } else {
+                conta.instrumentos.joinToString(" · ") { it.rotuloNaListaDeContas() }
+            },
+            style = PingoTheme.typography.bodySmall,
+            color = PingoTheme.colors.onSurfaceVariant,
+        )
     }
 }

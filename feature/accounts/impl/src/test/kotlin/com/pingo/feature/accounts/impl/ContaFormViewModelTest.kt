@@ -224,6 +224,90 @@ class ContaFormViewModelTest {
         assertEquals(chaveDoSegundo, chaves[1])
     }
 
+    @Test
+    fun `arquivar instrumento isolado afeta apenas ele e permite reativar`() {
+        semearContaEditavel()
+        val irmao = instrumentos.porConta.single().copy(publicId = "instrumento-2", apelido = "Débito", ultimosDigitos = null)
+        instrumentos.porConta = instrumentos.porConta + irmao
+        instrumentos.instrumentos.value = instrumentos.porConta
+        val viewModel = criarViewModel("conta-1")
+
+        viewModel.onEvent(ContaFormEvent.SolicitarArquivamentoDoInstrumento("instrumento-1"))
+        assertEquals(DialogoDeArquivamento.Instrumento("instrumento-1", "Cartão"), viewModel.uiState.value.dialogo)
+        viewModel.onEvent(ContaFormEvent.ConfirmarArquivamento)
+
+        assertEquals(listOf("instrumento-1"), instrumentos.arquivados)
+        assertTrue(contas.arquivadas.isEmpty())
+        assertFalse(viewModel.uiState.value.contaArquivada)
+        assertEquals(
+            listOf(true, false),
+            viewModel.uiState.value.formulario.instrumentos.map { it.arquivado },
+        )
+
+        val reaberto = criarViewModel("conta-1")
+        assertEquals(listOf(true, false), reaberto.uiState.value.formulario.instrumentos.map { it.arquivado })
+
+        reaberto.onEvent(ContaFormEvent.ReativarInstrumento("instrumento-1"))
+
+        assertEquals(listOf("instrumento-1"), instrumentos.reativados)
+        assertEquals(listOf(false, false), reaberto.uiState.value.formulario.instrumentos.map { it.arquivado })
+        assertEquals("instrumento-1", reaberto.uiState.value.formulario.instrumentos.first().publicId)
+    }
+
+    @Test
+    fun `cancelar confirmacao de arquivamento nao altera nada`() {
+        semearContaEditavel()
+        val viewModel = criarViewModel("conta-1")
+
+        viewModel.onEvent(ContaFormEvent.SolicitarArquivamentoDaConta)
+        assertEquals(DialogoDeArquivamento.Conta, viewModel.uiState.value.dialogo)
+
+        viewModel.onEvent(ContaFormEvent.CancelarArquivamento)
+
+        assertNull(viewModel.uiState.value.dialogo)
+        assertTrue(contas.arquivadas.isEmpty())
+        assertFalse(viewModel.uiState.value.contaArquivada)
+        assertFalse(viewModel.uiState.value.concluido)
+    }
+
+    @Test
+    fun `confirmar arquivamento da conta conclui e reativar volta ao estado ativo`() {
+        semearContaEditavel()
+        val viewModel = criarViewModel("conta-1")
+
+        viewModel.onEvent(ContaFormEvent.SolicitarArquivamentoDaConta)
+        viewModel.onEvent(ContaFormEvent.ConfirmarArquivamento)
+
+        assertEquals(listOf("conta-1"), contas.arquivadas)
+        assertTrue(viewModel.uiState.value.contaArquivada)
+        assertTrue(viewModel.uiState.value.concluido)
+
+        val reaberto = criarViewModel("conta-1")
+        assertTrue(reaberto.uiState.value.contaArquivada)
+        assertFalse(reaberto.uiState.value.podeSalvar)
+
+        reaberto.onEvent(ContaFormEvent.ReativarConta)
+
+        assertEquals(listOf("conta-1"), contas.reativadas)
+        assertFalse(reaberto.uiState.value.contaArquivada)
+        assertEquals("instrumento-1", reaberto.uiState.value.formulario.instrumentos.single().publicId)
+    }
+
+    @Test
+    fun `falha ao arquivar mantem a conta ativa e sinaliza erro`() {
+        semearContaEditavel()
+        val viewModel = criarViewModel("conta-1")
+        contas.falhaAoArquivar = IOException("banco indisponível")
+
+        viewModel.onEvent(ContaFormEvent.SolicitarArquivamentoDaConta)
+        viewModel.onEvent(ContaFormEvent.ConfirmarArquivamento)
+
+        assertTrue(viewModel.uiState.value.falhouAoArquivar)
+        assertFalse(viewModel.uiState.value.contaArquivada)
+        assertFalse(viewModel.uiState.value.concluido)
+        assertNull(viewModel.uiState.value.dialogo)
+    }
+
     private fun criarViewModel(contaPublicId: String? = null): ContaFormViewModel {
         val argumentos = if (contaPublicId == null) emptyMap() else mapOf(AccountsRoute.ARG_CONTA_ID to contaPublicId)
 

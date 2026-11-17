@@ -52,8 +52,8 @@ class NovoLancamentoViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             combine(
-                contaRepository.observeContas(),
-                instrumentoRepository.observeInstrumentos(),
+                contaRepository.observeContasAtivas(),
+                instrumentoRepository.observeInstrumentosAtivos(),
                 categoriaRepository.observeEscolhiveis(),
             ) { contas, instrumentos, categorias ->
                 BaseDoNovoLancamento(carregado = true, contas = contas, instrumentos = instrumentos, categorias = categorias)
@@ -305,8 +305,13 @@ class NovoLancamentoViewModel @Inject constructor(
         val instrumentos: List<Instrumento> = emptyList(),
         val categorias: List<Categoria> = emptyList(),
     ) {
-        fun instrumentosAtivos(): List<Instrumento> =
-            instrumentos.filter { instrumento -> instrumento.excluidoEm == null && !instrumento.arquivado }
+        fun instrumentosAtivos(): List<Instrumento> {
+            val contasAtivas = contas.filter { conta -> conta.excluidoEm == null && !conta.arquivada }.map { it.publicId }.toSet()
+
+            return instrumentos.filter { instrumento ->
+                instrumento.excluidoEm == null && !instrumento.arquivado && instrumento.contaPublicId in contasAtivas
+            }
+        }
     }
 
     private companion object {

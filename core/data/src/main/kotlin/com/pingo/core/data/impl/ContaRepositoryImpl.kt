@@ -23,7 +23,9 @@ class ContaRepositoryImpl @Inject constructor(
     private val instrumentoDao: InstrumentoDao,
     private val transacao: TransacaoLocal,
 ) : ContaRepository {
-    override fun observeContas(): Flow<List<Conta>> = contaDao.observeAtivas().map { contas -> contas.map { it.toModel() } }
+    override fun observeContas(): Flow<List<Conta>> = contaDao.observeNaoExcluidas().map { contas -> contas.map { it.toModel() } }
+
+    override fun observeContasAtivas(): Flow<List<Conta>> = contaDao.observeAtivas().map { contas -> contas.map { it.toModel() } }
 
     override suspend fun buscar(publicId: String): Conta? = contaDao.buscar(publicId)?.toModel()
 

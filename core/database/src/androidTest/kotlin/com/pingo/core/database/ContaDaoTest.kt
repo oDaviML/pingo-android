@@ -79,6 +79,17 @@ class ContaDaoTest {
         assertTrue(dao.observeAtivas().first().isEmpty())
     }
 
+    @Test
+    fun arquivadaSaiDasAtivasEPermaneceNasNaoExcluidas() = runBlocking {
+        dao.upsert(conta("Conta arquivada"))
+
+        dao.definirArquivamento(PUBLIC_ID, arquivada = true, quando = Instant.parse("2026-11-10T12:05:00Z"))
+
+        assertTrue(dao.observeAtivas().first().isEmpty())
+        assertEquals(listOf(PUBLIC_ID), dao.observeNaoExcluidas().first().map(ContaEntity::publicId))
+        assertEquals(true, dao.buscar(PUBLIC_ID)?.arquivada)
+    }
+
     private suspend fun waitUntil(condition: () -> Boolean) {
         withTimeout(5_000) {
             while (!condition()) {

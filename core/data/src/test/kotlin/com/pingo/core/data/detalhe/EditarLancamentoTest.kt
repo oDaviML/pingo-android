@@ -398,6 +398,77 @@ class EditarLancamentoTest {
         assertNull(salvo.par?.tipoSemTransferencia)
     }
 
+    @Test
+    fun `editar historico mantem o instrumento arquivado original`() = runTest {
+        val instrumento = ambiente.instrumento()
+        ambiente.instrumentos.arquivar(instrumento.publicId, ambiente.agora)
+        ambiente.lancamentos.salvar(
+            lancamentoDeTeste(publicId = "historico", instrumentoPublicId = instrumento.publicId, valorCentavos = 4290),
+        )
+
+        val resultado = ambiente.editar.editar(
+            edicao(publicId = "historico", valorCentavos = 4990, instrumento = instrumento.publicId),
+        )
+
+        val salvo = (resultado as ResultadoDaEdicao.Salvo).lancamento
+        assertEquals(instrumento.publicId, salvo.instrumentoPublicId)
+        assertEquals(4990L, salvo.valorCentavos)
+    }
+
+    @Test
+    fun `editar recusa escolher outro instrumento arquivado`() = runTest {
+        val original = ambiente.instrumento()
+        val arquivado = ambiente.instrumento()
+        ambiente.instrumentos.arquivar(arquivado.publicId, ambiente.agora)
+        ambiente.lancamentos.salvar(
+            lancamentoDeTeste(publicId = "historico", instrumentoPublicId = original.publicId, valorCentavos = 4290),
+        )
+
+        val resultado = ambiente.editar.editar(
+            edicao(publicId = "historico", valorCentavos = 4290, instrumento = arquivado.publicId),
+        )
+
+        assertEquals(setOf(CampoDoDetalhe.INSTRUMENTO), (resultado as ResultadoDaEdicao.Invalido).campos)
+        assertEquals(original.publicId, ambiente.lancamentos.buscar("historico")?.instrumentoPublicId)
+    }
+
+    @Test
+    fun `editar transferencia recusa destino arquivado que nao e o par original`() = runTest {
+        val origem = ambiente.instrumento(ambiente.conta("Nubank"))
+        val destino = ambiente.instrumento(ambiente.conta("Inter", InstituicaoFinanceira.INTER))
+        val arquivado = ambiente.instrumento(ambiente.conta("Itaú", InstituicaoFinanceira.ITAU))
+        ambiente.instrumentos.arquivar(arquivado.publicId, ambiente.agora)
+        val saida = lancamentoDeTeste(
+            publicId = "saida",
+            instrumentoPublicId = origem.publicId,
+            valorCentavos = 50000,
+            tipo = TipoLancamento.TRANSFERENCIA,
+            transferenciaId = "transferencia",
+            tipoSemTransferencia = TipoLancamento.DESPESA,
+        )
+        val entrada = lancamentoDeTeste(
+            publicId = "entrada",
+            instrumentoPublicId = destino.publicId,
+            valorCentavos = 50000,
+            tipo = TipoLancamento.TRANSFERENCIA,
+            transferenciaId = "transferencia",
+            tipoSemTransferencia = TipoLancamento.RECEITA,
+        )
+        ambiente.lancamentos.salvarTodos(listOf(saida, entrada))
+
+        val resultado = ambiente.editar.editar(
+            edicao(
+                publicId = "saida",
+                tipo = TipoLancamento.TRANSFERENCIA,
+                valorCentavos = 50000,
+                instrumento = origem.publicId,
+                destino = arquivado.publicId,
+            ),
+        )
+
+        assertEquals(setOf(CampoDoDetalhe.DESTINO), (resultado as ResultadoDaEdicao.Invalido).campos)
+    }
+
     private fun edicao(
         publicId: String = "lanc",
         tipo: TipoLancamento = TipoLancamento.DESPESA,

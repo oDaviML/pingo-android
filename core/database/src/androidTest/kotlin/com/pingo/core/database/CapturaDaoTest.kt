@@ -52,6 +52,17 @@ class CapturaDaoTest {
     }
 
     @Test
+    fun instrumentosDeContaArquivadaNaoSaoElegiveisParaCaptura() = runBlocking {
+        seedConta("itau", InstituicaoFinanceira.ITAU)
+        database.instrumentoDao().upsert(instrumento("cartao-itau", "itau"))
+        database.contaDao().definirArquivamento("itau", arquivada = true, quando = AGORA)
+
+        val encontrados = database.instrumentoDao().ativosDaInstituicao(InstituicaoFinanceira.ITAU)
+
+        assertEquals(emptyList<String>(), encontrados.map(InstrumentoEntity::publicId))
+    }
+
+    @Test
     fun candidatosDeTransferenciaExcluemLancamentoSemInstrumento() = runBlocking {
         seedConta("itau", InstituicaoFinanceira.ITAU)
         seedInstrumento("cartao-itau", "itau")

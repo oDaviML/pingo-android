@@ -12,7 +12,11 @@ data class ContaFormUiState(
     val falhouAoSalvar: Boolean = false,
     val concluido: Boolean = false,
     val edicao: Boolean = false,
+    val contaArquivada: Boolean = false,
+    val dialogo: DialogoDeArquivamento? = null,
+    val processandoArquivamento: Boolean = false,
+    val falhouAoArquivar: Boolean = false,
 ) {
     val podeSalvar: Boolean
-        get() = !carregando && !salvando && !concluido && !falhaDeLeitura && formulario.valida()
+        get() = !carregando && !salvando && !concluido && !falhaDeLeitura && !contaArquivada && formulario.valida()
 }

@@ -231,6 +231,45 @@ class ReviewRoomTest {
     }
 
     @Test
+    fun seletorDeDestinoDaRevisaoIgnoraInstrumentoArquivado() {
+        val (ativo, arquivado) = runBlocking {
+            val contasDeTeste = criarDuasContas()
+            val antigo = Instrumento(
+                publicId = "inst-arquivado",
+                contaPublicId = contasDeTeste.inter.contaPublicId,
+                tipo = TipoInstrumento.DEBITO,
+                apelido = "Débito antigo",
+                criadoEm = agora,
+                atualizadoEm = agora,
+            )
+            instrumentos.salvar(antigo)
+            instrumentos.arquivar(antigo.publicId, agora)
+            lancamentos.salvar(
+                lancamento(
+                    publicId = "saida",
+                    instrumentoPublicId = contasDeTeste.nubank.publicId,
+                    motivo = MotivoPendencia.TRANSFERENCIA_AMBIGUA,
+                    textoBruto = "Pix enviado R\$ 150,00",
+                    valorCentavos = 15000,
+                    tipo = TipoLancamento.DESPESA,
+                ),
+            )
+
+            contasDeTeste.inter to antigo
+        }
+
+        val viewModel = criarViewModel()
+        mostrar(viewModel)
+        aguardarCarregamento(viewModel)
+
+        composeRule.onNodeWithTag("marcar-transferencia-saida").performClick()
+        composeRule.waitUntil(TEMPO_ESPERA) { viewModel.uiState.value.painelDeTransferencia != null }
+
+        composeRule.onNodeWithTag("destino-revisao-${ativo.publicId}").assertIsDisplayed()
+        composeRule.onNodeWithTag("destino-revisao-${arquivado.publicId}").assertDoesNotExist()
+    }
+
+    @Test
     fun marcarTransferenciaResolveOPendente() {
         val destino = runBlocking {
             val contasDeTeste = criarDuasContas()

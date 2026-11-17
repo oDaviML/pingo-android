@@ -7,7 +7,7 @@ Aplicativo Android do Pingo: captura automática de transações financeiras a p
 O F1 entregou o fluxo completo de captura automática e as telas principais. O F2 organiza contas e a leitura do app:
 
 - Onboarding passos 1–7: login Google via Credential Manager, termo LGPD, acesso às notificações, permissão para o Pingo notificar, bateria/autostart e escolha de bancos/instrumentos. Biometria fica para F3.
-- Contas: lista agrupada por instituição com seus instrumentos, estados vazio, carregando e erro de leitura, além de cadastro e edição pela própria aba.
+- Contas: lista agrupada por instituição com seus instrumentos, estados vazio, carregando e erro de leitura, além de cadastro e edição pela própria aba. Contas arquivadas aparecem numa seção própria e podem ser reabertas; a edição de uma conta ativa permite arquivar instrumentos individualmente e reativá-los depois, com confirmação que explica que o histórico continua disponível.
 - Cadastro compartilhado entre onboarding e Contas: instituição, apelido, tipo de conta, crédito (fechamento/vencimento e últimos quatro dígitos opcionais), débito e voucher (benefício, saldo inicial e recarga opcional). Vários instrumentos do mesmo tipo convivem com IDs e dados independentes.
 - Outra instituição fica restrita a lançamentos manuais e não recebe associação automática de notificações.
 - Início: saldo do mês (receitas − despesas, transferências excluídas), seletor de mês, avisos de "N para revisar" e "captura parada", top 3 categorias de despesa, últimos 5 lançamentos e atalho para lançamento manual.
@@ -80,6 +80,10 @@ O cadastro compartilhado de contas e instrumentos exige fechamento e vencimento 
 
 O schema 5 adiciona `instrumentos.arquivadoPorCascata` pela migration 4→5, `INTEGER NOT NULL DEFAULT 0`, sem backfill: registros legados não ganham procedência inventada. Arquivar a conta marca só os instrumentos ativos; reativar restaura apenas os arquivados por essa cascata, e instrumentos arquivados antes continuam arquivados. No push o campo vai explícito; no pull, um payload legado sem o campo preserva o valor local conhecido e um snapshot com valor explícito aplica a reativação.
 
+Arquivar não apaga histórico: a conta e seus instrumentos saem das consultas selecionáveis (`observeContasAtivas`/`observeInstrumentosAtivos`), mas continuam nas consultas históricas usadas por Lançamentos, revisão e relatórios. Por isso novos lançamentos manuais e destinos de transferência da revisão só oferecem conta e instrumento ativos, e a captura só associa notificações a instrumentos de conta ativa. Na edição de um lançamento histórico, o instrumento arquivado original continua aceito, mas não é possível trocar para outro arquivado. "Excluir conta" no formulário abre a confirmação de arquivamento em vez de remover transações.
+
+O fluxo de arquivamento é coberto em três camadas: ViewModel (instrumento isolado, cascata com cancelamento, reativação e falha), Room (`ContaDao`/`InstrumentoDao` separando consultas ativas e históricas) e app (`ArquivamentoFluxoTest` alterna conta e instrumento, reabre a conta, reativa e confirma que o lançamento histórico continua em Lançamentos). O teste de sync (`SyncHttpIntegrationTest`) empurra um grafo com conta arquivada por cascata e instrumento arquivado manualmente, restaura num banco vazio, reativa depois da restauração e repete o pull sem duplicar, cobrindo todos os campos de conta/instrumento, isolamento entre dois usuários e a procedência preservada em HTTP real.
+
 ## Design system
 
 O `core:designsystem` traduz o design system do FigCraft (`design/design-system.md` e `design/pingo.figcraft`) para Compose, sem Material 3: tema próprio (`PingoTheme`) com tokens de cor, tipografia Nunito, raios, espaçamento, elevação e movimento, além dos componentes `Pingo*` e do stepper do onboarding.
@@ -143,7 +147,12 @@ ANDROID_SERIAL=emulator-5580 ./gradlew --max-workers=2 :feature:accounts:impl:co
   -Pandroid.testInstrumentationRunnerArguments.pingo.syncHost=http://10.0.2.2:8080/
 
 ANDROID_SERIAL=emulator-5580 ./gradlew --max-workers=2 :app:connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=com.pingo.contas.ContasFluxoTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.pingo.contas.ContasFluxoTest,com.pingo.contas.ArquivamentoFluxoTest,com.pingo.captura.CapturaListenerTest,com.pingo.sync.SyncHttpIntegrationTest \
+  -Pandroid.testInstrumentationRunnerArguments.pingo.syncHost=http://10.0.2.2:8080/
+
+ANDROID_SERIAL=emulator-5580 ./gradlew --max-workers=2 :core:database:connectedDebugAndroidTest \
+  :feature:review:impl:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.pingo.core.database.ContaDaoTest,com.pingo.core.database.InstrumentoDaoTest,com.pingo.core.database.CapturaDaoTest,com.pingo.feature.review.impl.ReviewRoomTest \
   -Pandroid.testInstrumentationRunnerArguments.pingo.syncHost=http://10.0.2.2:8080/
 ```
 

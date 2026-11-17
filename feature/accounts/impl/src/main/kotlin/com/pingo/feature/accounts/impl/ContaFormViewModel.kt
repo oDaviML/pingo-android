@@ -49,6 +49,12 @@ class ContaFormViewModel @Inject constructor(
 
             ContaFormEvent.Salvar -> salvar()
             ContaFormEvent.TentarDeNovo -> contaPublicId?.let(::carregar)
+            ContaFormEvent.SolicitarArquivamentoDaConta -> solicitarArquivamentoDaConta()
+            is ContaFormEvent.SolicitarArquivamentoDoInstrumento -> solicitarArquivamentoDoInstrumento(event.chave)
+            ContaFormEvent.ConfirmarArquivamento -> confirmarArquivamento()
+            ContaFormEvent.CancelarArquivamento -> mutableUiState.update { it.copy(dialogo = null) }
+            ContaFormEvent.ReativarConta -> reativarConta()
+            is ContaFormEvent.ReativarInstrumento -> reativarInstrumento(event.chave)
         }
     }
 
@@ -61,11 +67,16 @@ class ContaFormViewModel @Inject constructor(
                     ?: throw IllegalArgumentException("Conta inexistente")
                 val instrumentos = instrumentoRepository.observePorConta(publicId).first()
 
-                ContaFormulario.de(conta, instrumentos)
+                conta to ContaFormulario.de(conta, instrumentos)
             }.fold(
-                onSuccess = { formulario ->
+                onSuccess = { (conta, formulario) ->
                     mutableUiState.update {
-                        it.copy(carregando = false, falhaDeLeitura = false, formulario = formulario)
+                        it.copy(
+                            carregando = false,
+                            falhaDeLeitura = false,
+                            formulario = formulario,
+                            contaArquivada = conta.arquivada,
+                        )
                     }
                 },
                 onFailure = { exception ->
@@ -102,6 +113,130 @@ class ContaFormViewModel @Inject constructor(
             )
         }
     }
+
+    private fun solicitarArquivamentoDaConta() {
+        val atual = mutableUiState.value
+        if (!podeArquivar(atual)) {
+            return
+        }
+
+        mutableUiState.update { it.copy(dialogo = DialogoDeArquivamento.Conta, falhouAoArquivar = false) }
+    }
+
+    private fun solicitarArquivamentoDoInstrumento(chave: String) {
+        val atual = mutableUiState.value
+        val instrumento = atual.formulario.instrumentos.firstOrNull { it.chave == chave }
+
+        if (!podeArquivar(atual) || instrumento == null || instrumento.arquivado) {
+            return
+        }
+
+        mutableUiState.update {
+            it.copy(dialogo = DialogoDeArquivamento.Instrumento(chave = chave, apelido = instrumento.apelido), falhouAoArquivar = false)
+        }
+    }
+
+    private fun podeArquivar(atual: ContaFormUiState): Boolean = !contaNaoEditavel(atual) && !atual.processandoArquivamento
+
+    private fun contaNaoEditavel(atual: ContaFormUiState): Boolean = contaPublicId == null || !atual.edicao || atual.contaArquivada
+
+    private fun confirmarArquivamento() {
+        val dialogo = mutableUiState.value.dialogo ?: return
+        val publicId = contaPublicId ?: return
+
+        mutableUiState.update { it.copy(processandoArquivamento = true, falhouAoArquivar = false) }
+
+        viewModelScope.launch {
+            runCatching {
+                when (dialogo) {
+                    DialogoDeArquivamento.Conta -> contaRepository.arquivar(publicId, clock.instant())
+                    is DialogoDeArquivamento.Instrumento -> instrumentoRepository.arquivar(dialogo.chave, clock.instant())
+                }
+            }.fold(
+                onSuccess = {
+                    mutableUiState.update { state ->
+                        state.copy(
+                            processandoArquivamento = false,
+                            dialogo = null,
+                            contaArquivada = state.contaArquivada || dialogo == DialogoDeArquivamento.Conta,
+                            concluido = state.concluido || dialogo == DialogoDeArquivamento.Conta,
+                            formulario = state.formulario.comInstrumentosArquivados(dialogo),
+                        )
+                    }
+                },
+                onFailure = { exception ->
+                    if (exception is CancellationException) {
+                        throw exception
+                    }
+
+                    mutableUiState.update { it.copy(processandoArquivamento = false, dialogo = null, falhouAoArquivar = true) }
+                },
+            )
+        }
+    }
+
+    private fun reativarConta() {
+        val publicId = contaPublicId ?: return
+        if (!mutableUiState.value.contaArquivada || mutableUiState.value.processandoArquivamento) {
+            return
+        }
+
+        mutableUiState.update { it.copy(processandoArquivamento = true, falhouAoArquivar = false) }
+
+        viewModelScope.launch {
+            runCatching { contaRepository.reativar(publicId, clock.instant()) }.fold(
+                onSuccess = {
+                    mutableUiState.update { it.copy(processandoArquivamento = false, contaArquivada = false) }
+                    carregar(publicId)
+                },
+                onFailure = { exception ->
+                    if (exception is CancellationException) {
+                        throw exception
+                    }
+
+                    mutableUiState.update { it.copy(processandoArquivamento = false, falhouAoArquivar = true) }
+                },
+            )
+        }
+    }
+
+    private fun reativarInstrumento(chave: String) {
+        val instrumento = mutableUiState.value.formulario.instrumentos.firstOrNull { it.chave == chave }
+        if (instrumento == null || !instrumento.arquivado || mutableUiState.value.processandoArquivamento) {
+            return
+        }
+
+        mutableUiState.update { it.copy(processandoArquivamento = true, falhouAoArquivar = false) }
+
+        viewModelScope.launch {
+            runCatching { instrumentoRepository.reativar(chave, clock.instant()) }.fold(
+                onSuccess = {
+                    mutableUiState.update { state ->
+                        state.copy(
+                            processandoArquivamento = false,
+                            formulario = state.formulario.comInstrumentoReativado(chave),
+                        )
+                    }
+                },
+                onFailure = { exception ->
+                    if (exception is CancellationException) {
+                        throw exception
+                    }
+
+                    mutableUiState.update { it.copy(processandoArquivamento = false, falhouAoArquivar = true) }
+                },
+            )
+        }
+    }
+
+    private fun ContaFormulario.comInstrumentosArquivados(dialogo: DialogoDeArquivamento): ContaFormulario = when (dialogo) {
+        DialogoDeArquivamento.Conta -> copy(instrumentos = instrumentos.map { it.copy(arquivado = true) })
+        is DialogoDeArquivamento.Instrumento ->
+            copy(instrumentos = instrumentos.map { if (it.chave == dialogo.chave) it.copy(arquivado = true) else it })
+    }
+
+    private fun ContaFormulario.comInstrumentoReativado(chave: String): ContaFormulario =
+        copy(instrumentos = instrumentos.map { if (it.chave == chave) it.copy(arquivado = false) else it })
 
     private suspend fun persistir(formulario: ContaFormulario) {
         if (formulario.editando) {

@@ -13,6 +13,9 @@ import javax.inject.Inject
 
 class InstrumentoRepositoryImpl @Inject constructor(private val instrumentoDao: InstrumentoDao) : InstrumentoRepository {
     override fun observeInstrumentos(): Flow<List<Instrumento>> =
+        instrumentoDao.observeNaoExcluidos().map { instrumentos -> instrumentos.map { it.toModel() } }
+
+    override fun observeInstrumentosAtivos(): Flow<List<Instrumento>> =
         instrumentoDao.observeAtivos().map { instrumentos -> instrumentos.map { it.toModel() } }
 
     override fun observePorConta(contaPublicId: String): Flow<List<Instrumento>> =

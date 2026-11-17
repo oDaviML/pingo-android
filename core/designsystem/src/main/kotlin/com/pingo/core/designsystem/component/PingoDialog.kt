@@ -76,6 +76,52 @@ fun PingoDestructiveDialog(
 }
 
 @Composable
+fun PingoActionDialog(
+    title: String,
+    description: String,
+    confirmText: String,
+    onConfirm: () -> Unit,
+    onDismissRequest: () -> Unit,
+    confirmLoading: Boolean = false,
+    confirmModifier: Modifier = Modifier,
+) {
+    DialogShell(onDismissRequest = onDismissRequest) {
+        DialogCard(
+            icon = PingoIcons.Landmark,
+            tint = PingoTheme.colors.onPrimaryContainer,
+            container = PingoTheme.colors.primaryContainer,
+            title = title,
+        ) {
+            PingoText(
+                text = description,
+                style = PingoTheme.typography.body,
+                color = PingoTheme.colors.onSurfaceVariant,
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                PingoButton(
+                    text = "Cancelar",
+                    onClick = onDismissRequest,
+                    type = PingoButtonType.Text,
+                )
+                PingoButton(
+                    text = confirmText,
+                    onClick = onConfirm,
+                    modifier = confirmModifier,
+                    type = PingoButtonType.Tonal,
+                    enabled = !confirmLoading,
+                    loading = confirmLoading,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun PingoInfoDialog(
     title: String,
     text: String,

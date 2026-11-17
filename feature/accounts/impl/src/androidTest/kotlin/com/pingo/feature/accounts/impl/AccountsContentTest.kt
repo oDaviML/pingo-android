@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.pingo.core.designsystem.component.AbaInferior
@@ -87,6 +88,36 @@ class AccountsContentTest {
     }
 
     @Test
+    fun contasArquivadasAparecemEmSecaoPropriaEAceitamReabrir() {
+        var aberta: String? = null
+        val contas = listOf(
+            conta("conta-nu", InstituicaoFinanceira.NUBANK, "Nubank pessoal"),
+            conta("conta-antiga", InstituicaoFinanceira.INTER, "Inter antiga", arquivada = true),
+        )
+        val instrumentos = listOf(
+            instrumento("nu-1", "conta-nu", TipoInstrumento.CREDITO, "Cartão ultravioleta", "4321"),
+            instrumento("antiga-1", "conta-antiga", TipoInstrumento.DEBITO, "Débito antigo", null, arquivado = true),
+        )
+        mostrar(
+            AccountsUiState(
+                carregando = false,
+                grupos = agruparContas(contas, instrumentos),
+                arquivadas = contasArquivadas(contas, instrumentos),
+            ),
+            onAbrirConta = { aberta = it },
+        )
+
+        composeRule.onNodeWithText("Contas arquivadas").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Inter antiga").assertIsDisplayed()
+        composeRule.onNodeWithText("Arquivada").assertIsDisplayed()
+        salvarCaptura("contas-arquivadas")
+
+        composeRule.onNodeWithTag("conta-arquivada-conta-antiga").performScrollTo().performClick()
+
+        assertEquals("conta-antiga", aberta)
+    }
+
+    @Test
     fun listaAgrupadaRendeNoTemaEscuro() {
         mostrar(estadoComContas(), escuro = true)
 
@@ -142,11 +173,12 @@ class AccountsContentTest {
         return AccountsUiState(carregando = false, grupos = agruparContas(contas, instrumentos))
     }
 
-    private fun conta(publicId: String, instituicao: InstituicaoFinanceira, apelido: String): Conta = Conta(
+    private fun conta(publicId: String, instituicao: InstituicaoFinanceira, apelido: String, arquivada: Boolean = false): Conta = Conta(
         publicId = publicId,
         instituicao = instituicao,
         apelido = apelido,
         tipo = TipoConta.CORRENTE,
+        arquivada = arquivada,
         criadoEm = INSTANTE,
         atualizadoEm = INSTANTE,
     )
@@ -157,12 +189,14 @@ class AccountsContentTest {
         tipo: TipoInstrumento,
         apelido: String,
         ultimosDigitos: String?,
+        arquivado: Boolean = false,
     ): Instrumento = Instrumento(
         publicId = publicId,
         contaPublicId = contaPublicId,
         tipo = tipo,
         apelido = apelido,
         ultimosDigitos = ultimosDigitos,
+        arquivado = arquivado,
         fechamentoDia = 5.takeIf { tipo == TipoInstrumento.CREDITO },
         vencimentoDia = 12.takeIf { tipo == TipoInstrumento.CREDITO },
         criadoEm = INSTANTE,

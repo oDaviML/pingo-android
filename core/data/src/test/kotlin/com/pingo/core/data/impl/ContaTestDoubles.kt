@@ -31,8 +31,12 @@ internal class FakeContaDao : ContaDao {
 
     fun gravadas(): List<ContaEntity> = tabela.value
 
-    override fun observeAtivas(): Flow<List<ContaEntity>> =
+    override fun observeNaoExcluidas(): Flow<List<ContaEntity>> =
         tabela.map { contas -> contas.filter { it.excluidoEm == null }.sortedBy { it.apelido } }
+
+    override fun observeAtivas(): Flow<List<ContaEntity>> = tabela.map { contas ->
+        contas.filter { it.excluidoEm == null && !it.arquivada }.sortedBy { it.apelido }
+    }
 
     override suspend fun buscar(publicId: String): ContaEntity? = tabela.value.firstOrNull { it.publicId == publicId }
 
@@ -60,11 +64,15 @@ internal class FakeInstrumentoDao : InstrumentoDao {
 
     fun gravados(): List<InstrumentoEntity> = tabela.value
 
-    override fun observeAtivos(): Flow<List<InstrumentoEntity>> =
+    override fun observeNaoExcluidos(): Flow<List<InstrumentoEntity>> =
         tabela.map { instrumentos -> instrumentos.filter { it.excluidoEm == null }.sortedBy { it.apelido } }
 
+    override fun observeAtivos(): Flow<List<InstrumentoEntity>> = tabela.map { instrumentos ->
+        instrumentos.filter { it.excluidoEm == null && !it.arquivado }.sortedBy { it.apelido }
+    }
+
     override fun observePorConta(contaPublicId: String): Flow<List<InstrumentoEntity>> =
-        observeAtivos().map { instrumentos -> instrumentos.filter { it.contaPublicId == contaPublicId } }
+        observeNaoExcluidos().map { instrumentos -> instrumentos.filter { it.contaPublicId == contaPublicId } }
 
     override suspend fun buscar(publicId: String): InstrumentoEntity? = tabela.value.firstOrNull { it.publicId == publicId }
 

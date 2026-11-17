@@ -36,7 +36,8 @@ class EditarLancamento @Inject constructor(
         val instrumento = resolverInstrumento(edicao.instrumentoPublicId)
         val destino = resolverInstrumento(edicao.destinoPublicId)
         val categoria = resolverCategoria(edicao.categoriaPublicId)
-        val invalidos = validar(edicao, original, instrumento, destino, categoria)
+        val destinoOriginal = destinoOriginalDe(original, edicao.destinoPublicId)
+        val invalidos = validar(edicao, original, instrumento, destino, destinoOriginal, categoria)
 
         return when {
             invalidos.isNotEmpty() -> ResultadoDaEdicao.Invalido(invalidos)
@@ -49,37 +50,61 @@ class EditarLancamento @Inject constructor(
         ?.let { instrumentoRepository.buscar(it) }
         ?.takeIf { it.excluidoEm == null }
 
+    private suspend fun destinoOriginalDe(original: Lancamento, destinoPublicId: String?): String? {
+        if (destinoPublicId == null) {
+            return null
+        }
+
+        val transferenciaId = original.transferenciaId ?: return null
+
+        return lancamentoRepository.observeLancamentos().first()
+            .firstOrNull { it.transferenciaId == transferenciaId && it.publicId != original.publicId }
+            ?.instrumentoPublicId
+    }
+
     private suspend fun resolverCategoria(publicId: String?): Categoria? = publicId
         ?.let { categoriaRepository.buscar(it) }
         ?.takeIf { it.podeSerEscolhida }
+
+    private fun Instrumento.elegivelParaVinculo(escolhido: String, original: String?): Boolean = !arquivado || escolhido == original
 
     private fun validar(
         edicao: EdicaoDoLancamento,
         original: Lancamento,
         instrumento: Instrumento?,
         destino: Instrumento?,
+        destinoOriginal: String?,
         categoria: Categoria?,
     ): Set<CampoDoDetalhe> {
         val doValor = if (edicao.valorCentavos <= 0) setOf(CampoDoDetalhe.VALOR) else emptySet()
 
         return if (edicao.tipo == TipoLancamento.TRANSFERENCIA) {
-            doValor + validarTransferencia(edicao, instrumento, destino)
+            doValor + validarTransferencia(edicao, original, instrumento, destino, destinoOriginal)
         } else {
             doValor + validarLancamento(edicao, original, instrumento, categoria)
         }
     }
 
-    private fun validarTransferencia(edicao: EdicaoDoLancamento, instrumento: Instrumento?, destino: Instrumento?): Set<CampoDoDetalhe> =
-        buildSet {
-            if (edicao.instrumentoPublicId == null || instrumento == null) {
-                add(CampoDoDetalhe.INSTRUMENTO)
-            }
-            if (edicao.destinoPublicId == null || destino == null) {
-                add(CampoDoDetalhe.DESTINO)
-            } else if (instrumento != null && destino.contaPublicId == instrumento.contaPublicId) {
-                add(CampoDoDetalhe.DESTINO)
-            }
+    private fun validarTransferencia(
+        edicao: EdicaoDoLancamento,
+        original: Lancamento,
+        instrumento: Instrumento?,
+        destino: Instrumento?,
+        destinoOriginal: String?,
+    ): Set<CampoDoDetalhe> = buildSet {
+        if (edicao.instrumentoPublicId == null || instrumento == null) {
+            add(CampoDoDetalhe.INSTRUMENTO)
+        } else if (!instrumento.elegivelParaVinculo(edicao.instrumentoPublicId, original.instrumentoPublicId)) {
+            add(CampoDoDetalhe.INSTRUMENTO)
         }
+        if (edicao.destinoPublicId == null || destino == null) {
+            add(CampoDoDetalhe.DESTINO)
+        } else if (instrumento != null && destino.contaPublicId == instrumento.contaPublicId) {
+            add(CampoDoDetalhe.DESTINO)
+        } else if (!destino.elegivelParaVinculo(edicao.destinoPublicId, destinoOriginal)) {
+            add(CampoDoDetalhe.DESTINO)
+        }
+    }
 
     private fun validarLancamento(
         edicao: EdicaoDoLancamento,
@@ -89,6 +114,11 @@ class EditarLancamento @Inject constructor(
     ): Set<CampoDoDetalhe> = buildSet {
         if (edicao.instrumentoPublicId != null && instrumento == null) {
             add(CampoDoDetalhe.INSTRUMENTO)
+        }
+        if (edicao.instrumentoPublicId != null && instrumento != null) {
+            if (!instrumento.elegivelParaVinculo(edicao.instrumentoPublicId, original.instrumentoPublicId)) {
+                add(CampoDoDetalhe.INSTRUMENTO)
+            }
         }
         if (edicao.instrumentoPublicId == null && exigeInstrumento(original)) {
             add(CampoDoDetalhe.INSTRUMENTO)

@@ -10,6 +10,9 @@ import java.time.Instant
 @Dao
 interface ContaDao {
     @Query("SELECT * FROM contas WHERE excluidoEm IS NULL ORDER BY apelido")
+    fun observeNaoExcluidas(): Flow<List<ContaEntity>>
+
+    @Query("SELECT * FROM contas WHERE excluidoEm IS NULL AND arquivada = 0 ORDER BY apelido")
     fun observeAtivas(): Flow<List<ContaEntity>>
 
     @Query("SELECT * FROM contas WHERE publicId = :publicId")

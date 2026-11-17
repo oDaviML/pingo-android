@@ -35,7 +35,7 @@ internal fun opcoesDoDetalhe(
 ): OpcoesDoDetalhe {
     val contasPorId = base.contas.associateBy { it.publicId }
     val instrumentosPorId = base.instrumentos.associateBy { it.publicId }
-    val ativos = instrumentosAtivos(base)
+    val ativos = instrumentosAtivos(base, contasPorId)
     val instrumento = instrumentoPublicId?.let { instrumentosPorId[it] }
     val categoria = categoriaPublicId?.let { id -> base.categorias.firstOrNull { candidata -> candidata.publicId == id } }
 
@@ -50,8 +50,12 @@ internal fun opcoesDoDetalhe(
     )
 }
 
-internal fun instrumentosAtivos(base: BaseDoDetalhe): List<Instrumento> =
-    base.instrumentos.filter { it.excluidoEm == null && !it.arquivado }
+internal fun instrumentosAtivos(base: BaseDoDetalhe, contasPorId: Map<String, Conta>): List<Instrumento> =
+    base.instrumentos.filter { instrumento ->
+        instrumento.excluidoEm == null &&
+            !instrumento.arquivado &&
+            contasPorId[instrumento.contaPublicId]?.let { it.excluidoEm == null && !it.arquivada } == true
+    }
 
 internal fun destinos(
     instrumentos: List<Instrumento>,

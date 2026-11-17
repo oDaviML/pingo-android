@@ -182,6 +182,100 @@ class ContaFormContentTest {
     }
 
     @Test
+    fun instrumentoExistenteMostraArquivarEReativarConformeEstado() {
+        val formulario = ContaFormulario.nova(InstituicaoFinanceira.NUBANK).copy(
+            publicId = "conta-1",
+            apelido = "Nubank",
+            instrumentos = listOf(
+                InstrumentoFormulario.novo(TipoInstrumento.CREDITO).copy(
+                    publicId = "instrumento-1",
+                    apelido = "Cartão",
+                    fechamentoDia = "5",
+                    vencimentoDia = "12",
+                ),
+                InstrumentoFormulario.novo(TipoInstrumento.DEBITO).copy(
+                    publicId = "instrumento-2",
+                    apelido = "Débito antigo",
+                    arquivado = true,
+                ),
+            ),
+        )
+        val eventos = mutableListOf<ContaFormEvent>()
+        mostrar(ContaFormUiState(formulario = formulario, edicao = true), eventos = eventos)
+
+        composeRule.onNodeWithText("Arquivado").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Arquivar").performScrollTo().performClick()
+        composeRule.onNodeWithText("Reativar").performScrollTo().performClick()
+
+        assertEquals(
+            listOf<ContaFormEvent>(
+                ContaFormEvent.SolicitarArquivamentoDoInstrumento(formulario.instrumentos[0].chave),
+                ContaFormEvent.ReativarInstrumento(formulario.instrumentos[1].chave),
+            ),
+            eventos,
+        )
+    }
+
+    @Test
+    fun excluirContaPedeConfirmacaoComAvisoDeHistoricoEPermiteCancelar() {
+        val formulario = ContaFormulario.nova(InstituicaoFinanceira.OUTRA).copy(
+            publicId = "conta-1",
+            apelido = "Conta manual",
+        )
+        val eventos = mutableListOf<ContaFormEvent>()
+        mostrar(ContaFormUiState(formulario = formulario, edicao = true), eventos = eventos)
+
+        composeRule.onNodeWithText("Excluir conta").performScrollTo().performClick()
+
+        assertEquals(listOf<ContaFormEvent>(ContaFormEvent.SolicitarArquivamentoDaConta), eventos)
+    }
+
+    @Test
+    fun dialogoDeArquivamentoExplicaHistoricoEPermiteCancelar() {
+        val formulario = ContaFormulario.nova(InstituicaoFinanceira.OUTRA).copy(
+            publicId = "conta-1",
+            apelido = "Conta manual",
+        )
+        val eventos = mutableListOf<ContaFormEvent>()
+        mostrar(
+            ContaFormUiState(formulario = formulario, edicao = true, dialogo = DialogoDeArquivamento.Conta),
+            eventos = eventos,
+        )
+
+        composeRule.onNodeWithText("Arquivar esta conta?").assertIsDisplayed()
+        composeRule.onNodeWithText(
+            "O histórico de lançamentos continua disponível em Lançamentos e relatórios.",
+            substring = true,
+        ).assertIsDisplayed()
+        composeRule.onNodeWithText("Cancelar").performClick()
+
+        assertEquals(listOf<ContaFormEvent>(ContaFormEvent.CancelarArquivamento), eventos)
+    }
+
+    @Test
+    fun contaArquivadaMostraAvisoEPermiteReativarSemSalvar() {
+        val formulario = ContaFormulario.nova(InstituicaoFinanceira.NUBANK).copy(
+            publicId = "conta-1",
+            apelido = "Nubank",
+            instrumentos = listOf(
+                InstrumentoFormulario.novo(TipoInstrumento.DEBITO).copy(
+                    publicId = "instrumento-1",
+                    apelido = "Débito",
+                    arquivado = true,
+                ),
+            ),
+        )
+        val eventos = mutableListOf<ContaFormEvent>()
+        mostrar(ContaFormUiState(formulario = formulario, edicao = true, contaArquivada = true), eventos = eventos)
+
+        composeRule.onNodeWithText("Conta arquivada").assertIsDisplayed()
+        composeRule.onNodeWithText("Salvar conta").assertDoesNotExist()
+        composeRule.onNodeWithText("Reativar conta").performScrollTo().performClick()
+
+        assertEquals(listOf<ContaFormEvent>(ContaFormEvent.ReativarConta), eventos)
+    }
+
+    @Test
     fun carregandoMostraIndicadorProprio() {
         mostrar(ContaFormUiState(carregando = true))
 

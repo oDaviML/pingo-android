@@ -37,6 +37,7 @@ internal fun InstrumentoFormularioCampos(
     instrumento: InstrumentoFormulario,
     podeRemover: Boolean,
     onEvento: (EventoDoFormularioDeConta) -> Unit,
+    acao: (@Composable () -> Unit)? = null,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -48,7 +49,13 @@ internal fun InstrumentoFormularioCampos(
                 .height(1.dp)
                 .background(PingoTheme.colors.outlineVariant),
         )
-        CabecalhoDoInstrumento(titulo = titulo, instrumento = instrumento, podeRemover = podeRemover, onEvento = onEvento)
+        CabecalhoDoInstrumento(
+            titulo = titulo,
+            instrumento = instrumento,
+            podeRemover = podeRemover,
+            onEvento = onEvento,
+            acao = acao,
+        )
 
         PingoTextField(
             value = instrumento.apelido,
@@ -76,6 +83,7 @@ private fun CabecalhoDoInstrumento(
     instrumento: InstrumentoFormulario,
     podeRemover: Boolean,
     onEvento: (EventoDoFormularioDeConta) -> Unit,
+    acao: (@Composable () -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -95,7 +103,8 @@ private fun CabecalhoDoInstrumento(
             )
         }
         Box(modifier = Modifier.weight(1f))
-        if (podeRemover) {
+        acao?.invoke()
+        if (podeRemover && instrumento.publicId == null) {
             PingoButton(
                 text = "Remover",
                 onClick = { onEvento(EventoDoFormularioDeConta.RemoverInstrumento(instrumento.chave)) },
