@@ -1,27 +1,25 @@
 package com.pingo.feature.accounts.impl
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.getValue
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pingo.core.designsystem.component.AbaInferior
-import com.pingo.core.designsystem.component.PingoBottomBar
-import com.pingo.core.designsystem.component.PingoText
-import com.pingo.core.designsystem.theme.PingoTheme
 
 @Composable
-fun AccountsScreen(onSelecionarAba: (AbaInferior) -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(PingoTheme.colors.background),
-    ) {
-        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-            PingoText(text = "Contas em breve")
-        }
-        PingoBottomBar(selecionada = AbaInferior.CONTAS, onSelecionar = onSelecionarAba)
-    }
+fun AccountsScreen(
+    onSelecionarAba: (AbaInferior) -> Unit,
+    onNovaConta: () -> Unit,
+    onAbrirConta: (String) -> Unit,
+    viewModel: AccountsViewModel = hiltViewModel(),
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    AccountsContent(
+        state = state,
+        onNovaConta = onNovaConta,
+        onAbrirConta = onAbrirConta,
+        onTentarDeNovo = viewModel::tentarDeNovo,
+        onSelecionarAba = onSelecionarAba,
+    )
 }

@@ -2,15 +2,18 @@
 
 Aplicativo Android do Pingo: captura automática de transações financeiras a partir das notificações dos apps de banco, parser executado no aparelho e interface para acompanhamento de gastos.
 
-## Estado atual (F1)
+## Estado atual (F2)
 
-O F1 entrega o fluxo completo de captura automática e as telas principais:
+O F1 entregou o fluxo completo de captura automática e as telas principais. O F2 organiza contas e a leitura do app:
 
 - Onboarding passos 1–7: login Google via Credential Manager, termo LGPD, acesso às notificações, permissão para o Pingo notificar, bateria/autostart e escolha de bancos/instrumentos. Biometria fica para F3.
+- Contas: lista agrupada por instituição com seus instrumentos, estados vazio, carregando e erro de leitura, além de cadastro e edição pela própria aba.
+- Cadastro compartilhado entre onboarding e Contas: instituição, apelido, tipo de conta, crédito (fechamento/vencimento e últimos quatro dígitos opcionais), débito e voucher (benefício, saldo inicial e recarga opcional). Vários instrumentos do mesmo tipo convivem com IDs e dados independentes.
+- Outra instituição fica restrita a lançamentos manuais e não recebe associação automática de notificações.
 - Início: saldo do mês (receitas − despesas, transferências excluídas), seletor de mês, avisos de "N para revisar" e "captura parada", top 3 categorias de despesa, últimos 5 lançamentos e atalho para lançamento manual.
 - Lançamentos: lista por dia, busca, filtros, detalhe/edição e novo lançamento.
 - Revisão de pendências, notificações por pendente (Confirmar sem abrir o app e Corrigir abrindo o detalhe) e Status da captura com permissões, contadores e reconexão.
-- Contas e Relatórios são placeholders nesta fase.
+- Relatórios segue placeholder nesta fase; indicadores financeiros por instrumento ficam para o próximo marco.
 
 ## Como buildar
 
@@ -128,6 +131,21 @@ O `PingoApplication` inicia o listener e agenda a sincronização. Em builds deb
 ```
 
 Os testes instrumentados de UI usam `createAndroidComposeRule` com Room em memória nas features e, nos fluxos entre telas, o banco real do app via entry points de teste. As suítes de captura usam a seam de debug (`pingo-teste-<INSTITUICAO>`) para postar notificações sintéticas e comprovar o caminho real do listener.
+
+Checagens locais do cadastro de contas (unitários e instrumentados focados):
+
+```bash
+./gradlew --max-workers=2 :core:ui:testDebugUnitTest :feature:accounts:impl:testDebugUnitTest \
+  :feature:onboarding:impl:testDebugUnitTest :core:data:testDebugUnitTest
+
+ANDROID_SERIAL=emulator-5580 ./gradlew --max-workers=2 :feature:accounts:impl:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.pingo.feature.accounts.impl.AccountsContentTest,com.pingo.feature.accounts.impl.ContaFormContentTest,com.pingo.feature.accounts.impl.ContaFormRoomTest,com.pingo.feature.accounts.impl.ContaFormSalvamentoTest \
+  -Pandroid.testInstrumentationRunnerArguments.pingo.syncHost=http://10.0.2.2:8080/
+
+ANDROID_SERIAL=emulator-5580 ./gradlew --max-workers=2 :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.pingo.contas.ContasFluxoTest \
+  -Pandroid.testInstrumentationRunnerArguments.pingo.syncHost=http://10.0.2.2:8080/
+```
 
 Os testes de sync/HTTP precisam do `Pingo.Api.TestHost`, que escuta apenas em loopback e usa uma fixture de autenticação exclusiva de testes:
 

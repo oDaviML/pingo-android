@@ -15,6 +15,9 @@ import com.pingo.core.designsystem.theme.PingoTheme
 import com.pingo.core.model.BeneficioVoucher
 import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.TipoInstrumento
+import com.pingo.core.ui.contas.ContaFormulario
+import com.pingo.core.ui.contas.EventoDoFormularioDeConta
+import com.pingo.core.ui.contas.InstrumentoFormulario
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -40,15 +43,15 @@ class OnboardingContasContentTest {
 
     @Test
     fun escolherUmBancoCreditoMostraCamposDeFechamentoEVencimento() {
-        mostrar(OnboardingContasUiState(escolhas = listOf(escolhaPadrao(InstituicaoFinanceira.NUBANK))))
+        mostrar(OnboardingContasUiState(contas = listOf(contaPadrao(InstituicaoFinanceira.NUBANK))))
 
         composeRule.onNodeWithText("Apelido da conta").assertIsDisplayed()
         composeRule.onNodeWithText("Tipo de conta").assertIsDisplayed()
         composeRule.onNodeWithText("Corrente").assertIsDisplayed()
         composeRule.onNodeWithText("Benefício").assertIsDisplayed()
-        composeRule.onNodeWithText("Crédito").assertIsDisplayed()
-        composeRule.onNodeWithText("Débito").assertIsDisplayed()
-        composeRule.onNodeWithText("Voucher").assertIsDisplayed()
+        composeRule.onNodeWithText("Crédito 1").assertIsDisplayed()
+        composeRule.onNodeWithText("+ Débito").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("+ Voucher").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Últimos 4 dígitos (opcional)").assertIsDisplayed()
         composeRule.onNodeWithText("Fechamento").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Vencimento").performScrollTo().assertIsDisplayed()
@@ -57,17 +60,12 @@ class OnboardingContasContentTest {
 
     @Test
     fun creditoComDiaForaDaFaixaMostraAMensagemDoCampo() {
-        val instrumento = InstrumentoEscolhido(
-            tipo = TipoInstrumento.CREDITO,
-            apelido = "Cartão de crédito",
-            ultimosDigitos = "",
+        val instrumento = InstrumentoFormulario.novo(TipoInstrumento.CREDITO).copy(
             fechamentoDia = "0",
             vencimentoDia = "32",
         )
         mostrar(
-            OnboardingContasUiState(
-                escolhas = listOf(escolhaPadrao(InstituicaoFinanceira.NUBANK).copy(instrumentos = listOf(instrumento))),
-            ),
+            OnboardingContasUiState(contas = listOf(contaPadrao(InstituicaoFinanceira.NUBANK).copy(instrumentos = listOf(instrumento)))),
         )
 
         composeRule.onAllNodesWithText("Informe um dia entre 1 e 31").assertCountEquals(2)
@@ -75,8 +73,27 @@ class OnboardingContasContentTest {
     }
 
     @Test
+    fun doisCreditosAparecemComCamposIndependentes() {
+        val primeiro = InstrumentoFormulario.novo(TipoInstrumento.CREDITO).copy(fechamentoDia = "5", vencimentoDia = "12")
+        val segundo = InstrumentoFormulario.novo(
+            TipoInstrumento.CREDITO,
+        ).copy(apelido = "Cartão adicional", fechamentoDia = "20", vencimentoDia = "28")
+        mostrar(
+            OnboardingContasUiState(
+                contas = listOf(contaPadrao(InstituicaoFinanceira.NUBANK).copy(instrumentos = listOf(primeiro, segundo))),
+            ),
+        )
+
+        composeRule.onNodeWithText("Crédito 1").assertIsDisplayed()
+        composeRule.onNodeWithText("Crédito 2").performScrollTo().assertIsDisplayed()
+        composeRule.onAllNodesWithText("Apelido do crédito").assertCountEquals(2)
+        composeRule.onAllNodesWithText("Remover").assertCountEquals(2)
+        composeRule.onNodeWithText("Continuar").assertIsEnabled()
+    }
+
+    @Test
     fun voucherMostraBeneficioSaldoERecargaOpcional() {
-        mostrar(OnboardingContasUiState(escolhas = listOf(escolhaPadrao(InstituicaoFinanceira.CAJU))))
+        mostrar(OnboardingContasUiState(contas = listOf(contaPadrao(InstituicaoFinanceira.CAJU))))
 
         composeRule.onAllNodesWithText("Benefício").assertCountEquals(2)
         composeRule.onNodeWithText("VR").performScrollTo().assertIsDisplayed()
@@ -90,23 +107,12 @@ class OnboardingContasContentTest {
 
     @Test
     fun voucherComBeneficioESaldoHabilitaContinuar() {
-        mostrar(
-            OnboardingContasUiState(
-                escolhas = listOf(
-                    escolhaPadrao(InstituicaoFinanceira.CAJU).copy(
-                        instrumentos = listOf(
-                            InstrumentoEscolhido(
-                                tipo = TipoInstrumento.VOUCHER,
-                                apelido = "VR",
-                                ultimosDigitos = "",
-                                beneficio = BeneficioVoucher.VR,
-                                saldoInicial = "250,00",
-                            ),
-                        ),
-                    ),
-                ),
-            ),
+        val voucher = InstrumentoFormulario.novo(TipoInstrumento.VOUCHER).copy(
+            apelido = "VR",
+            beneficio = BeneficioVoucher.VR,
+            saldoInicial = "250,00",
         )
+        mostrar(OnboardingContasUiState(contas = listOf(contaPadrao(InstituicaoFinanceira.CAJU).copy(instrumentos = listOf(voucher)))))
 
         composeRule.onNodeWithText("Continuar").assertIsEnabled()
     }
@@ -124,7 +130,7 @@ class OnboardingContasContentTest {
     @Test
     fun continuarHabilitaComUmBancoEscolhidoEEmiteContinuar() {
         val eventos = mutableListOf<OnboardingContasEvent>()
-        mostrar(OnboardingContasUiState(escolhas = listOf(escolhaCompleta(InstituicaoFinanceira.NUBANK))), eventos)
+        mostrar(OnboardingContasUiState(contas = listOf(contaCompleta(InstituicaoFinanceira.NUBANK))), eventos)
 
         composeRule.onNodeWithText("Continuar").assertIsEnabled().performClick()
 
@@ -142,25 +148,26 @@ class OnboardingContasContentTest {
     }
 
     @Test
-    fun marcarOutroInstrumentoEmiteAlternarInstrumento() {
+    fun adicionarInstrumentoEmiteOEventoDoFormulario() {
         val eventos = mutableListOf<OnboardingContasEvent>()
-        mostrar(OnboardingContasUiState(escolhas = listOf(escolhaPadrao(InstituicaoFinanceira.NUBANK))), eventos)
+        mostrar(OnboardingContasUiState(contas = listOf(contaPadrao(InstituicaoFinanceira.NUBANK))), eventos)
 
-        composeRule.onNodeWithText("Débito").performClick()
+        composeRule.onNodeWithText("+ Débito").performScrollTo().performClick()
 
         assertEquals(
-            listOf(OnboardingContasEvent.AlternarInstrumento(InstituicaoFinanceira.NUBANK, TipoInstrumento.DEBITO)),
+            listOf(
+                OnboardingContasEvent.AlterarFormulario(
+                    InstituicaoFinanceira.NUBANK,
+                    EventoDoFormularioDeConta.AdicionarInstrumento(TipoInstrumento.DEBITO),
+                ),
+            ),
             eventos,
         )
     }
 
     @Test
     fun apelidoEmBrancoMostraErroEImpedeContinuar() {
-        mostrar(
-            OnboardingContasUiState(
-                escolhas = listOf(escolhaPadrao(InstituicaoFinanceira.NUBANK).copy(apelido = "  ")),
-            ),
-        )
+        mostrar(OnboardingContasUiState(contas = listOf(contaPadrao(InstituicaoFinanceira.NUBANK).copy(apelido = "  "))))
 
         composeRule.onNodeWithText("Use de 1 a 100 caracteres.").assertIsDisplayed()
         composeRule.onNodeWithText("Continuar").assertIsNotEnabled()
@@ -168,10 +175,10 @@ class OnboardingContasContentTest {
 
     @Test
     fun ultimosDigitosIncompletosMostramErro() {
-        val instrumentoIncompleto = InstrumentoEscolhido(TipoInstrumento.CREDITO, "Cartão de crédito", "12")
+        val instrumentoIncompleto = InstrumentoFormulario.novo(TipoInstrumento.CREDITO).copy(ultimosDigitos = "12")
         mostrar(
             OnboardingContasUiState(
-                escolhas = listOf(escolhaPadrao(InstituicaoFinanceira.NUBANK).copy(instrumentos = listOf(instrumentoIncompleto))),
+                contas = listOf(contaPadrao(InstituicaoFinanceira.NUBANK).copy(instrumentos = listOf(instrumentoIncompleto))),
             ),
         )
 
@@ -183,7 +190,7 @@ class OnboardingContasContentTest {
     fun falhaAoSalvarMostraMensagemEPermiteTentarDeNovo() {
         mostrar(
             OnboardingContasUiState(
-                escolhas = listOf(escolhaCompleta(InstituicaoFinanceira.NUBANK)),
+                contas = listOf(contaCompleta(InstituicaoFinanceira.NUBANK)),
                 salvamento = SalvamentoUiState.Error,
             ),
         )
@@ -203,15 +210,17 @@ class OnboardingContasContentTest {
         }
     }
 
-    private fun escolhaPadrao(instituicao: InstituicaoFinanceira): EscolhaBanco = BancoOferecido.de(instituicao).escolhaInicial()
+    private fun contaPadrao(instituicao: InstituicaoFinanceira): ContaFormulario = BancoOferecido.de(instituicao).escolhaInicial()
 
-    private fun escolhaCompleta(instituicao: InstituicaoFinanceira): EscolhaBanco = escolhaPadrao(instituicao).copy(
-        instrumentos = escolhaPadrao(instituicao).instrumentos.map { instrumento ->
-            when (instrumento.tipo) {
-                TipoInstrumento.CREDITO -> instrumento.copy(fechamentoDia = "5", vencimentoDia = "12")
-                TipoInstrumento.VOUCHER -> instrumento.copy(beneficio = BeneficioVoucher.VR, saldoInicial = "250,00")
-                TipoInstrumento.DEBITO -> instrumento
-            }
-        },
-    )
+    private fun contaCompleta(instituicao: InstituicaoFinanceira): ContaFormulario = contaPadrao(instituicao).let { conta ->
+        conta.copy(
+            instrumentos = conta.instrumentos.map { instrumento ->
+                when (instrumento.tipo) {
+                    TipoInstrumento.CREDITO -> instrumento.copy(fechamentoDia = "5", vencimentoDia = "12")
+                    TipoInstrumento.VOUCHER -> instrumento.copy(beneficio = BeneficioVoucher.VR, saldoInicial = "250,00")
+                    TipoInstrumento.DEBITO -> instrumento
+                }
+            },
+        )
+    }
 }

@@ -29,6 +29,7 @@ import com.pingo.core.designsystem.theme.PingoTheme
 import com.pingo.core.notifications.NotificacoesDeRevisao
 import com.pingo.feature.accounts.api.AccountsRoute
 import com.pingo.feature.accounts.impl.AccountsScreen
+import com.pingo.feature.accounts.impl.ContaFormScreen
 import com.pingo.feature.capturestatus.api.CaptureStatusRoute
 import com.pingo.feature.capturestatus.impl.CaptureStatusScreen
 import com.pingo.feature.home.api.HomeRoute
@@ -94,7 +95,7 @@ private fun ContextoInicial(activity: Activity?, destinoInicial: DestinoInicial,
     }
 }
 
-private fun NavGraphBuilder.telasDeAba(navController: NavHostController) {
+private fun NavGraphBuilder.telaDeInicio(navController: NavHostController) {
     composable(HomeRoute.ROUTE) {
         HomeScreen(
             onOpenSettings = { navController.navigate(SettingsRoute.ROUTE) },
@@ -104,6 +105,10 @@ private fun NavGraphBuilder.telasDeAba(navController: NavHostController) {
             onSelecionarAba = { aba -> navController.abrirAba(aba) },
         )
     }
+}
+
+private fun NavGraphBuilder.telasDeAba(navController: NavHostController) {
+    telaDeInicio(navController = navController)
     composable(TransactionsRoute.ROUTE) {
         TransactionsScreen(
             onOpenDetalhe = { publicId -> navController.navigate(TransactionsRoute.detalhe(publicId)) },
@@ -125,12 +130,29 @@ private fun NavGraphBuilder.telasDeAba(navController: NavHostController) {
         )
     }
     composable(AccountsRoute.ROUTE) {
-        AccountsScreen(onSelecionarAba = { aba -> navController.abrirAba(aba) })
+        AccountsScreen(
+            onSelecionarAba = { aba -> navController.abrirAba(aba) },
+            onNovaConta = { navController.navigate(AccountsRoute.NOVA_ROUTE) },
+            onAbrirConta = { contaPublicId -> navController.navigate(AccountsRoute.editar(contaPublicId)) },
+        )
     }
+    telasDeCadastroDeConta(navController = navController)
     composable(ReportsRoute.ROUTE) {
         ReportsScreen(onSelecionarAba = { aba -> navController.abrirAba(aba) })
     }
     telaDeRevisao(navController = navController)
+}
+
+private fun NavGraphBuilder.telasDeCadastroDeConta(navController: NavHostController) {
+    composable(AccountsRoute.NOVA_ROUTE) {
+        ContaFormScreen(onVoltar = { navController.popBackStack() })
+    }
+    composable(
+        route = AccountsRoute.EDITAR_ROUTE,
+        arguments = listOf(navArgument(AccountsRoute.ARG_CONTA_ID) { type = NavType.StringType }),
+    ) {
+        ContaFormScreen(onVoltar = { navController.popBackStack() })
+    }
 }
 
 private fun NavGraphBuilder.telaDeRevisao(navController: NavHostController) {

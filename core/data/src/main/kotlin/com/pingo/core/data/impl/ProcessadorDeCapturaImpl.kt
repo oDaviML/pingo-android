@@ -13,6 +13,7 @@ import com.pingo.core.data.captura.ResultadoProcessamento
 import com.pingo.core.data.categoria.CategoriaAprendida
 import com.pingo.core.model.Categoria
 import com.pingo.core.model.EstabelecimentoNormalizado
+import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.Instrumento
 import com.pingo.core.model.Lancamento
 import com.pingo.core.model.MotivoPendencia
@@ -65,10 +66,17 @@ class ProcessadorDeCapturaImpl @Inject constructor(
             return ResultadoProcessamento.Duplicada
         }
 
-        val instrumentos = instrumentoRepository.ativosDaInstituicao(captura.instituicao)
+        val instrumentos = instrumentosElegiveis(captura.instituicao)
 
         return gravar(captura, instrumentos, hash)
     }
+
+    private suspend fun instrumentosElegiveis(instituicao: InstituicaoFinanceira): List<Instrumento> =
+        if (instituicao == InstituicaoFinanceira.OUTRA) {
+            emptyList()
+        } else {
+            instrumentoRepository.ativosDaInstituicao(instituicao)
+        }
 
     private suspend fun gravar(captura: CapturaParaProcessar, instrumentos: List<Instrumento>, hash: String): ResultadoProcessamento {
         val transacao = captura.transacao

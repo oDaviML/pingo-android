@@ -226,6 +226,50 @@ class CapturaListenerTest {
     }
 
     @Test
+    fun capturaComTagOutraNaoAssociaInstrumentoManualmenteCadastrado() {
+        val agora = Instant.now()
+        val contaPublicId = "conta-outra-${System.nanoTime()}"
+        val instrumentoPublicId = "instrumento-outra-${System.nanoTime()}"
+        runBlocking {
+            captura.contaRepository().salvar(
+                Conta(
+                    publicId = contaPublicId,
+                    instituicao = InstituicaoFinanceira.OUTRA,
+                    apelido = "Outra",
+                    tipo = TipoConta.CORRENTE,
+                    criadoEm = agora,
+                    atualizadoEm = agora,
+                ),
+            )
+            captura.instrumentoRepository().salvar(
+                Instrumento(
+                    publicId = instrumentoPublicId,
+                    contaPublicId = contaPublicId,
+                    tipo = TipoInstrumento.DEBITO,
+                    apelido = "Débito manual",
+                    criadoEm = agora,
+                    atualizadoEm = agora,
+                ),
+            )
+        }
+        val valor = valorUnico()
+        val inicio = Instant.now()
+
+        postar("Compra aprovada", "pingo-teste-OUTRA-$valor", textoCompra(valor))
+        aguardarLeituraApos(InstituicaoFinanceira.OUTRA, inicio)
+
+        val lancamentos = runBlocking { captura.lancamentoRepository().observeLancamentos().first() }
+        assertTrue(lancamentos.none { it.instrumentoPublicId == instrumentoPublicId })
+        lancamentos.filter { it.valorCentavos == valor && it.origem == OrigemLancamento.NOTIFICACAO }.forEach { lancamento ->
+            assertNull(lancamento.instrumentoPublicId)
+            assertEquals(StatusLancamento.PENDENTE, lancamento.status)
+            assertEquals(MotivoPendencia.INSTRUMENTO_NAO_ENCONTRADO.name, lancamento.motivoPendencia)
+            assertEquals(InstituicaoFinanceira.OUTRA, lancamento.instituicaoOrigem)
+        }
+        assertEquals(1, runBlocking { captura.instrumentoRepository().ativosDaInstituicao(InstituicaoFinanceira.OUTRA) }.size)
+    }
+
+    @Test
     fun doisLancamentosComInstrumentosEmContasDistintasFormamTransferencia() {
         val agora = Instant.now()
         runBlocking {

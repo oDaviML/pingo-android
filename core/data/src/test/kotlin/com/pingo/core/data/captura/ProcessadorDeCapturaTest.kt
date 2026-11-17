@@ -548,6 +548,19 @@ class ProcessadorDeCapturaTest {
         dispatchers = FakeAppDispatchers(StandardTestDispatcher(testScheduler)),
     )
 
+    @Test
+    fun `instituicao outra nunca recebe associacao automatica de captura`() = runTest {
+        val categorias = AmbienteCategorias().comPadroes()
+        ambiente.instrumentos.criar(InstituicaoFinanceira.OUTRA)
+
+        val resultado = processador(categorias).processar(captura(instituicao = InstituicaoFinanceira.OUTRA))
+
+        val lancamento = (resultado as ResultadoProcessamento.Gravado).lancamento
+        assertNull(lancamento.instrumentoPublicId)
+        assertEquals(StatusLancamento.PENDENTE, lancamento.status)
+        assertEquals(MotivoPendencia.INSTRUMENTO_NAO_ENCONTRADO.name, lancamento.motivoPendencia)
+    }
+
     private class AmbienteDeCaptura {
         val contas = FakeContas()
         val instrumentos = FakeInstrumentos(contas)

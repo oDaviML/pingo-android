@@ -12,12 +12,15 @@ import com.pingo.core.model.NovaConta
 import com.pingo.core.model.TipoConta
 import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.testing.TestDispatcherRule
+import com.pingo.core.ui.contas.ContaFormulario
+import com.pingo.core.ui.contas.EventoDoFormularioDeConta
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -35,7 +38,7 @@ class OnboardingContasViewModelTest {
 
     @Test
     fun `comeca sem bancos escolhidos e sem poder continuar`() {
-        assertTrue(viewModel.uiState.value.escolhas.isEmpty())
+        assertTrue(viewModel.uiState.value.contas.isEmpty())
         assertFalse(viewModel.uiState.value.podeContinuar)
     }
 
@@ -43,12 +46,11 @@ class OnboardingContasViewModelTest {
     fun `escolher um banco cria a conta com o tipo e o instrumento padrao`() {
         viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.NUBANK))
 
-        val escolha = viewModel.uiState.value.escolhas.single()
-        assertEquals(InstituicaoFinanceira.NUBANK, escolha.instituicao)
-        assertEquals("Nubank", escolha.apelido)
-        assertEquals(TipoConta.CORRENTE, escolha.tipoConta)
-        assertEquals(listOf(TipoInstrumento.CREDITO), escolha.instrumentos.map { it.tipo })
-        assertEquals("Cartão de crédito", escolha.instrumentos.single().apelido)
+        val conta = contaDe(InstituicaoFinanceira.NUBANK)
+        assertEquals("Nubank", conta.apelido)
+        assertEquals(TipoConta.CORRENTE, conta.tipoConta)
+        assertEquals(listOf(TipoInstrumento.CREDITO), conta.instrumentos.map { it.tipo })
+        assertEquals("Cartão de crédito", conta.instrumentos.single().apelido)
         assertFalse(viewModel.uiState.value.podeContinuar)
 
         preencherCredito(InstituicaoFinanceira.NUBANK)
@@ -59,13 +61,13 @@ class OnboardingContasViewModelTest {
     fun `credito sem fechamento ou vencimento impede continuar`() {
         viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.NUBANK))
 
-        viewModel.onEvent(OnboardingContasEvent.AlterarFechamento(InstituicaoFinanceira.NUBANK, TipoInstrumento.CREDITO, "5"))
+        alterar(InstituicaoFinanceira.NUBANK, EventoDoFormularioDeConta.AlterarFechamento(chaveDe(InstituicaoFinanceira.NUBANK), "5"))
         assertFalse(viewModel.uiState.value.podeContinuar)
 
-        viewModel.onEvent(OnboardingContasEvent.AlterarVencimento(InstituicaoFinanceira.NUBANK, TipoInstrumento.CREDITO, "32"))
+        alterar(InstituicaoFinanceira.NUBANK, EventoDoFormularioDeConta.AlterarVencimento(chaveDe(InstituicaoFinanceira.NUBANK), "32"))
         assertFalse(viewModel.uiState.value.podeContinuar)
 
-        viewModel.onEvent(OnboardingContasEvent.AlterarVencimento(InstituicaoFinanceira.NUBANK, TipoInstrumento.CREDITO, "31"))
+        alterar(InstituicaoFinanceira.NUBANK, EventoDoFormularioDeConta.AlterarVencimento(chaveDe(InstituicaoFinanceira.NUBANK), "31"))
         assertTrue(viewModel.uiState.value.podeContinuar)
     }
 
@@ -75,13 +77,16 @@ class OnboardingContasViewModelTest {
 
         assertFalse(viewModel.uiState.value.podeContinuar)
 
-        viewModel.onEvent(OnboardingContasEvent.AlterarBeneficio(InstituicaoFinanceira.CAJU, TipoInstrumento.VOUCHER, BeneficioVoucher.VR))
+        alterar(
+            InstituicaoFinanceira.CAJU,
+            EventoDoFormularioDeConta.AlterarBeneficio(chaveDe(InstituicaoFinanceira.CAJU), BeneficioVoucher.VR),
+        )
         assertFalse(viewModel.uiState.value.podeContinuar)
 
-        viewModel.onEvent(OnboardingContasEvent.AlterarSaldoInicial(InstituicaoFinanceira.CAJU, TipoInstrumento.VOUCHER, "250,00"))
+        alterar(InstituicaoFinanceira.CAJU, EventoDoFormularioDeConta.AlterarSaldoInicial(chaveDe(InstituicaoFinanceira.CAJU), "250,00"))
         assertTrue(viewModel.uiState.value.podeContinuar)
 
-        val instrumento = viewModel.uiState.value.escolhas.single().instrumentos.single()
+        val instrumento = contaDe(InstituicaoFinanceira.CAJU).instrumentos.single()
         assertEquals(BeneficioVoucher.VR, instrumento.beneficio)
         assertEquals(25000L, instrumento.paraNovoInstrumento().saldoCentavos)
     }
@@ -91,16 +96,16 @@ class OnboardingContasViewModelTest {
         viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.NUBANK))
         viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.NUBANK))
 
-        assertTrue(viewModel.uiState.value.escolhas.isEmpty())
+        assertTrue(viewModel.uiState.value.contas.isEmpty())
     }
 
     @Test
     fun `caju cria conta de beneficio com voucher`() {
         viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.CAJU))
 
-        val escolha = viewModel.uiState.value.escolhas.single()
-        assertEquals(TipoConta.BENEFICIO, escolha.tipoConta)
-        assertEquals(listOf(TipoInstrumento.VOUCHER), escolha.instrumentos.map { it.tipo })
+        val conta = contaDe(InstituicaoFinanceira.CAJU)
+        assertEquals(TipoConta.BENEFICIO, conta.tipoConta)
+        assertEquals(listOf(TipoInstrumento.VOUCHER), conta.instrumentos.map { it.tipo })
     }
 
     @Test
@@ -108,44 +113,67 @@ class OnboardingContasViewModelTest {
         viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.NUBANK))
         viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.INTER))
 
-        viewModel.onEvent(OnboardingContasEvent.AlterarApelidoConta(InstituicaoFinanceira.NUBANK, "Roxinho"))
-        viewModel.onEvent(OnboardingContasEvent.AlterarTipoConta(InstituicaoFinanceira.NUBANK, TipoConta.BENEFICIO))
+        alterar(InstituicaoFinanceira.NUBANK, EventoDoFormularioDeConta.AlterarApelidoConta("Roxinho"))
+        alterar(InstituicaoFinanceira.NUBANK, EventoDoFormularioDeConta.AlterarTipoConta(TipoConta.BENEFICIO))
 
-        val (nubank, inter) = viewModel.uiState.value.escolhas
-        assertEquals("Roxinho", nubank.apelido)
-        assertEquals(TipoConta.BENEFICIO, nubank.tipoConta)
-        assertEquals("Inter", inter.apelido)
-        assertEquals(TipoConta.CORRENTE, inter.tipoConta)
+        assertEquals("Roxinho", contaDe(InstituicaoFinanceira.NUBANK).apelido)
+        assertEquals(TipoConta.BENEFICIO, contaDe(InstituicaoFinanceira.NUBANK).tipoConta)
+        assertEquals("Inter", contaDe(InstituicaoFinanceira.INTER).apelido)
+        assertEquals(TipoConta.CORRENTE, contaDe(InstituicaoFinanceira.INTER).tipoConta)
+    }
+
+    @Test
+    fun `adiciona dois instrumentos do mesmo tipo com dados independentes`() {
+        viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.NUBANK))
+        alterar(InstituicaoFinanceira.NUBANK, EventoDoFormularioDeConta.AdicionarInstrumento(TipoInstrumento.CREDITO))
+
+        val instrumentos = contaDe(InstituicaoFinanceira.NUBANK).instrumentos
+        assertEquals(listOf(TipoInstrumento.CREDITO, TipoInstrumento.CREDITO), instrumentos.map { it.tipo })
+        assertNotEquals(instrumentos[0].chave, instrumentos[1].chave)
+
+        alterar(InstituicaoFinanceira.NUBANK, EventoDoFormularioDeConta.AlterarApelidoInstrumento(instrumentos[1].chave, "Cartão dois"))
+        alterar(InstituicaoFinanceira.NUBANK, EventoDoFormularioDeConta.AlterarFechamento(instrumentos[1].chave, "20"))
+        alterar(InstituicaoFinanceira.NUBANK, EventoDoFormularioDeConta.AlterarVencimento(instrumentos[1].chave, "28"))
+        alterar(InstituicaoFinanceira.NUBANK, EventoDoFormularioDeConta.AlterarFechamento(instrumentos[0].chave, "5"))
+        alterar(InstituicaoFinanceira.NUBANK, EventoDoFormularioDeConta.AlterarVencimento(instrumentos[0].chave, "12"))
+
+        val atualizados = contaDe(InstituicaoFinanceira.NUBANK).instrumentos
+        assertEquals("Cartão de crédito", atualizados[0].apelido)
+        assertEquals("5", atualizados[0].fechamentoDia)
+        assertEquals("Cartão dois", atualizados[1].apelido)
+        assertEquals("20", atualizados[1].fechamentoDia)
+        assertTrue(viewModel.uiState.value.podeContinuar)
     }
 
     @Test
     fun `marcar outro tipo de instrumento adiciona um instrumento com apelido padrao`() {
         viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.NUBANK))
-        viewModel.onEvent(OnboardingContasEvent.AlternarInstrumento(InstituicaoFinanceira.NUBANK, TipoInstrumento.DEBITO))
+        alterar(InstituicaoFinanceira.NUBANK, EventoDoFormularioDeConta.AdicionarInstrumento(TipoInstrumento.DEBITO))
 
-        val instrumentos = viewModel.uiState.value.escolhas.single().instrumentos
+        val instrumentos = contaDe(InstituicaoFinanceira.NUBANK).instrumentos
         assertEquals(listOf(TipoInstrumento.CREDITO, TipoInstrumento.DEBITO), instrumentos.map { it.tipo })
         assertEquals("Cartão de débito", instrumentos.last().apelido)
     }
 
     @Test
-    fun `desmarcar um tipo de instrumento mantem os outros`() {
+    fun `remover um instrumento mantem os outros`() {
         viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.NUBANK))
-        viewModel.onEvent(OnboardingContasEvent.AlternarInstrumento(InstituicaoFinanceira.NUBANK, TipoInstrumento.DEBITO))
-        viewModel.onEvent(OnboardingContasEvent.AlternarInstrumento(InstituicaoFinanceira.NUBANK, TipoInstrumento.CREDITO))
+        alterar(InstituicaoFinanceira.NUBANK, EventoDoFormularioDeConta.AdicionarInstrumento(TipoInstrumento.DEBITO))
+        val chaveDoCredito = chaveDe(InstituicaoFinanceira.NUBANK, indice = 0)
 
-        val instrumentos = viewModel.uiState.value.escolhas.single().instrumentos
-        assertEquals(listOf(TipoInstrumento.DEBITO), instrumentos.map { it.tipo })
+        alterar(InstituicaoFinanceira.NUBANK, EventoDoFormularioDeConta.RemoverInstrumento(chaveDoCredito))
+
+        assertEquals(listOf(TipoInstrumento.DEBITO), contaDe(InstituicaoFinanceira.NUBANK).instrumentos.map { it.tipo })
     }
 
     @Test
-    fun `nao desmarca o ultimo tipo de instrumento do banco`() {
+    fun `nao remove o ultimo instrumento do banco`() {
         viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.NUBANK))
-        viewModel.onEvent(OnboardingContasEvent.AlternarInstrumento(InstituicaoFinanceira.NUBANK, TipoInstrumento.CREDITO))
         preencherCredito(InstituicaoFinanceira.NUBANK)
 
-        val instrumentos = viewModel.uiState.value.escolhas.single().instrumentos
-        assertEquals(listOf(TipoInstrumento.CREDITO), instrumentos.map { it.tipo })
+        alterar(InstituicaoFinanceira.NUBANK, EventoDoFormularioDeConta.RemoverInstrumento(chaveDe(InstituicaoFinanceira.NUBANK)))
+
+        assertEquals(listOf(TipoInstrumento.CREDITO), contaDe(InstituicaoFinanceira.NUBANK).instrumentos.map { it.tipo })
         assertTrue(viewModel.uiState.value.podeContinuar)
     }
 
@@ -153,9 +181,12 @@ class OnboardingContasViewModelTest {
     fun `ultimos digitos aceitam so numeros e guardam no maximo quatro`() {
         viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.NUBANK))
 
-        viewModel.onEvent(OnboardingContasEvent.AlterarUltimosDigitos(InstituicaoFinanceira.NUBANK, TipoInstrumento.CREDITO, "12a34x9"))
+        alterar(
+            InstituicaoFinanceira.NUBANK,
+            EventoDoFormularioDeConta.AlterarUltimosDigitos(chaveDe(InstituicaoFinanceira.NUBANK), "12a34x9"),
+        )
 
-        assertEquals("1234", viewModel.uiState.value.escolhas.single().instrumentos.single().ultimosDigitos)
+        assertEquals("1234", contaDe(InstituicaoFinanceira.NUBANK).instrumentos.single().ultimosDigitos)
     }
 
     @Test
@@ -163,14 +194,14 @@ class OnboardingContasViewModelTest {
         viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.NUBANK))
         preencherCredito(InstituicaoFinanceira.NUBANK)
 
-        viewModel.onEvent(OnboardingContasEvent.AlterarApelidoConta(InstituicaoFinanceira.NUBANK, "   "))
+        alterar(InstituicaoFinanceira.NUBANK, EventoDoFormularioDeConta.AlterarApelidoConta("   "))
         assertFalse(viewModel.uiState.value.podeContinuar)
 
-        viewModel.onEvent(OnboardingContasEvent.AlterarApelidoConta(InstituicaoFinanceira.NUBANK, "Nubank"))
-        viewModel.onEvent(OnboardingContasEvent.AlterarUltimosDigitos(InstituicaoFinanceira.NUBANK, TipoInstrumento.CREDITO, "12"))
+        alterar(InstituicaoFinanceira.NUBANK, EventoDoFormularioDeConta.AlterarApelidoConta("Nubank"))
+        alterar(InstituicaoFinanceira.NUBANK, EventoDoFormularioDeConta.AlterarUltimosDigitos(chaveDe(InstituicaoFinanceira.NUBANK), "12"))
         assertFalse(viewModel.uiState.value.podeContinuar)
 
-        viewModel.onEvent(OnboardingContasEvent.AlterarUltimosDigitos(InstituicaoFinanceira.NUBANK, TipoInstrumento.CREDITO, ""))
+        alterar(InstituicaoFinanceira.NUBANK, EventoDoFormularioDeConta.AlterarUltimosDigitos(chaveDe(InstituicaoFinanceira.NUBANK), ""))
         assertTrue(viewModel.uiState.value.podeContinuar)
     }
 
@@ -178,7 +209,10 @@ class OnboardingContasViewModelTest {
     fun `continuar cria as contas com instrumentos e conclui o passo`() {
         viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.NUBANK))
         viewModel.onEvent(OnboardingContasEvent.AlternarBanco(InstituicaoFinanceira.ITAU))
-        viewModel.onEvent(OnboardingContasEvent.AlterarUltimosDigitos(InstituicaoFinanceira.NUBANK, TipoInstrumento.CREDITO, "1084"))
+        alterar(
+            InstituicaoFinanceira.NUBANK,
+            EventoDoFormularioDeConta.AlterarUltimosDigitos(chaveDe(InstituicaoFinanceira.NUBANK), "1084"),
+        )
         preencherCredito(InstituicaoFinanceira.NUBANK)
 
         viewModel.onEvent(OnboardingContasEvent.Continuar)
@@ -264,9 +298,18 @@ class OnboardingContasViewModelTest {
         assertTrue(viewModel.uiState.value.concluido)
     }
 
+    private fun contaDe(instituicao: InstituicaoFinanceira): ContaFormulario =
+        viewModel.uiState.value.contas.first { it.instituicao == instituicao }
+
+    private fun chaveDe(instituicao: InstituicaoFinanceira, indice: Int = 0): String = contaDe(instituicao).instrumentos[indice].chave
+
+    private fun alterar(instituicao: InstituicaoFinanceira, evento: EventoDoFormularioDeConta) {
+        viewModel.onEvent(OnboardingContasEvent.AlterarFormulario(instituicao, evento))
+    }
+
     private fun preencherCredito(instituicao: InstituicaoFinanceira) {
-        viewModel.onEvent(OnboardingContasEvent.AlterarFechamento(instituicao, TipoInstrumento.CREDITO, "5"))
-        viewModel.onEvent(OnboardingContasEvent.AlterarVencimento(instituicao, TipoInstrumento.CREDITO, "12"))
+        alterar(instituicao, EventoDoFormularioDeConta.AlterarFechamento(chaveDe(instituicao), "5"))
+        alterar(instituicao, EventoDoFormularioDeConta.AlterarVencimento(chaveDe(instituicao), "12"))
     }
 
     private class FakeContaRepository : ContaRepository {

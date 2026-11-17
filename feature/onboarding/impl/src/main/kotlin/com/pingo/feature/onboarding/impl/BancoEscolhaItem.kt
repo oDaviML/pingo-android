@@ -23,6 +23,8 @@ import com.pingo.core.designsystem.component.PingoText
 import com.pingo.core.designsystem.theme.PingoLayout
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.ui.contas.ContaFormulario
+import com.pingo.core.ui.contas.ContaFormularioCampos
 
 @Composable
 internal fun BancosEscolhaCard(state: OnboardingContasUiState, onEvent: (OnboardingContasEvent) -> Unit) {
@@ -39,7 +41,7 @@ internal fun BancosEscolhaCard(state: OnboardingContasUiState, onEvent: (Onboard
 
             BancoEscolhaItem(
                 banco = banco,
-                escolha = state.escolhas.firstOrNull { it.instituicao == banco.instituicao },
+                conta = state.contas.firstOrNull { it.instituicao == banco.instituicao },
                 onEvent = onEvent,
             )
         }
@@ -47,7 +49,7 @@ internal fun BancosEscolhaCard(state: OnboardingContasUiState, onEvent: (Onboard
 }
 
 @Composable
-internal fun BancoEscolhaItem(banco: BancoOferecido, escolha: EscolhaBanco?, onEvent: (OnboardingContasEvent) -> Unit) {
+internal fun BancoEscolhaItem(banco: BancoOferecido, conta: ContaFormulario?, onEvent: (OnboardingContasEvent) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -56,12 +58,17 @@ internal fun BancoEscolhaItem(banco: BancoOferecido, escolha: EscolhaBanco?, onE
     ) {
         BancoCabecalho(
             banco = banco,
-            selecionado = escolha != null,
+            selecionado = conta != null,
             onAlternar = { onEvent(OnboardingContasEvent.AlternarBanco(banco.instituicao)) },
         )
 
-        if (escolha != null) {
-            ContaEscolhaCampos(escolha = escolha, onEvent = onEvent)
+        if (conta != null) {
+            ContaFormularioCampos(
+                formulario = conta,
+                onEvento = { evento ->
+                    onEvent(OnboardingContasEvent.AlterarFormulario(instituicao = banco.instituicao, evento = evento))
+                },
+            )
         }
     }
 }

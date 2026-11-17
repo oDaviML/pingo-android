@@ -25,6 +25,8 @@ class NavHostRoutesTest {
             TransactionsRoute.ROUTE,
             TransactionsRoute.DETALHE_ROUTE,
             AccountsRoute.ROUTE,
+            AccountsRoute.NOVA_ROUTE,
+            AccountsRoute.EDITAR_ROUTE,
             ReportsRoute.ROUTE,
             ReviewRoute.ROUTE,
             CaptureStatusRoute.ROUTE,
@@ -36,6 +38,11 @@ class NavHostRoutesTest {
     @Test
     fun detalheRouteCarregaPublicId() {
         assertEquals("transactions/detalhe/lanc-1", TransactionsRoute.detalhe("lanc-1"))
+    }
+
+    @Test
+    fun editarContaRouteCarregaPublicId() {
+        assertEquals("accounts/editar/conta-1", AccountsRoute.editar("conta-1"))
     }
 
     @Test
