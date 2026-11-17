@@ -1,6 +1,13 @@
 package com.pingo.core.network.sync
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+
+val jsonDeSync: Json = Json {
+    ignoreUnknownKeys = true
+    explicitNulls = true
+    encodeDefaults = true
+}
 
 @Serializable
 data class PushChangesPayload(
@@ -171,16 +178,16 @@ data class InstrumentoSnapshotDto(
     val contaPublicId: String,
     val tipo: String,
     val apelido: String,
-    val ultimosDigitos: String? = null,
+    val ultimosDigitos: CampoPresenca<String> = CampoPresenca.ausente(),
     val arquivado: Boolean,
-    val fechamentoDia: Int? = null,
-    val vencimentoDia: Int? = null,
-    val beneficio: String? = null,
-    val saldo: Double? = null,
-    val diaRecarga: Int? = null,
-    val valorRecarga: Double? = null,
-    val limiteCredito: Double? = null,
-    val arquivadoPorCascata: Boolean? = null,
+    val fechamentoDia: CampoPresenca<Int> = CampoPresenca.ausente(),
+    val vencimentoDia: CampoPresenca<Int> = CampoPresenca.ausente(),
+    val beneficio: CampoPresenca<String> = CampoPresenca.ausente(),
+    val saldo: CampoPresenca<Double> = CampoPresenca.ausente(),
+    val diaRecarga: CampoPresenca<Int> = CampoPresenca.ausente(),
+    val valorRecarga: CampoPresenca<Double> = CampoPresenca.ausente(),
+    val limiteCredito: CampoPresenca<Double> = CampoPresenca.ausente(),
+    val arquivadoPorCascata: CampoPresenca<Boolean> = CampoPresenca.ausente(),
     val criadoEm: String,
     val atualizadoEm: String,
     val excluidoEm: String? = null,

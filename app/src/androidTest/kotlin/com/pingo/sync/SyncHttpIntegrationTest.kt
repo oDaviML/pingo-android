@@ -413,20 +413,20 @@ class SyncHttpIntegrationTest {
             val voucherRemoto = remotos.instrumentos.single { it.publicId == voucher.publicId }
             val manualRemoto = remotos.instrumentos.single { it.publicId == debitoManual.publicId }
             assertTrue(creditoRemoto.arquivado)
-            assertEquals(true, creditoRemoto.arquivadoPorCascata)
-            assertEquals("1234", creditoRemoto.ultimosDigitos)
-            assertEquals(5, creditoRemoto.fechamentoDia)
-            assertEquals(12, creditoRemoto.vencimentoDia)
+            assertEquals(true, creditoRemoto.arquivadoPorCascata.valor)
+            assertEquals("1234", creditoRemoto.ultimosDigitos.valor)
+            assertEquals(5, creditoRemoto.fechamentoDia.valor)
+            assertEquals(12, creditoRemoto.vencimentoDia.valor)
             assertEquals("Crédito sem dígitos", semDigitosRemoto.apelido)
-            assertNull(semDigitosRemoto.ultimosDigitos)
-            assertEquals(28, semDigitosRemoto.fechamentoDia)
-            assertEquals(5, semDigitosRemoto.vencimentoDia)
+            assertNull(semDigitosRemoto.ultimosDigitos.valor)
+            assertEquals(28, semDigitosRemoto.fechamentoDia.valor)
+            assertEquals(5, semDigitosRemoto.vencimentoDia.valor)
             assertTrue(debitoRemoto.arquivado)
-            assertEquals(false, debitoRemoto.arquivadoPorCascata)
-            assertEquals("VR", voucherRemoto.beneficio)
-            assertEquals(486.20, voucherRemoto.saldo ?: 0.0, 0.001)
-            assertEquals(5, voucherRemoto.diaRecarga)
-            assertEquals(300.0, voucherRemoto.valorRecarga ?: 0.0, 0.001)
+            assertEquals(false, debitoRemoto.arquivadoPorCascata.valor)
+            assertEquals("VR", voucherRemoto.beneficio.valor)
+            assertEquals(486.20, voucherRemoto.saldo.valor ?: 0.0, 0.001)
+            assertEquals(5, voucherRemoto.diaRecarga.valor)
+            assertEquals(300.0, voucherRemoto.valorRecarga.valor ?: 0.0, 0.001)
             assertFalse(manualRemoto.arquivado)
 
             val outroUsuario = HttpPingoApiClient(
@@ -484,6 +484,77 @@ class SyncHttpIntegrationTest {
                 assertEquals(false, restauracao.instrumentoDao().buscar(creditoSemDigitos.publicId)?.arquivado)
                 assertEquals(true, restauracao.instrumentoDao().buscar(debito.publicId)?.arquivado)
                 assertEquals(false, restauracao.instrumentoDao().buscar(debito.publicId)?.arquivadoPorCascata)
+            } finally {
+                restauracao.close()
+            }
+        }
+    }
+
+    @Test
+    fun recargaOpcionalRemovidaSincronizaNuloExplicitoERestauraSemRecarga() = runBlocking {
+        assumeTrue("informe -e $ARG_HOST=<url do Pingo.Api.TestHost>", !host.isNullOrBlank())
+
+        withTimeout(TEMPO_TOTAL) {
+            val token = "auth0|recarga-${UUID.randomUUID()}"
+            val api = HttpPingoApiClient(PingoApiConfig(host!!), FixtureAuth(token), dispatchers)
+            assertTrue("host de teste inacessível em $host", api.healthCheck())
+
+            val fonte = captura.database()
+            fonte.clearAllTables()
+
+            captura.contaRepository().criarComInstrumentos(
+                listOf(
+                    NovaConta(
+                        instituicao = InstituicaoFinanceira.CAJU,
+                        apelido = "Caju benefícios",
+                        tipo = TipoConta.BENEFICIO,
+                        instrumentos = listOf(
+                            NovoInstrumento(
+                                tipo = TipoInstrumento.VOUCHER,
+                                apelido = "Caju VR",
+                                beneficio = BeneficioVoucher.VR,
+                                saldoCentavos = 48620,
+                                diaRecarga = 5,
+                                valorRecargaCentavos = 30000,
+                            ),
+                        ),
+                    ),
+                ),
+                Instant.now(),
+            )
+
+            val conta = captura.contaRepository().observeContas().first().single()
+            val voucher = captura.instrumentoRepository().observePorConta(conta.publicId).first().single()
+
+            motor(api, fonte, FakePreferences(), token).run()
+
+            val comRecarga = api.pullChanges(null).instrumentos.single { it.publicId == voucher.publicId }
+            assertEquals(5, comRecarga.diaRecarga.valor)
+            assertEquals(300.0, comRecarga.valorRecarga.valor ?: 0.0, 0.001)
+
+            captura.instrumentoRepository().salvar(
+                voucher.copy(
+                    diaRecarga = null,
+                    valorRecargaCentavos = null,
+                    atualizadoEm = Instant.now(),
+                ),
+            )
+
+            motor(api, fonte, FakePreferences(), token).run()
+
+            val semRecarga = api.pullChanges(null).instrumentos.single { it.publicId == voucher.publicId }
+            assertNull(semRecarga.diaRecarga.valor)
+            assertNull(semRecarga.valorRecarga.valor)
+            assertEquals(486.20, semRecarga.saldo.valor ?: 0.0, 0.001)
+
+            val restauracao = bancoEmMemoria()
+            try {
+                motor(api, restauracao, FakePreferences(), token).run()
+
+                val restaurado = restauracao.instrumentoDao().buscar(voucher.publicId)
+                assertNull(restaurado?.diaRecarga)
+                assertNull(restaurado?.valorRecargaCentavos)
+                assertEquals(48620L, restaurado?.saldoCentavos)
             } finally {
                 restauracao.close()
             }

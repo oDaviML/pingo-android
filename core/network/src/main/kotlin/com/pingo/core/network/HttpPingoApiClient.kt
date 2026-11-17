@@ -7,9 +7,9 @@ import com.pingo.core.network.sync.PullChangesRequest
 import com.pingo.core.network.sync.PullChangesResult
 import com.pingo.core.network.sync.PushChangesPayload
 import com.pingo.core.network.sync.PushChangesResult
+import com.pingo.core.network.sync.jsonDeSync
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -26,10 +26,7 @@ class HttpPingoApiClient @Inject constructor(
     private val dispatchers: AppDispatchers,
 ) : PingoApiClient {
     private val baseUrl = config.baseUrl.trimEnd('/')
-    private val json = Json {
-        ignoreUnknownKeys = true
-        explicitNulls = false
-    }
+    private val json = jsonDeSync
     private val client = OkHttpClient.Builder()
         .connectTimeout(config.connectTimeoutMillis, TimeUnit.MILLISECONDS)
         .build()

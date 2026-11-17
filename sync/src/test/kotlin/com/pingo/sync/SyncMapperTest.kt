@@ -2,15 +2,18 @@ package com.pingo.sync
 
 import com.pingo.core.database.entity.InstrumentoEntity
 import com.pingo.core.database.entity.LancamentoEntity
+import com.pingo.core.model.BeneficioVoucher
 import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.OrigemLancamento
 import com.pingo.core.model.StatusLancamento
 import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.network.sync.CampoPresenca
 import com.pingo.core.network.sync.InstrumentoChangeDto
 import com.pingo.core.network.sync.InstrumentoSnapshotDto
 import com.pingo.core.network.sync.LancamentoChangeDto
 import com.pingo.core.network.sync.LancamentoSnapshotDto
+import com.pingo.core.network.sync.jsonDeSync
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -104,8 +107,14 @@ class SyncMapperTest {
 
     @Test
     fun `pull de instrumento aplica a procedencia de cascata`() {
-        val arquivado = instrumentoSnapshot(arquivado = true, arquivadoPorCascata = true).toEntity()
-        val reativado = instrumentoSnapshot(arquivado = false, arquivadoPorCascata = false).toEntity()
+        val arquivado = instrumentoSnapshot(
+            arquivado = true,
+            arquivadoPorCascata = CampoPresenca.de(true),
+        ).toEntity()
+        val reativado = instrumentoSnapshot(
+            arquivado = false,
+            arquivadoPorCascata = CampoPresenca.de(false),
+        ).toEntity()
 
         assertTrue(arquivado.arquivado)
         assertTrue(arquivado.arquivadoPorCascata)
@@ -116,15 +125,151 @@ class SyncMapperTest {
 
     @Test
     fun `pull de instrumento legado sem procedencia nao inventa cascata`() {
-        val json = """
-            {"publicId":"instrumento-1","contaPublicId":"conta-1","tipo":"Credito","apelido":"Cartão",
-            "arquivado":false,"criadoEm":"2026-11-10T12:00:00Z","atualizadoEm":"2026-11-10T12:00:00Z"}
-        """.trimIndent()
+        val snapshot = jsonDeSync.decodeFromString(InstrumentoSnapshotDto.serializer(), instrumentoLegadoJson())
 
-        val snapshot = Json.decodeFromString(InstrumentoSnapshotDto.serializer(), json)
-
-        assertNull(snapshot.arquivadoPorCascata)
+        assertFalse(snapshot.arquivadoPorCascata.presente)
         assertFalse(snapshot.toEntity().arquivadoPorCascata)
+    }
+
+    @Test
+    fun `pull legado omisso preserva a configuracao financeira ja conhecida`() {
+        val cartao = instrumentoEntity()
+        val voucher = instrumentoEntity().copy(
+            fechamentoDia = null,
+            vencimentoDia = null,
+            limiteCreditoCentavos = null,
+            beneficio = BeneficioVoucher.VR,
+            saldoCentavos = 48620,
+            diaRecarga = 5,
+            valorRecargaCentavos = 30000,
+        )
+
+        val cartaoAplicado = jsonDeSync.decodeFromString(
+            InstrumentoSnapshotDto.serializer(),
+            instrumentoLegadoJson(apelido = "Cartão renomeado"),
+        ).toEntity(cartao)
+        val voucherAplicado = jsonDeSync.decodeFromString(
+            InstrumentoSnapshotDto.serializer(),
+            instrumentoLegadoJson(tipo = "Voucher", apelido = "VR renomeado"),
+        ).toEntity(voucher)
+
+        assertEquals("Cartão renomeado", cartaoAplicado.apelido)
+        assertEquals("1084", cartaoAplicado.ultimosDigitos)
+        assertEquals(5, cartaoAplicado.fechamentoDia)
+        assertEquals(12, cartaoAplicado.vencimentoDia)
+        assertEquals(500000L, cartaoAplicado.limiteCreditoCentavos)
+
+        assertEquals("VR renomeado", voucherAplicado.apelido)
+        assertEquals(BeneficioVoucher.VR, voucherAplicado.beneficio)
+        assertEquals(48620L, voucherAplicado.saldoCentavos)
+        assertEquals(5, voucherAplicado.diaRecarga)
+        assertEquals(30000L, voucherAplicado.valorRecargaCentavos)
+    }
+
+    @Test
+    fun `pull com nulo explicito remove os campos opcionais informados`() {
+        val local = instrumentoEntity().copy(
+            beneficio = BeneficioVoucher.VR,
+            saldoCentavos = 48620,
+            diaRecarga = 5,
+            valorRecargaCentavos = 30000,
+        )
+        val removido = jsonDeSync.decodeFromString(
+            InstrumentoSnapshotDto.serializer(),
+            instrumentoLegadoJson(
+                campos = """
+                    "ultimosDigitos": null,
+                    "fechamentoDia": null,
+                    "vencimentoDia": null,
+                    "beneficio": null,
+                    "saldo": null,
+                    "diaRecarga": null,
+                    "valorRecarga": null,
+                    "limiteCredito": null,
+                    "arquivadoPorCascata": null,
+                """.trimIndent(),
+            ),
+        ).toEntity(local)
+
+        assertNull(removido.ultimosDigitos)
+        assertNull(removido.fechamentoDia)
+        assertNull(removido.vencimentoDia)
+        assertNull(removido.beneficio)
+        assertNull(removido.saldoCentavos)
+        assertNull(removido.diaRecarga)
+        assertNull(removido.valorRecargaCentavos)
+        assertNull(removido.limiteCreditoCentavos)
+        assertFalse(removido.arquivadoPorCascata)
+    }
+
+    @Test
+    fun `pull de reativacao legada omissa limpa a procedencia incompativel`() {
+        val arquivadoPorCascata = instrumentoEntity(arquivado = true, arquivadoPorCascata = true)
+
+        val reativado = jsonDeSync.decodeFromString(
+            InstrumentoSnapshotDto.serializer(),
+            instrumentoLegadoJson(arquivado = false),
+        ).toEntity(arquivadoPorCascata)
+
+        assertFalse(reativado.arquivado)
+        assertFalse(reativado.arquivadoPorCascata)
+    }
+
+    @Test
+    fun `pull de arquivado legado omisso preserva a procedencia compativel`() {
+        val arquivadoPorCascata = instrumentoEntity(arquivado = true, arquivadoPorCascata = true)
+
+        val arquivado = jsonDeSync.decodeFromString(
+            InstrumentoSnapshotDto.serializer(),
+            instrumentoLegadoJson(arquivado = true),
+        ).toEntity(arquivadoPorCascata)
+
+        assertTrue(arquivado.arquivado)
+        assertTrue(arquivado.arquivadoPorCascata)
+    }
+
+    @Test
+    fun `pull de arquivado legado sobre ativo inconsistente nao inventa procedencia`() {
+        val ativoInconsistente = instrumentoEntity(arquivado = false, arquivadoPorCascata = true)
+
+        val arquivado = jsonDeSync.decodeFromString(
+            InstrumentoSnapshotDto.serializer(),
+            instrumentoLegadoJson(arquivado = true),
+        ).toEntity(ativoInconsistente)
+
+        assertTrue(arquivado.arquivado)
+        assertFalse(arquivado.arquivadoPorCascata)
+    }
+
+    @Test
+    fun `pull ativo com procedencia explicita nao mantem cascata`() {
+        val ativo = jsonDeSync.decodeFromString(
+            InstrumentoSnapshotDto.serializer(),
+            instrumentoLegadoJson(campos = "\"arquivadoPorCascata\": true,"),
+        ).toEntity()
+
+        assertFalse(ativo.arquivado)
+        assertFalse(ativo.arquivadoPorCascata)
+    }
+
+    @Test
+    fun `push de recarga removida envia nulo explicito`() {
+        val removido = instrumentoEntity().copy(
+            beneficio = BeneficioVoucher.VR,
+            saldoCentavos = 48620,
+        ).toChangeDto()
+        val configurado = instrumentoEntity().copy(
+            diaRecarga = 5,
+            valorRecargaCentavos = 30000,
+        ).toChangeDto()
+
+        val jsonRemovido = jsonDeSync.encodeToString(InstrumentoChangeDto.serializer(), removido)
+        val jsonConfigurado = jsonDeSync.encodeToString(InstrumentoChangeDto.serializer(), configurado)
+
+        assertTrue(jsonRemovido.contains("\"diaRecarga\":null"))
+        assertTrue(jsonRemovido.contains("\"valorRecarga\":null"))
+        assertTrue(jsonConfigurado.contains("\"diaRecarga\":5"))
+        assertTrue(jsonConfigurado.contains("\"valorRecarga\":300.0"))
     }
 
     @Test
@@ -174,22 +319,43 @@ class SyncMapperTest {
         assertNull(ausente.tipoSemTransferencia)
     }
 
-    private fun instrumentoSnapshot(arquivado: Boolean, arquivadoPorCascata: Boolean?): InstrumentoSnapshotDto = InstrumentoSnapshotDto(
+    private fun instrumentoSnapshot(
+        arquivado: Boolean,
+        arquivadoPorCascata: CampoPresenca<Boolean> = CampoPresenca.ausente(),
+    ): InstrumentoSnapshotDto = InstrumentoSnapshotDto(
         publicId = "instrumento-1",
         contaPublicId = "conta-1",
         tipo = "Credito",
         apelido = "Cartão",
-        ultimosDigitos = "1084",
+        ultimosDigitos = CampoPresenca.de("1084"),
         arquivado = arquivado,
         arquivadoPorCascata = arquivadoPorCascata,
-        fechamentoDia = 5,
-        vencimentoDia = 12,
-        limiteCredito = 5000.0,
+        fechamentoDia = CampoPresenca.de(5),
+        vencimentoDia = CampoPresenca.de(12),
+        limiteCredito = CampoPresenca.de(5000.0),
         criadoEm = "2026-11-10T12:00:00Z",
         atualizadoEm = "2026-11-10T12:00:00Z",
     )
 
-    private fun instrumentoEntity(arquivado: Boolean, arquivadoPorCascata: Boolean): InstrumentoEntity = InstrumentoEntity(
+    private fun instrumentoLegadoJson(
+        tipo: String = "Credito",
+        apelido: String = "Cartão",
+        arquivado: Boolean = false,
+        campos: String = "",
+    ): String = """
+        {
+          "publicId": "instrumento-1",
+          "contaPublicId": "conta-1",
+          "tipo": "$tipo",
+          "apelido": "$apelido",
+          "arquivado": $arquivado,
+          ${campos.trim()}
+          "criadoEm": "2026-11-10T12:00:00Z",
+          "atualizadoEm": "2026-11-10T12:00:00Z"
+        }
+    """.trimIndent()
+
+    private fun instrumentoEntity(arquivado: Boolean = false, arquivadoPorCascata: Boolean = false): InstrumentoEntity = InstrumentoEntity(
         publicId = "instrumento-1",
         contaPublicId = "conta-1",
         tipo = TipoInstrumento.CREDITO,

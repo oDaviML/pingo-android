@@ -61,7 +61,7 @@ interface InstrumentoDao {
     @Query("UPDATE instrumentos SET excluidoEm = :quando, atualizadoEm = :quando WHERE publicId = :publicId")
     suspend fun marcarExcluido(publicId: String, quando: Instant)
 
-    @Query("UPDATE instrumentos SET arquivado = 1, atualizadoEm = :quando WHERE publicId = :publicId")
+    @Query("UPDATE instrumentos SET arquivado = 1, arquivadoPorCascata = 0, atualizadoEm = :quando WHERE publicId = :publicId")
     suspend fun marcarArquivado(publicId: String, quando: Instant)
 
     @Query("UPDATE instrumentos SET arquivado = 0, arquivadoPorCascata = 0, atualizadoEm = :quando WHERE publicId = :publicId")

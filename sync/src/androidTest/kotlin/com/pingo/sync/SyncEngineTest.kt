@@ -14,6 +14,7 @@ import com.pingo.core.auth.TokenStore
 import com.pingo.core.auth.UsuarioAutenticado
 import com.pingo.core.data.categoria.CategoriaSeeder
 import com.pingo.core.data.impl.CategoriaRepositoryImpl
+import com.pingo.core.data.impl.InstrumentoRepositoryImpl
 import com.pingo.core.database.PingoDatabase
 import com.pingo.core.database.entity.ContaEntity
 import com.pingo.core.database.entity.InstrumentoEntity
@@ -31,6 +32,7 @@ import com.pingo.core.network.PingoApiClient
 import com.pingo.core.network.rules.ParserRulesResponse
 import com.pingo.core.network.sync.CategoriaSnapshotDto
 import com.pingo.core.network.sync.ContaSnapshotDto
+import com.pingo.core.network.sync.InstrumentoSnapshotDto
 import com.pingo.core.network.sync.PublicIdAliasDto
 import com.pingo.core.network.sync.PullChangesResult
 import com.pingo.core.network.sync.PushChangesPayload
@@ -318,6 +320,84 @@ class SyncEngineTest {
         assertNotNull(database.instrumentoDao().buscar("instrumento-1"))
         assertEquals(4290L, database.lancamentoDao().buscar("lancamento-1")?.valorCentavos)
         assertEquals(0, api.pushCalls)
+    }
+
+    @Test
+    fun pullLegadoOmissoPreservaConfiguracaoConhecidaDoInstrumento() = runTest {
+        database.contaDao().upsert(contaEntity("conta-1"))
+        database.instrumentoDao().upsert(
+            instrumentoEntity("instrumento-1", "conta-1").copy(
+                ultimosDigitos = "1084",
+                fechamentoDia = 5,
+                vencimentoDia = 12,
+                limiteCreditoCentavos = 500000,
+            ),
+        )
+        api.pullResult = PullChangesResult(
+            servidorEm = init.toString(),
+            instrumentos = listOf(
+                InstrumentoSnapshotDto(
+                    publicId = "instrumento-1",
+                    contaPublicId = "conta-1",
+                    tipo = "Credito",
+                    apelido = "Cartão renomeado",
+                    arquivado = false,
+                    criadoEm = init.toString(),
+                    atualizadoEm = init.toString(),
+                ),
+            ),
+        )
+
+        engine.run()
+
+        val aplicado = database.instrumentoDao().buscar("instrumento-1")
+        assertEquals("Cartão renomeado", aplicado?.apelido)
+        assertEquals("1084", aplicado?.ultimosDigitos)
+        assertEquals(5, aplicado?.fechamentoDia)
+        assertEquals(12, aplicado?.vencimentoDia)
+        assertEquals(500000L, aplicado?.limiteCreditoCentavos)
+    }
+
+    @Test
+    fun pullDeReativacaoLegadaLimpaProcedenciaDeCascataIncompativel() = runTest {
+        database.contaDao().upsert(contaEntity("conta-1"))
+        database.instrumentoDao().upsert(
+            instrumentoEntity("instrumento-1", "conta-1").copy(arquivado = true, arquivadoPorCascata = true),
+        )
+        api.pullResult = PullChangesResult(
+            servidorEm = init.toString(),
+            instrumentos = listOf(
+                InstrumentoSnapshotDto(
+                    publicId = "instrumento-1",
+                    contaPublicId = "conta-1",
+                    tipo = "Debito",
+                    apelido = "Conta",
+                    arquivado = false,
+                    criadoEm = init.toString(),
+                    atualizadoEm = init.toString(),
+                ),
+            ),
+        )
+
+        engine.run()
+
+        val aplicado = database.instrumentoDao().buscar("instrumento-1")
+        assertEquals(false, aplicado?.arquivado)
+        assertEquals(false, aplicado?.arquivadoPorCascata)
+    }
+
+    @Test
+    fun arquivamentoManualDeInstrumentoAtivoLimpaProcedenciaDeCascata() = runTest {
+        database.contaDao().upsert(contaEntity("conta-1"))
+        database.instrumentoDao().upsert(
+            instrumentoEntity("instrumento-1", "conta-1").copy(arquivadoPorCascata = true),
+        )
+
+        InstrumentoRepositoryImpl(database.instrumentoDao()).arquivar("instrumento-1", init.plusSeconds(60))
+
+        val aplicado = database.instrumentoDao().buscar("instrumento-1")
+        assertEquals(true, aplicado?.arquivado)
+        assertEquals(false, aplicado?.arquivadoPorCascata)
     }
 
     @Test
