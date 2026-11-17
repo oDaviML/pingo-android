@@ -242,7 +242,14 @@ class HomeRoomTest {
                     instituicao = InstituicaoFinanceira.NUBANK,
                     apelido = "Nubank",
                     tipo = TipoConta.CORRENTE,
-                    instrumentos = listOf(NovoInstrumento(tipo = TipoInstrumento.CREDITO, apelido = "Cartão de crédito")),
+                    instrumentos = listOf(
+                        NovoInstrumento(
+                            tipo = TipoInstrumento.CREDITO,
+                            apelido = "Cartão de crédito",
+                            fechamentoDia = 5,
+                            vencimentoDia = 12,
+                        ),
+                    ),
                 ),
             ),
             agora,

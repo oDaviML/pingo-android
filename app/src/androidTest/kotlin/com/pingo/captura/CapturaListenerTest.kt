@@ -33,6 +33,7 @@ import com.pingo.core.notifications.EscopoDeCaptura
 import com.pingo.core.notifications.NotificacoesDeCaptura
 import com.pingo.core.notifications.RebindDeListenerDoSistema
 import com.pingo.core.notifications.ServicoDeCapturaDoAndroid
+import com.pingo.support.prepararListenerDeCaptura
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -78,7 +79,7 @@ class CapturaListenerTest {
         limparBancoCompartilhado()
         semearInstrumentoECategoria()
         shell("pm grant $PACOTE android.permission.POST_NOTIFICATIONS")
-        shell("cmd notification allow_listener $COMPONENTE")
+        prepararListenerDeCaptura(::shell)
         runBlocking { controller.reconectar() }
         aguardarEstado(EstadoListener.ATIVO)
         aguardarNotificacaoProcessada()
@@ -153,7 +154,7 @@ class CapturaListenerTest {
         val valor = valorUnico()
         val inicio = Instant.now()
 
-        postar("Sua compra foi aprovada", "pingo-teste-ITAU-$valor", textoCompra(valor))
+        postar("Sua compra foi aprovada", "pingo-teste-ITAU", textoCompra(valor))
 
         val depois = aguardarContadores(mes) { atuais -> atuais.reconhecidas == antes.reconhecidas + 1 }
         assertEquals(antes.pendentes, depois.pendentes)
@@ -167,7 +168,7 @@ class CapturaListenerTest {
         val valor = valorUnico()
         val inicio = System.nanoTime()
 
-        postar("Sua compra foi aprovada", "pingo-teste-ITAU-$valor", textoCompra(valor))
+        postar("Sua compra foi aprovada", "pingo-teste-ITAU", textoCompra(valor))
 
         val lancamento = runBlocking {
             withTimeoutOrNull(TEMPO_ESPERA) {
@@ -196,7 +197,7 @@ class CapturaListenerTest {
         val valor = valorUnico()
         val inicio = System.nanoTime()
 
-        postar("Compra aprovada", "pingo-teste-NUBANK-$valor", textoCompraNubank(valor))
+        postar("Compra aprovada", "pingo-teste-NUBANK", textoCompraNubank(valor))
 
         val lancamento = runBlocking {
             withTimeoutOrNull(TEMPO_ESPERA) {
@@ -255,7 +256,7 @@ class CapturaListenerTest {
         val valor = valorUnico()
         val inicio = Instant.now()
 
-        postar("Compra aprovada", "pingo-teste-OUTRA-$valor", textoCompra(valor))
+        postar("Compra aprovada", "pingo-teste-OUTRA", textoCompra(valor))
         aguardarLeituraApos(InstituicaoFinanceira.OUTRA, inicio)
 
         val lancamentos = runBlocking { captura.lancamentoRepository().observeLancamentos().first() }
@@ -299,9 +300,9 @@ class CapturaListenerTest {
         val valor = valorUnico()
         val inicio = Instant.now()
 
-        postar("Pagamento", "pingo-teste-INTER-$valor", textoPagamentoInter(valor))
+        postar("Pagamento", "pingo-teste-INTER", textoPagamentoInter(valor))
         aguardarLancamento(valor, inicio)
-        postar("Pix recebido", "pingo-teste-ITAU-$valor", textoPixRecebidoItau(valor))
+        postar("Pix recebido", "pingo-teste-ITAU", textoPixRecebidoItau(valor))
 
         val par = runBlocking {
             withTimeout(TEMPO_ESPERA) {

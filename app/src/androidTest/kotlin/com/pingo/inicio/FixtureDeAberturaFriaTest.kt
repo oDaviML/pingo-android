@@ -63,6 +63,8 @@ class FixtureDeAberturaFriaTest {
                             tipo = TipoInstrumento.CREDITO,
                             apelido = "Cartão Itaú",
                             ultimosDigitos = "1234",
+                            fechamentoDia = 5,
+                            vencimentoDia = 12,
                         ),
                     ),
                 ),

@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.pingo.core.designsystem.theme.PingoTheme
 import com.pingo.core.notifications.FabricanteDoSistema
@@ -143,14 +144,14 @@ class OnboardingPermissoesContentTest {
 
         composeRule.onNodeWithText("Passo 6 de 8").assertIsDisplayed()
         composeRule.onNodeWithText("Mantenha a captura ligada").assertIsDisplayed()
-        composeRule.onNodeWithText("XIAOMI · MIUI E HYPEROS").assertIsDisplayed()
-        composeRule.onNodeWithText("Ative Início automático.").assertIsDisplayed()
-        composeRule.onNodeWithText("Sem restrição de bateria").assertIsDisplayed()
-        composeRule.onNodeWithText("Início automático").assertIsDisplayed()
+        composeRule.onNodeWithText("XIAOMI · MIUI E HYPEROS").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Ative Início automático.").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Sem restrição de bateria").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Início automático").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("O texto lido não sai do aparelho. A leitura acontece aqui; nada do texto é enviado.")
             .assertIsDisplayed()
 
-        composeRule.onNodeWithText("Samsung").performClick()
+        composeRule.onNodeWithText("Samsung").performScrollTo().performClick()
         composeRule.onNodeWithText("Abrir ajustes de bateria").performClick()
         composeRule.onNodeWithText("Pular por enquanto").performClick()
 

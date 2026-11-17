@@ -47,6 +47,7 @@ import com.pingo.feature.capturestatus.impl.AtualizacaoDeRegras
 import com.pingo.feature.capturestatus.impl.CaptureStatusScreen
 import com.pingo.feature.capturestatus.impl.CaptureStatusViewModel
 import com.pingo.feature.home.impl.HomeViewModel
+import com.pingo.support.prepararListenerDeCaptura
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -87,7 +88,7 @@ class StatusDaCapturaTest {
     fun preparaOListener() {
         limparBancoEEstadoDaCaptura()
         shell("pm grant $PACOTE android.permission.POST_NOTIFICATIONS")
-        shell("cmd notification allow_listener $COMPONENTE")
+        prepararListenerDeCaptura(::shell)
         aguardarAcessoConcedido()
         conectarOListener()
         aguardarNotificacaoProcessada()
@@ -113,7 +114,7 @@ class StatusDaCapturaTest {
 
         val valorPendente = valorUnico()
         val inicioPendente = Instant.now()
-        postar("Sua compra foi aprovada", "pingo-teste-ITAU-$valorPendente", textoCompra(valorPendente))
+        postar("Sua compra foi aprovada", "pingo-teste-ITAU", textoCompra(valorPendente))
 
         val comPendente = aguardarContadores(mes) { it.pendentes == antes.pendentes + 1 }
         assertEquals(antes.reconhecidas, comPendente.reconhecidas)
@@ -138,7 +139,7 @@ class StatusDaCapturaTest {
 
         semearInstrumentoECategoria()
         val valorReconhecido = valorUnico()
-        postar("Sua compra foi aprovada", "pingo-teste-ITAU-$valorReconhecido", textoCompra(valorReconhecido))
+        postar("Sua compra foi aprovada", "pingo-teste-ITAU", textoCompra(valorReconhecido))
         val depois = aguardarContadores(mes) { it.reconhecidas == comDesconhecida.reconhecidas + 1 }
         assertEquals(comDesconhecida.pendentes, depois.pendentes)
         assertEquals(comDesconhecida.ignoradas, depois.ignoradas)
@@ -436,7 +437,7 @@ class StatusDaCapturaTest {
         val limite = System.currentTimeMillis() + TEMPO_ESPERA
         while (System.currentTimeMillis() < limite) {
             val inicio = Instant.now()
-            val sonda = "pingo-teste-CAJU-${System.nanoTime()}"
+            val sonda = "pingo-teste-CAJU"
             postar("Sonda do Pingo", sonda, TEXTO_SONDA_CAJU)
 
             val processou = runBlocking {

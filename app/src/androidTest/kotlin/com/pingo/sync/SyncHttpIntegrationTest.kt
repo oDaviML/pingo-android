@@ -43,6 +43,7 @@ import com.pingo.core.notifications.ConexaoDoListener
 import com.pingo.core.notifications.EscopoDeCaptura
 import com.pingo.core.notifications.RebindDeListenerDoSistema
 import com.pingo.core.notifications.ServicoDeCapturaDoAndroid
+import com.pingo.support.prepararListenerDeCaptura
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -404,7 +405,7 @@ class SyncHttpIntegrationTest {
 
     private suspend fun garantirListenerConectado() {
         shell("pm grant $PACOTE android.permission.POST_NOTIFICATIONS")
-        shell("cmd notification allow_listener $COMPONENTE")
+        prepararListenerDeCaptura(::shell)
 
         val limite = System.currentTimeMillis() + TEMPO_ESPERA
         while (System.currentTimeMillis() < limite && !acessoNotificacoes.concedido()) {
@@ -418,7 +419,7 @@ class SyncHttpIntegrationTest {
         val limite = System.currentTimeMillis() + TEMPO_ESPERA
 
         while (System.currentTimeMillis() < limite) {
-            postar("Compra no débito", "pingo-teste-INTER-$valorCentavos", texto)
+            postar("Compra no débito", "pingo-teste-INTER", texto)
 
             val capturado = withTimeoutOrNull(INTERVALO_SONDAGEM) {
                 captura.lancamentoRepository().observeLancamentos()

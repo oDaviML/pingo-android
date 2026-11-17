@@ -29,6 +29,7 @@ import com.pingo.core.notifications.NotificacoesDeRevisao
 import com.pingo.core.notifications.RevisarPendenciaReceiver
 import com.pingo.core.notifications.di.CapturaStatusEntryPoint
 import com.pingo.core.notifications.di.RevisaoNotificacoesEntryPoint
+import com.pingo.support.prepararListenerDeCaptura
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -229,7 +230,7 @@ class NotificacaoDeRevisaoTest {
 
     @Test
     fun capturaPendenteSemInstrumentoGeraNotificacaoDeRevisao() {
-        shell("cmd notification allow_listener $COMPONENTE")
+        prepararListenerDeCaptura(::shell)
         runBlocking { capturaStatus.capturaController().reconectar() }
         aguardarListenerAtivo()
         limparBanco()

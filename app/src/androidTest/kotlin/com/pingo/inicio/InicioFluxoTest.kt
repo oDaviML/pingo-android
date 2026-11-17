@@ -48,6 +48,7 @@ import com.pingo.feature.home.impl.HomeContent
 import com.pingo.feature.home.impl.HomeViewModel
 import com.pingo.feature.transactions.impl.TransactionsContent
 import com.pingo.feature.transactions.impl.TransactionsViewModel
+import com.pingo.support.prepararListenerDeCaptura
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -92,7 +93,7 @@ class InicioFluxoTest {
     fun preparaAmbiente() {
         limparBancoEEstado()
         shell("pm grant $PACOTE android.permission.POST_NOTIFICATIONS")
-        shell("cmd notification allow_listener $COMPONENTE")
+        prepararListenerDeCaptura(::shell)
         runBlocking { controller.reconectar() }
         aguardarEstado(EstadoListener.ATIVO)
         aguardarContadoresEstaveis()
@@ -115,7 +116,7 @@ class InicioFluxoTest {
         val valor = valorUnico()
         val inicio = System.nanoTime()
 
-        postar("Sua compra foi aprovada", "pingo-teste-ITAU-$valor", textoCompra(valor))
+        postar("Sua compra foi aprovada", "pingo-teste-ITAU", textoCompra(valor))
 
         val lancamento = runBlocking {
             withTimeoutOrNull(TEMPO_ESPERA) {
@@ -164,7 +165,7 @@ class InicioFluxoTest {
         val valor = valorUnico()
         val inicio = System.nanoTime()
 
-        postar("Compra aprovada", "pingo-teste-NUBANK-$valor", textoCompraNubank(valor))
+        postar("Compra aprovada", "pingo-teste-NUBANK", textoCompraNubank(valor))
 
         val lancamento = runBlocking {
             withTimeoutOrNull(TEMPO_ESPERA) {
@@ -214,7 +215,7 @@ class InicioFluxoTest {
         val mes = YearMonth.from(Instant.now().atZone(ZoneId.systemDefault()))
         val antes = contadores(mes)
         val valor = valorUnico()
-        postar("Sua compra foi aprovada", "pingo-teste-ITAU-$valor", textoCompra(valor))
+        postar("Sua compra foi aprovada", "pingo-teste-ITAU", textoCompra(valor))
         Thread.sleep(INTERVALO_ESTABILIZACAO)
 
         assertEquals(antes, contadores(mes))
@@ -399,6 +400,8 @@ class InicioFluxoTest {
                             tipo = TipoInstrumento.CREDITO,
                             apelido = "Cartão Itaú",
                             ultimosDigitos = ULTIMOS_DIGITOS,
+                            fechamentoDia = 5,
+                            vencimentoDia = 12,
                         ),
                     ),
                 ),

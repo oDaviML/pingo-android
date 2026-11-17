@@ -57,6 +57,7 @@ import com.pingo.feature.home.impl.HomeViewModel
 import com.pingo.feature.transactions.api.TransactionsRoute
 import com.pingo.feature.transactions.impl.DetalheDoLancamentoScreen
 import com.pingo.feature.transactions.impl.DetalheDoLancamentoViewModel
+import com.pingo.support.prepararListenerDeCaptura
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -101,7 +102,7 @@ class RevisaoNaInicioTest {
         runBlocking { dataSource.clear() }
         shell("pm grant $PACOTE android.permission.POST_NOTIFICATIONS")
         runBlocking { revisao.permissoesDataSource().registrarNotificacoesDoPingo(PermissaoDoPingo.PERMITIDA) }
-        shell("cmd notification allow_listener $COMPONENTE")
+        prepararListenerDeCaptura(::shell)
         runBlocking {
             controller().reconectar()
         }
@@ -124,7 +125,7 @@ class RevisaoNaInicioTest {
         criarInicio()
 
         val valorConfirmado = valorUnico()
-        postar("Compra aprovada", "pingo-teste-ITAU-$valorConfirmado", textoCompra(valorConfirmado))
+        postar("Compra aprovada", "pingo-teste-ITAU", textoCompra(valorConfirmado))
         val primeiro = aguardarPendente(valorConfirmado)
         val notificacao = aguardarNotificacao(primeiro.publicId)
 
@@ -144,7 +145,7 @@ class RevisaoNaInicioTest {
         InstrumentationRegistry.getInstrumentation().removeMonitor(monitor)
 
         val valorPendente = valorUnico()
-        postar("Compra aprovada", "pingo-teste-ITAU-$valorPendente", textoCompra(valorPendente))
+        postar("Compra aprovada", "pingo-teste-ITAU", textoCompra(valorPendente))
         val segundo = aguardarPendente(valorPendente)
         composeRule.waitUntil(TEMPO_ESPERA) { homeViewModel.uiState.value.pendentes == 1 }
 
@@ -169,7 +170,7 @@ class RevisaoNaInicioTest {
         criarInicio()
 
         val valor = valorUnico()
-        postar("Compra aprovada", "pingo-teste-NUBANK-$valor", textoCompraNubank(valor))
+        postar("Compra aprovada", "pingo-teste-NUBANK", textoCompraNubank(valor))
         val pendente = aguardarPendente(valor, InstituicaoFinanceira.NUBANK)
         assertNull(pendente.instrumentoPublicId)
         semearInstrumento()
@@ -318,6 +319,8 @@ class RevisaoNaInicioTest {
                             tipo = TipoInstrumento.CREDITO,
                             apelido = "Cartão Itaú",
                             ultimosDigitos = ULTIMOS_DIGITOS,
+                            fechamentoDia = 5,
+                            vencimentoDia = 12,
                         ),
                     ),
                 ),
