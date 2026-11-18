@@ -15,13 +15,13 @@ val localProperties = Properties().apply {
 
 fun localProperty(key: String, fallback: String): String = localProperties.getProperty(key) ?: System.getenv(key) ?: fallback
 
-val versaoDoBuild = providers.gradleProperty("pingo.versionName").orNull ?: "0.4.0"
+val versaoDoBuild = providers.gradleProperty("pingo.versionName").orNull ?: "0.5.0"
 
 android {
     namespace = "com.pingo"
     defaultConfig {
         applicationId = "com.pingo"
-        versionCode = 4
+        versionCode = 5
         versionName = versaoDoBuild
         buildConfigField("String", "AUTH0_DOMAIN", "\"${localProperty("pingo.auth0.domain", "")}\"")
         buildConfigField("String", "AUTH0_CLIENT_ID", "\"${localProperty("pingo.auth0.clientId", "")}\"")
