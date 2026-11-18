@@ -42,7 +42,7 @@ $ANDROID_HOME/build-tools/36.0.0/zipalign -p -f 4 app/build/outputs/apk/release/
 $ANDROID_HOME/build-tools/36.0.0/apksigner sign --ks ../release-private/pingo-release.p12 \
   --ks-type PKCS12 --ks-key-alias pingo-release \
   --ks-pass "file:../release-private/pingo-release.password" \
-  --out ../releases/Pingo-0.2.0-release.apk /tmp/pingo-aligned.apk
+  --out ../releases/Pingo-0.3.0-release.apk /tmp/pingo-aligned.apk
 ```
 
 Nenhum caminho de chave, senha ou `signingConfig` fica no repositório. O cadastro do SHA-1 no Google/Auth0 e a compatibilidade da API de produção são pendências externas descritas em `../releases/README.md`.
