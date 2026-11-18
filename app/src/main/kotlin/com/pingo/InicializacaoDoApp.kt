@@ -21,7 +21,7 @@ import javax.inject.Singleton
 @Suppress("LongParameterList")
 class InicializacaoDoApp internal constructor(
     private val observador: Provider<IniciadorDeObservacaoDePendencias>,
-    private val agendadorDeSync: AgendadorDeSync,
+    private val agendadorDeSync: Provider<AgendadorDeSync>,
     private val aoAutenticar: (suspend () -> Unit)?,
     private val aoDeslogar: (suspend () -> Unit)?,
     private val authRepository: Provider<AuthRepository>?,
@@ -32,7 +32,7 @@ class InicializacaoDoApp internal constructor(
     @Inject
     constructor(
         observador: Provider<IniciadorDeObservacaoDePendencias>,
-        agendadorDeSync: AgendadorDeSync,
+        agendadorDeSync: Provider<AgendadorDeSync>,
         materializarRecargasVencidas: Provider<MaterializarRecargasVencidasUseCase>,
         agendadorDeAvisos: Provider<AgendadorDeAvisosOpcional>,
         authRepository: Provider<AuthRepository>,
@@ -61,7 +61,7 @@ class InicializacaoDoApp internal constructor(
         dispatchers: AppDispatchers,
     ) : this(
         observador = observador,
-        agendadorDeSync = agendadorDeSync,
+        agendadorDeSync = Provider { agendadorDeSync },
         aoAutenticar = null,
         aoDeslogar = null,
         authRepository = null,
@@ -79,7 +79,7 @@ class InicializacaoDoApp internal constructor(
         dispatchers: AppDispatchers,
     ) : this(
         observador = observador,
-        agendadorDeSync = agendadorDeSync,
+        agendadorDeSync = Provider { agendadorDeSync },
         aoAutenticar = aoAutenticar,
         aoDeslogar = aoDeslogar,
         authRepository = authRepository,
@@ -98,7 +98,7 @@ class InicializacaoDoApp internal constructor(
 
         escopo.launch {
             observador.get().iniciar()
-            agendadorDeSync.agendar()
+            agendadorDeSync.get().agendar()
             launch { observarTelemetria() }
             observarSessao()
         }

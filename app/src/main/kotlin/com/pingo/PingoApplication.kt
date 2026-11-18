@@ -1,6 +1,8 @@
 package com.pingo
 
 import android.app.Application
+import android.os.Handler
+import android.os.Looper
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import dagger.Lazy
@@ -25,6 +27,13 @@ class PingoApplication :
     override fun onCreate() {
         super.onCreate()
 
-        inicializacaoDoApp.get().iniciar()
+        Handler(Looper.getMainLooper()).postDelayed(
+            { inicializacaoDoApp.get().iniciar() },
+            ATRASO_INICIALIZACAO_MS,
+        )
+    }
+
+    private companion object {
+        const val ATRASO_INICIALIZACAO_MS = 2_500L
     }
 }

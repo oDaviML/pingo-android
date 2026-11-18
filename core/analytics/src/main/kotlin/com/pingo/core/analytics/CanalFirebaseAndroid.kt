@@ -10,9 +10,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-internal class CanalFirebaseAndroid @Inject constructor(@ApplicationContext private val context: Context) : CanalTelemetria {
+internal class CanalFirebaseAndroid @Inject constructor(@param:ApplicationContext private val context: Context) : CanalTelemetria {
     override fun atualizarColeta(habilitada: Boolean) {
-        if (!firebaseDisponivel()) return
+        if (!firebaseDisponivel(inicializarSeAusente = habilitada)) return
 
         runCatching {
             FirebaseAnalytics.getInstance(context).setAnalyticsCollectionEnabled(habilitada)
@@ -21,7 +21,7 @@ internal class CanalFirebaseAndroid @Inject constructor(@ApplicationContext priv
     }
 
     override fun registrarEvento(nome: String, atributos: Map<String, String>) {
-        if (!firebaseDisponivel()) return
+        if (!firebaseDisponivel(inicializarSeAusente = false)) return
 
         runCatching {
             val bundle = Bundle().apply {
@@ -32,12 +32,14 @@ internal class CanalFirebaseAndroid @Inject constructor(@ApplicationContext priv
     }
 
     override fun registrarExcecao(erro: Throwable) {
-        if (!firebaseDisponivel()) return
+        if (!firebaseDisponivel(inicializarSeAusente = false)) return
 
         runCatching {
             FirebaseCrashlytics.getInstance().recordException(erro)
         }
     }
 
-    private fun firebaseDisponivel(): Boolean = runCatching { FirebaseApp.getApps(context).isNotEmpty() }.getOrDefault(false)
+    private fun firebaseDisponivel(inicializarSeAusente: Boolean): Boolean = runCatching {
+        FirebaseApp.getApps(context).isNotEmpty() || (inicializarSeAusente && FirebaseApp.initializeApp(context) != null)
+    }.getOrDefault(false)
 }

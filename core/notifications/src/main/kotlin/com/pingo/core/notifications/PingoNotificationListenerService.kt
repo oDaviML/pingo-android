@@ -4,6 +4,7 @@ import android.app.Notification
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.pingo.core.common.AppDispatchers
+import dagger.Lazy
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -14,11 +15,11 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class PingoNotificationListenerService : NotificationListenerService() {
-    @Inject lateinit var pipelineDeCaptura: PipelineDeCaptura
+    @Inject lateinit var pipelineDeCaptura: Lazy<PipelineDeCaptura>
 
     @Inject lateinit var capturaController: CapturaController
 
-    @Inject lateinit var atualizadorDeRegras: AtualizadorDeRegras
+    @Inject lateinit var atualizadorDeRegras: Lazy<AtualizadorDeRegras>
 
     @Inject lateinit var dispatchers: AppDispatchers
 
@@ -34,7 +35,7 @@ class PingoNotificationListenerService : NotificationListenerService() {
         super.onListenerConnected()
         desconexaoProcessada = false
         capturaController.registrarConectado()
-        executar { atualizadorDeRegras.atualizar() }
+        executar { atualizadorDeRegras.get().atualizar() }
     }
 
     override fun onListenerDisconnected() {
@@ -51,7 +52,7 @@ class PingoNotificationListenerService : NotificationListenerService() {
     override fun onNotificationPosted(statusBarNotification: StatusBarNotification) {
         super.onNotificationPosted(statusBarNotification)
         val notificacao = statusBarNotification.paraNotificacaoRecebida()
-        executar { pipelineDeCaptura.processar(notificacao) }
+        executar { pipelineDeCaptura.get().processar(notificacao) }
     }
 
     override fun onDestroy() {

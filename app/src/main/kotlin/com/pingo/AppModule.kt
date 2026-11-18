@@ -9,6 +9,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Provider
 import javax.inject.Singleton
 
 @Module
@@ -34,8 +35,8 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideAgendadorDeSync(syncScheduler: SyncScheduler): AgendadorDeSync = AgendadorDeSync {
-        syncScheduler.schedulePeriodic()
-        syncScheduler.syncNow()
+    fun provideAgendadorDeSync(syncScheduler: Provider<SyncScheduler>): AgendadorDeSync = AgendadorDeSync {
+        syncScheduler.get().schedulePeriodic()
+        syncScheduler.get().syncNow()
     }
 }

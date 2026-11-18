@@ -8,6 +8,7 @@ import com.pingo.core.datastore.UserPreferencesDataSource
 import com.pingo.navigation.DestinoInicial
 import com.pingo.navigation.destinoInicialPara
 import com.pingo.sync.SyncScheduler
+import dagger.Lazy
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +22,7 @@ import javax.inject.Inject
 class AppViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val preferences: UserPreferencesDataSource,
-    private val syncScheduler: SyncScheduler,
+    private val syncScheduler: Lazy<SyncScheduler>,
 ) : ViewModel() {
     val session: StateFlow<SessionState> = authRepository.session
 
@@ -38,6 +39,6 @@ class AppViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     fun onConsentAccepted() {
-        syncScheduler.syncNow()
+        syncScheduler.get().syncNow()
     }
 }
