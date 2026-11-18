@@ -24,7 +24,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
-import java.time.LocalDate
 import java.time.YearMonth
 import javax.inject.Inject
 
@@ -160,7 +159,7 @@ class TransactionsViewModel @Inject constructor(
                 categoriasPorId = categoriasPorId,
                 instrumentosPorId = instrumentosPorId,
                 contasPorId = contasPorId,
-                hoje = LocalDate.ofInstant(clock.instant(), zonaCalendario),
+                hoje = clock.instant().atZone(zonaCalendario).toLocalDate(),
                 zona = zonaCalendario,
             ),
             quantidadeDeLancamentos = filtrados.size,

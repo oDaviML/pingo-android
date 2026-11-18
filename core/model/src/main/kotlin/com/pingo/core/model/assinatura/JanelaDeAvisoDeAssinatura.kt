@@ -17,7 +17,7 @@ object JanelaDeAvisoDeAssinatura {
         .atZone(ZONA_SAO_PAULO)
         .toInstant()
 
-    fun dataLocalEmSaoPaulo(instante: Instant): LocalDate = LocalDate.ofInstant(instante, ZONA_SAO_PAULO)
+    fun dataLocalEmSaoPaulo(instante: Instant): LocalDate = instante.atZone(ZONA_SAO_PAULO).toLocalDate()
 
     fun deveAgendar(agora: Instant, alvo: Instant): Boolean = !agora.isAfter(alvo)
 
