@@ -300,23 +300,26 @@ internal class BancoRoomDeTeste(private val context: Context, nomeArquivo: Strin
         clock = relogio,
     )
 
+    fun fontesContasProjection(): FontesContasProjection = FontesContasProjection(
+        contaDao = database.contaDao(),
+        instrumentoDao = database.instrumentoDao(),
+        faturaDao = database.faturaDao(),
+        configuracaoCartaoDao = database.configuracaoCartaoDao(),
+        referenciaDao = database.referenciaSaldoVoucherDao(),
+        recargaDao = database.recargaProgramadaVoucherDao(),
+        lancamentoDao = database.lancamentoDao(),
+    )
+
     fun contasProjectionF2(): ContasFinanceiroProjectionImpl = ContasFinanceiroProjectionImpl(
-        fontes = FontesContasProjection(
-            contaDao = database.contaDao(),
-            instrumentoDao = database.instrumentoDao(),
-            faturaDao = database.faturaDao(),
-            configuracaoCartaoDao = database.configuracaoCartaoDao(),
-            referenciaDao = database.referenciaSaldoVoucherDao(),
-            recargaDao = database.recargaProgramadaVoucherDao(),
-            lancamentoDao = database.lancamentoDao(),
-        ),
+        fontes = fontesContasProjection(),
         materializarRecargasVencidas = materializarRecargasF2(),
         clock = relogio,
     )
 
     fun inicioProjectionF2(): InicioFinanceiroProjectionImpl = InicioFinanceiroProjectionImpl(
-        contasProjection = contasProjectionF2(),
-        instrumentoDao = database.instrumentoDao(),
+        fontes = fontesContasProjection(),
+        materializarRecargasVencidas = materializarRecargasF2(),
+        clock = relogio,
     )
 
     fun relatoriosProjectionF2(): RelatoriosProjectionImpl = RelatoriosProjectionImpl(

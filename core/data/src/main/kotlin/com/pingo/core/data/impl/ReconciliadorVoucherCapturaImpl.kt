@@ -47,7 +47,7 @@ class ReconciliadorVoucherCapturaImpl @Inject constructor(
         if (!ehDeposito) {
             return resolverSaidaCaju(beneficio, digitos, vouchers, instrumentosAtivos)
         }
-        return resolverDepositoCaju(beneficio, digitos, vouchers, valorCentavos, dataHora)
+        return resolverDepositoCaju(beneficioBruto, beneficio, digitos, vouchers, valorCentavos, dataHora)
     }
 
     override suspend fun confirmarEfeitoAposGravar(lancamento: Lancamento, resolucao: ResolucaoCapturaCaju, agora: Instant) {
@@ -110,21 +110,46 @@ class ReconciliadorVoucherCapturaImpl @Inject constructor(
     }
 
     private suspend fun resolverDepositoCaju(
+        beneficioBruto: String?,
         beneficio: BeneficioVoucher?,
         digitos: String?,
         vouchers: List<Instrumento>,
         valorCentavos: Long,
         dataHora: Instant,
     ): ResolucaoCapturaCaju {
-        if (beneficio == null) {
-            return ResolucaoCapturaCaju(beneficio = null, instrumento = null, motivo = MotivoPendencia.BENEFICIO_AMBIGUO)
+        val alvo = when {
+            beneficio != null -> resolverComBeneficioExplicitado(beneficio, digitos, vouchers)
+            !beneficioBruto.isNullOrBlank() -> AlvoDepositoCaju.Pendente(MotivoPendencia.BENEFICIO_AMBIGUO)
+            vouchers.isEmpty() -> AlvoDepositoCaju.Pendente(MotivoPendencia.INSTRUMENTO_NAO_ENCONTRADO)
+            vouchers.size == 1 && vouchers.single().beneficio != null ->
+                AlvoDepositoCaju.Resolvido(vouchers.single(), requireNotNull(vouchers.single().beneficio))
+            else -> AlvoDepositoCaju.Pendente(MotivoPendencia.BENEFICIO_AMBIGUO)
         }
-        val candidatosInst = vouchers.filter { it.beneficio == beneficio }
-        val resolucao = ResolucaoDeInstrumento.de(digitos, candidatosInst)
-        val instrumento = resolucao.instrumento
-            ?: return ResolucaoCapturaCaju(beneficio = beneficio, instrumento = null, motivo = resolucao.motivo)
+        return when (alvo) {
+            is AlvoDepositoCaju.Pendente -> ResolucaoCapturaCaju(beneficio = beneficio, instrumento = null, motivo = alvo.motivo)
+            is AlvoDepositoCaju.Resolvido -> conciliarDepositoNoInstrumento(alvo.instrumento, alvo.beneficio, valorCentavos, dataHora)
+        }
+    }
 
-        return conciliarDepositoNoInstrumento(instrumento, beneficio, valorCentavos, dataHora)
+    private fun resolverComBeneficioExplicitado(
+        beneficio: BeneficioVoucher,
+        digitos: String?,
+        vouchers: List<Instrumento>,
+    ): AlvoDepositoCaju {
+        val candidatos = vouchers.filter { it.beneficio == beneficio }
+        val resolucao = ResolucaoDeInstrumento.de(digitos, candidatos)
+        val inst = resolucao.instrumento
+        return if (inst != null) {
+            AlvoDepositoCaju.Resolvido(inst, beneficio)
+        } else {
+            AlvoDepositoCaju.Pendente(resolucao.motivo ?: MotivoPendencia.INSTRUMENTO_NAO_ENCONTRADO)
+        }
+    }
+
+    private sealed interface AlvoDepositoCaju {
+        data class Resolvido(val instrumento: Instrumento, val beneficio: BeneficioVoucher) : AlvoDepositoCaju
+
+        data class Pendente(val motivo: MotivoPendencia) : AlvoDepositoCaju
     }
 
     private suspend fun conciliarDepositoNoInstrumento(

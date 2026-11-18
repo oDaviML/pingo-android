@@ -626,6 +626,188 @@ class F2IntegracaoRoomTest {
         assertEquals(VariacaoCategoria.Percentual(0), relatorioOut.categorias.single().variacaoMesAnterior)
     }
 
+    @Test
+    fun depositoCajuSemBeneficioComUmVoucherConciliaEDivergeMasComDoisFicaAmbiguo() = runBlocking {
+        ambiente.relogio.instante = saoPaulo(2026, 11, 5, 9)
+        val contaUm = ambiente.contasF2().criarComInstrumentos(
+            listOf(
+                NovaConta(
+                    instituicao = InstituicaoFinanceira.CAJU,
+                    apelido = "Caju",
+                    tipo = TipoConta.BENEFICIO,
+                    instrumentos = listOf(
+                        NovoInstrumento(
+                            tipo = TipoInstrumento.VOUCHER,
+                            apelido = "VA",
+                            beneficio = BeneficioVoucher.VA,
+                            saldoCentavos = 10000L,
+                            diaRecarga = 5,
+                            valorRecargaCentavos = 60000L,
+                        ),
+                    ),
+                ),
+            ),
+            saoPaulo(2026, 10, 1, 9),
+        ).single()
+        val va = contaUm.instrumentos.single()
+
+        val unicoExato = ambiente.processadorF2().processar(
+            cajuDeposito(valorCentavos = 60000L, beneficio = null, saldoCentavos = 70000L, quando = saoPaulo(2026, 11, 5, 10)),
+        ) as ResultadoProcessamento.Gravado
+        assertEquals(StatusLancamento.CONFIRMADO, unicoExato.lancamento.status)
+        assertEquals(va.publicId, unicoExato.lancamento.instrumentoPublicId)
+        assertEquals(BeneficioVoucher.VA, unicoExato.lancamento.beneficio)
+        assertEquals(70000L, saldoDoInstrumento(va.publicId))
+        val recargaSubstituida = ambiente.database.recargaProgramadaVoucherDao().buscarPorCompetencia(
+            va.publicId,
+            LocalDate.of(2026, 11, 1),
+        )
+        assertEquals(StatusRecargaProgramada.SUBSTITUIDA, recargaSubstituida?.status)
+
+        val unicoDivergente = ambiente.processadorF2().processar(
+            cajuDeposito(valorCentavos = 55000L, beneficio = null, saldoCentavos = 125000L, quando = saoPaulo(2026, 12, 5, 10)),
+        ) as ResultadoProcessamento.Gravado
+        assertEquals(StatusLancamento.PENDENTE, unicoDivergente.lancamento.status)
+        assertEquals(MotivoPendencia.DIVERGENCIA_RECARGA.name, unicoDivergente.lancamento.motivoPendencia)
+        assertEquals(va.publicId, unicoDivergente.lancamento.instrumentoPublicId)
+
+        ambiente.contasF2().salvarCadastro(
+            ContaEditada(
+                publicId = contaUm.conta.publicId,
+                apelido = "Caju",
+                tipo = TipoConta.BENEFICIO,
+                instrumentos = listOf(
+                    InstrumentoEditado(
+                        tipo = TipoInstrumento.VOUCHER,
+                        apelido = "VA",
+                        publicId = va.publicId,
+                        beneficio = BeneficioVoucher.VA,
+                        saldoCentavos = 10000L,
+                        diaRecarga = 5,
+                        valorRecargaCentavos = 60000L,
+                    ),
+                    InstrumentoEditado(
+                        tipo = TipoInstrumento.VOUCHER,
+                        apelido = "VR",
+                        beneficio = BeneficioVoucher.VR,
+                        saldoCentavos = 5000L,
+                        diaRecarga = 5,
+                        valorRecargaCentavos = 40000L,
+                    ),
+                ),
+            ),
+            saoPaulo(2026, 11, 6, 9),
+        )
+        val ambiguo = ambiente.processadorF2().processar(
+            cajuDeposito(valorCentavos = 40000L, beneficio = null, saldoCentavos = 45000L, quando = saoPaulo(2026, 11, 6, 10)),
+        ) as ResultadoProcessamento.Gravado
+        assertEquals(StatusLancamento.PENDENTE, ambiguo.lancamento.status)
+        assertEquals(MotivoPendencia.BENEFICIO_AMBIGUO.name, ambiguo.lancamento.motivoPendencia)
+        assertNull(ambiguo.lancamento.instrumentoPublicId)
+    }
+
+    @Test
+    fun excluirMaterializarEDesfazerRecargaReconciliadaNaoDuplicaSaldo() = runBlocking {
+        ambiente.relogio.instante = saoPaulo(2026, 11, 5, 9)
+        val caju = ambiente.contasF2().criarComInstrumentos(
+            listOf(
+                NovaConta(
+                    instituicao = InstituicaoFinanceira.CAJU,
+                    apelido = "Caju",
+                    tipo = TipoConta.BENEFICIO,
+                    instrumentos = listOf(
+                        NovoInstrumento(
+                            tipo = TipoInstrumento.VOUCHER,
+                            apelido = "VA",
+                            beneficio = BeneficioVoucher.VA,
+                            saldoCentavos = 10000L,
+                            diaRecarga = 5,
+                            valorRecargaCentavos = 60000L,
+                        ),
+                    ),
+                ),
+            ),
+            saoPaulo(2026, 10, 1, 9),
+        ).single()
+        val va = caju.instrumentos.single()
+
+        val captura = ambiente.processadorF2().processar(
+            cajuDeposito(60000L, "AUXÍLIO ALIMENTAÇÃO", 70000L, saoPaulo(2026, 11, 5, 10)),
+        ) as ResultadoProcessamento.Gravado
+        assertEquals(70000L, saldoDoInstrumento(va.publicId))
+
+        ambiente.lancamentosF2.excluir(captura.lancamento.publicId, saoPaulo(2026, 11, 5, 11))
+        assertEquals(10000L, saldoDoInstrumento(va.publicId))
+        val recIgnorada = ambiente.database.recargaProgramadaVoucherDao().buscarPorCompetencia(va.publicId, LocalDate.of(2026, 11, 1))
+        assertEquals(StatusRecargaProgramada.IGNORADA, recIgnorada?.status)
+        assertEquals(captura.lancamento.publicId, recIgnorada?.lancamentoPublicId)
+
+        assertEquals(0, ambiente.materializarRecargasF2()())
+        ambiente.contasProjectionF2().observeContas().first()
+        assertEquals(10000L, saldoDoInstrumento(va.publicId))
+
+        val excluido = requireNotNull(ambiente.lancamentosF2.buscar(captura.lancamento.publicId))
+        ambiente.lancamentosF2.salvar(excluido.copy(excluidoEm = null, atualizadoEm = saoPaulo(2026, 11, 5, 12)))
+        assertEquals(70000L, saldoDoInstrumento(va.publicId))
+        val recRestaurada = ambiente.database.recargaProgramadaVoucherDao().buscarPorCompetencia(va.publicId, LocalDate.of(2026, 11, 1))
+        assertEquals(StatusRecargaProgramada.SUBSTITUIDA, recRestaurada?.status)
+
+        ambiente.relogio.instante = saoPaulo(2026, 12, 6, 9)
+        assertEquals(1, ambiente.materializarRecargasF2()())
+        assertEquals(130000L, saldoDoInstrumento(va.publicId))
+        val recDez = requireNotNull(
+            ambiente.database.recargaProgramadaVoucherDao().buscarPorCompetencia(va.publicId, LocalDate.of(2026, 12, 1)),
+        )
+        val lancManualDezId = requireNotNull(recDez.lancamentoPublicId)
+
+        ambiente.lancamentosF2.excluir(lancManualDezId, saoPaulo(2026, 12, 6, 10))
+        assertEquals(70000L, saldoDoInstrumento(va.publicId))
+        assertEquals(0, ambiente.materializarRecargasF2()())
+        val lancDezExcluido = requireNotNull(ambiente.lancamentosF2.buscar(lancManualDezId))
+        ambiente.lancamentosF2.salvar(lancDezExcluido.copy(excluidoEm = null, atualizadoEm = saoPaulo(2026, 12, 6, 11)))
+        assertEquals(130000L, saldoDoInstrumento(va.publicId))
+        assertEquals(
+            StatusRecargaProgramada.EFETIVADA,
+            ambiente.database.recargaProgramadaVoucherDao().buscarPorCompetencia(va.publicId, LocalDate.of(2026, 12, 1))?.status,
+        )
+    }
+
+    @Test
+    fun excluirEDesfazerAjustePreservaTipoEHistoricoDeAjuste() = runBlocking {
+        ambiente.relogio.instante = saoPaulo(2026, 11, 10, 9)
+        val caju = ambiente.contasF2().criarComInstrumentos(
+            listOf(
+                NovaConta(
+                    instituicao = InstituicaoFinanceira.CAJU,
+                    apelido = "Caju",
+                    tipo = TipoConta.BENEFICIO,
+                    instrumentos = listOf(
+                        NovoInstrumento(TipoInstrumento.VOUCHER, "VA", beneficio = BeneficioVoucher.VA, saldoCentavos = 10000L),
+                    ),
+                ),
+            ),
+            saoPaulo(2026, 11, 1, 9),
+        ).single()
+        val va = caju.instrumentos.single()
+
+        val aplicado = ambiente.ajustarSaldoF2()(va.publicId, ValorAjusteSaldoVoucher.SaldoAlvo(40000L), "Conferência")
+            as ResultadoAjusteVoucher.Aplicado
+        assertEquals(40000L, saldoDoInstrumento(va.publicId))
+
+        ambiente.lancamentosF2.excluir(aplicado.lancamentoPublicId, saoPaulo(2026, 11, 10, 10))
+        assertEquals(10000L, saldoDoInstrumento(va.publicId))
+        assertTrue(ambiente.contasProjectionF2().observeDetalheVoucher(va.publicId).first()?.historicoAjustes.orEmpty().isEmpty())
+
+        val ajusteExcluido = requireNotNull(ambiente.lancamentosF2.buscar(aplicado.lancamentoPublicId))
+        ambiente.lancamentosF2.salvar(ajusteExcluido.copy(excluidoEm = null, atualizadoEm = saoPaulo(2026, 11, 10, 11)))
+
+        val detalhe = requireNotNull(ambiente.contasProjectionF2().observeDetalheVoucher(va.publicId).first())
+        assertEquals(40000L, detalhe.saldoAtualCentavos)
+        assertEquals(1, detalhe.historicoAjustes.size)
+        assertEquals(30000L, detalhe.historicoAjustes.single().deltaCentavos)
+        assertEquals("Conferência", detalhe.historicoAjustes.single().observacao)
+    }
+
     private suspend fun saldoDoInstrumento(instrumentoPublicId: String): Long =
         requireNotNull(ambiente.contasProjectionF2().observeDetalheVoucher(instrumentoPublicId).first()).saldoAtualCentavos
 

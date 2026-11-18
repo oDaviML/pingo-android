@@ -5,8 +5,10 @@ import com.pingo.core.database.dao.RecargaProgramadaVoucherDao
 import com.pingo.core.database.dao.ReferenciaSaldoVoucherDao
 import com.pingo.core.database.entity.ReferenciaSaldoVoucherEntity
 import com.pingo.core.model.Lancamento
+import com.pingo.core.model.OrigemLancamento
 import com.pingo.core.model.StatusLancamento
 import com.pingo.core.model.TipoInstrumento
+import com.pingo.core.model.TipoLancamento
 import com.pingo.core.model.voucher.StatusRecargaProgramada
 import com.pingo.core.model.voucher.TipoReferenciaSaldoVoucher
 import java.time.Clock
@@ -38,9 +40,7 @@ class ReconciliadorDeVouchersLocal @Inject constructor(
             desativarReferenciaDoLancamento(publicId)
         }
 
-        if (depois == null || depois.excluidoEm != null) {
-            reverterRecargasVinculadas(publicId)
-        }
+        atualizarRecargasVinculadas(depois, publicId)
     }
 
     private suspend fun instrumentoVoucherConfirmadoId(lancamento: Lancamento): String? {
@@ -53,30 +53,19 @@ class ReconciliadorDeVouchersLocal @Inject constructor(
         val agora = clock.instant()
         val existente = referenciaDao.buscarPorLancamentoIncluindoExcluidas(lancamento.publicId)
         if (existente != null) {
-            val alterada = existente.instrumentoPublicId != instrumentoPublicId ||
-                existente.saldoCentavos != saldoCentavos ||
-                existente.instanteReferencia != lancamento.dataHora ||
-                existente.excluidoEm != null
-            if (alterada) {
-                referenciaDao.upsert(
-                    existente.copy(
-                        instrumentoPublicId = instrumentoPublicId,
-                        tipoReferencia = TipoReferenciaSaldoVoucher.OBSERVADO_APOS_TRANSACAO,
-                        saldoCentavos = saldoCentavos,
-                        deltaCentavos = null,
-                        instanteReferencia = lancamento.dataHora,
-                        atualizadoEm = agora,
-                        excluidoEm = null,
-                    ),
-                )
-            }
+            atualizarReferenciaExistente(existente, lancamento, instrumentoPublicId, saldoCentavos, agora)
             return
+        }
+        val tipoRef = if (lancamento.tipo == TipoLancamento.AJUSTE) {
+            TipoReferenciaSaldoVoucher.AJUSTE
+        } else {
+            TipoReferenciaSaldoVoucher.OBSERVADO_APOS_TRANSACAO
         }
         referenciaDao.upsert(
             ReferenciaSaldoVoucherEntity(
                 publicId = UUID.randomUUID().toString(),
                 instrumentoPublicId = instrumentoPublicId,
-                tipoReferencia = TipoReferenciaSaldoVoucher.OBSERVADO_APOS_TRANSACAO,
+                tipoReferencia = tipoRef,
                 saldoCentavos = saldoCentavos,
                 deltaCentavos = null,
                 instanteReferencia = lancamento.dataHora,
@@ -88,16 +77,86 @@ class ReconciliadorDeVouchersLocal @Inject constructor(
         )
     }
 
+    private suspend fun atualizarReferenciaExistente(
+        existente: ReferenciaSaldoVoucherEntity,
+        lancamento: Lancamento,
+        instrumentoPublicId: String,
+        saldoCentavos: Long,
+        agora: java.time.Instant,
+    ) {
+        val ehAjuste = existente.tipoReferencia == TipoReferenciaSaldoVoucher.AJUSTE || lancamento.tipo == TipoLancamento.AJUSTE
+        val tipoPreservado = if (ehAjuste) {
+            TipoReferenciaSaldoVoucher.AJUSTE
+        } else {
+            TipoReferenciaSaldoVoucher.OBSERVADO_APOS_TRANSACAO
+        }
+        val deltaPreservado = if (ehAjuste) existente.deltaCentavos else null
+        val alterada = existente.instrumentoPublicId != instrumentoPublicId ||
+            existente.saldoCentavos != saldoCentavos ||
+            existente.instanteReferencia != lancamento.dataHora ||
+            existente.tipoReferencia != tipoPreservado ||
+            existente.deltaCentavos != deltaPreservado ||
+            existente.excluidoEm != null
+        if (alterada) {
+            referenciaDao.upsert(
+                existente.copy(
+                    instrumentoPublicId = instrumentoPublicId,
+                    tipoReferencia = tipoPreservado,
+                    saldoCentavos = saldoCentavos,
+                    deltaCentavos = deltaPreservado,
+                    instanteReferencia = lancamento.dataHora,
+                    atualizadoEm = agora,
+                    excluidoEm = null,
+                ),
+            )
+        }
+    }
+
     private suspend fun desativarReferenciaDoLancamento(lancamentoPublicId: String) {
         val existente = referenciaDao.buscarPorLancamento(lancamentoPublicId) ?: return
         referenciaDao.marcarExcluida(existente.publicId, clock.instant())
     }
 
+    private suspend fun atualizarRecargasVinculadas(depois: Lancamento?, publicId: String) {
+        when {
+            depois == null -> reverterRecargasVinculadas(publicId)
+            depois.excluidoEm != null -> ignorarRecargasVinculadas(publicId)
+            depois.status == StatusLancamento.CONFIRMADO -> restaurarRecargasIgnoradas(publicId, depois.origem)
+        }
+    }
+
+    private suspend fun ignorarRecargasVinculadas(lancamentoPublicId: String) {
+        val vinculadas = recargaDao.buscarPorLancamento(lancamentoPublicId)
+        val agora = clock.instant()
+        for (recarga in vinculadas) {
+            if (recarga.status == StatusRecargaProgramada.SUBSTITUIDA || recarga.status == StatusRecargaProgramada.EFETIVADA) {
+                recargaDao.upsert(
+                    recarga.copy(
+                        status = StatusRecargaProgramada.IGNORADA,
+                        atualizadoEm = agora,
+                    ),
+                )
+            }
+        }
+    }
+
+    private suspend fun restaurarRecargasIgnoradas(lancamentoPublicId: String, origem: OrigemLancamento) {
+        val vinculadas = recargaDao.buscarPorLancamento(lancamentoPublicId)
+        val agora = clock.instant()
+        val destino = if (origem == OrigemLancamento.NOTIFICACAO) {
+            StatusRecargaProgramada.SUBSTITUIDA
+        } else {
+            StatusRecargaProgramada.EFETIVADA
+        }
+        for (recarga in vinculadas) {
+            if (recarga.status == StatusRecargaProgramada.IGNORADA) {
+                recargaDao.upsert(recarga.copy(status = destino, atualizadoEm = agora))
+            }
+        }
+    }
+
     private suspend fun reverterRecargasVinculadas(lancamentoPublicId: String) {
         val vinculadas = recargaDao.buscarPorLancamento(lancamentoPublicId)
-        if (vinculadas.isEmpty()) {
-            return
-        }
         val agora = clock.instant()
         for (recarga in vinculadas) {
             if (recarga.status == StatusRecargaProgramada.SUBSTITUIDA || recarga.status == StatusRecargaProgramada.EFETIVADA) {
