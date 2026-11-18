@@ -1,6 +1,9 @@
 package com.pingo.feature.accounts.impl
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -40,20 +43,27 @@ class FaturasContentTest {
     fun estadoCarregandoErroENaoEncontradaExibemEstadosCorretos() {
         var tentativas = 0
         var voltou = false
-        mostrar(FaturasUiState(carregando = true), onVoltar = { voltou = true })
+        var state by mutableStateOf(FaturasUiState(carregando = true))
+        composeRule.setContent {
+            PingoTheme(darkTheme = false) {
+                FaturasContent(
+                    state = state,
+                    onVoltar = { voltou = true },
+                    onAbrirLancamento = {},
+                    onEvent = { if (it == FaturasEvent.TentarDeNovo) tentativas++ },
+                )
+            }
+        }
         composeRule.onNodeWithTag("faturas-carregando").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Voltar").performClick()
         assertTrue(voltou)
 
-        mostrar(
-            FaturasUiState(carregando = false, falha = true),
-            onEvent = { if (it == FaturasEvent.TentarDeNovo) tentativas++ },
-        )
+        state = FaturasUiState(carregando = false, falha = true)
         composeRule.onNodeWithTag("faturas-erro").assertIsDisplayed()
         composeRule.onNodeWithText("Tentar de novo").performClick()
         assertEquals(1, tentativas)
 
-        mostrar(FaturasUiState(carregando = false, naoEncontrada = true))
+        state = FaturasUiState(carregando = false, naoEncontrada = true)
         composeRule.onNodeWithTag("faturas-nao-encontrada").assertIsDisplayed()
     }
 
@@ -80,7 +90,7 @@ class FaturasContentTest {
         composeRule.onNodeWithTag("faturas-incompleta").assertIsDisplayed()
         composeRule.onNodeWithTag("modal-completar-datas").assertIsDisplayed()
         composeRule.onNodeWithTag("salvar-datas-cartao").assertIsNotEnabled()
-        composeRule.onNodeWithTag("campo-fechamento-cartao").performTextReplacement("5")
+        composeRule.onNodeWithContentDescription("Dia de fechamento").performTextReplacement("5")
         assertTrue(eventos.contains(FaturasEvent.AlterarFechamentoModal("5")))
     }
 

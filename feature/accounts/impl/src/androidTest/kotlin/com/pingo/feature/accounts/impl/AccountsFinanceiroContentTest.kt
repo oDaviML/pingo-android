@@ -1,6 +1,9 @@
 package com.pingo.feature.accounts.impl
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -71,8 +74,8 @@ class AccountsFinanceiroContentTest {
 
     @Test
     fun modaisDeCompletarDatasEAjustarSaldoRespeitamValidacoesETemaEscuro() {
-        mostrar(
-            state = criarEstadoFinanceiro().copy(
+        var state by mutableStateOf(
+            criarEstadoFinanceiro().copy(
                 modalCompletarDatas = ModalCompletarDatasUiState(
                     instrumentoPublicId = "cred-inc",
                     tituloCartao = "Crédito · Cartão sem datas",
@@ -80,22 +83,31 @@ class AccountsFinanceiroContentTest {
                     vencimentoDia = "35",
                 ),
             ),
-            escuro = true,
         )
+        composeRule.setContent {
+            PingoTheme(darkTheme = true) {
+                AccountsContent(
+                    state = state,
+                    onNovaConta = {},
+                    onAbrirConta = {},
+                    onTentarDeNovo = {},
+                    onSelecionarAba = { _: AbaInferior -> },
+                    onAbrirFaturas = {},
+                    onEvent = {},
+                )
+            }
+        }
         composeRule.onNodeWithTag("modal-completar-datas").assertIsDisplayed()
         composeRule.onNodeWithTag("salvar-datas-cartao").assertIsNotEnabled()
 
-        mostrar(
-            state = criarEstadoFinanceiro().copy(
-                modalAjustarSaldo = ModalAjustarSaldoUiState(
-                    instrumentoPublicId = "vou-1",
-                    tituloVoucher = "VR · Refeição",
-                    saldoAtualCentavos = 48_620L,
-                    modo = ModoAjusteVoucher.DELTA,
-                    valorTexto = "12,345",
-                ),
+        state = criarEstadoFinanceiro().copy(
+            modalAjustarSaldo = ModalAjustarSaldoUiState(
+                instrumentoPublicId = "vou-1",
+                tituloVoucher = "VR · Refeição",
+                saldoAtualCentavos = 48_620L,
+                modo = ModoAjusteVoucher.DELTA,
+                valorTexto = "12,345",
             ),
-            escuro = true,
         )
         composeRule.onNodeWithTag("modal-ajustar-saldo").assertIsDisplayed()
         composeRule.onNodeWithTag("salvar-ajuste-voucher").assertIsNotEnabled()

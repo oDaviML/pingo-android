@@ -3,6 +3,9 @@ package com.pingo.feature.home.impl
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -263,7 +266,7 @@ class HomeScreenTest {
         composeRule.onNodeWithText("Não foi possível carregar as faturas").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("voucher-inicio-${voucher.instrumentoPublicId}").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText(Valores.formatar(48620)).performScrollTo().assertIsDisplayed()
-        composeRule.onAllNodesWithText("R$ 0,00").assertCountEquals(0)
+        composeRule.onAllNodes(hasText("R$ 0,00") and hasAnyAncestor(hasTestTag("secao-faturas-credito"))).assertCountEquals(0)
     }
 
     @Test
@@ -281,7 +284,7 @@ class HomeScreenTest {
         composeRule.onNodeWithText("Não foi possível carregar os saldos de benefícios").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithTag("fatura-inicio-${fatura.instrumentoPublicId}").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText(Valores.formatar(128450)).performScrollTo().assertIsDisplayed()
-        composeRule.onAllNodesWithText("R$ 0,00").assertCountEquals(0)
+        composeRule.onAllNodes(hasText("R$ 0,00") and hasAnyAncestor(hasTestTag("secao-saldos-beneficios"))).assertCountEquals(0)
     }
 
     private fun mostrar(

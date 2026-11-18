@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -100,8 +101,8 @@ class AccountsFinanceiroRoomTest {
         composeRule.onNodeWithText("Datas não configuradas").performScrollTo().assertIsDisplayed()
 
         composeRule.onNodeWithText("Completar datas").performScrollTo().performClick()
-        composeRule.onNodeWithTag("campo-fechamento-cartao").performTextReplacement("15")
-        composeRule.onNodeWithTag("campo-vencimento-cartao").performTextReplacement("22")
+        composeRule.onNodeWithContentDescription("Dia de fechamento").performTextReplacement("15")
+        composeRule.onNodeWithContentDescription("Dia de vencimento").performTextReplacement("22")
         composeRule.onNodeWithTag("salvar-datas-cartao").performClick()
 
         aguardarTexto("R$ 250,00")
@@ -110,8 +111,8 @@ class AccountsFinanceiroRoomTest {
         assertEquals(22, instCartao.vencimentoDia)
 
         composeRule.onNodeWithText("Ajustar saldo").performScrollTo().performClick()
-        composeRule.onNodeWithTag("campo-valor-ajuste").performTextReplacement("600,00")
-        composeRule.onNodeWithTag("campo-observacao-ajuste").performTextReplacement("Conferido no app")
+        composeRule.onNodeWithContentDescription("Novo saldo (R$)").performTextReplacement("600,00")
+        composeRule.onNodeWithContentDescription("Observação (opcional)").performTextReplacement("Conferido no app")
         composeRule.onNodeWithTag("salvar-ajuste-voucher").performClick()
 
         aguardarTexto("R$ 600,00")

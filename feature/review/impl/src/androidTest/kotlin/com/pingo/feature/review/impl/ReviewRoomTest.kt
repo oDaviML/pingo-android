@@ -622,8 +622,18 @@ class ReviewRoomTest {
                     apelido = "Caju",
                     tipo = TipoConta.BENEFICIO,
                     instrumentos = listOf(
-                        NovoInstrumento(tipo = TipoInstrumento.VOUCHER, apelido = "Refeição", beneficio = BeneficioVoucher.VR),
-                        NovoInstrumento(tipo = TipoInstrumento.VOUCHER, apelido = "Alimentação", beneficio = BeneficioVoucher.VA),
+                        NovoInstrumento(
+                            tipo = TipoInstrumento.VOUCHER,
+                            apelido = "Refeição",
+                            beneficio = BeneficioVoucher.VR,
+                            saldoCentavos = 0L,
+                        ),
+                        NovoInstrumento(
+                            tipo = TipoInstrumento.VOUCHER,
+                            apelido = "Alimentação",
+                            beneficio = BeneficioVoucher.VA,
+                            saldoCentavos = 0L,
+                        ),
                     ),
                 ),
             ),

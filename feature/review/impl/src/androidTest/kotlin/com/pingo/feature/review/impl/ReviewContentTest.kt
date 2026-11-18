@@ -375,7 +375,7 @@ class ReviewContentTest {
             ),
         )
 
-        composeRule.onNodeWithTag("voucher-identificado").assertIsDisplayed()
+        composeRule.onNodeWithTag("voucher-identificado", useUnmergedTree = true).assertIsDisplayed()
         composeRule.onNodeWithText("Valor capturado: R$ 850,00").assertIsDisplayed()
         composeRule.onNodeWithText("Previsto: R$ 600,00").assertIsDisplayed()
         composeRule.onNodeWithText("Data prevista: 10/11/2026").assertIsDisplayed()
