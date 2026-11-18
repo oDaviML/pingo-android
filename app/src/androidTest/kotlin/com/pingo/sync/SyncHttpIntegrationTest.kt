@@ -27,7 +27,9 @@ import com.pingo.core.datastore.CapturaDataSourceImpl
 import com.pingo.core.datastore.SyncStatus
 import com.pingo.core.datastore.UserPreferencesDataSource
 import com.pingo.core.model.BeneficioVoucher
+import com.pingo.core.model.ContaEditada
 import com.pingo.core.model.InstituicaoFinanceira
+import com.pingo.core.model.InstrumentoEditado
 import com.pingo.core.model.Lancamento
 import com.pingo.core.model.MotivoPendencia
 import com.pingo.core.model.NovaConta
@@ -489,6 +491,203 @@ class SyncHttpIntegrationTest {
             }
         }
     }
+
+    @Test
+    fun edicaoDeContaInstrumentosELancamentoHistoricoComCascataSincronizaERestauraDuasVezes() = runBlocking {
+        assumeTrue("informe -e $ARG_HOST=<url do Pingo.Api.TestHost>", !host.isNullOrBlank())
+
+        withTimeout(TEMPO_TOTAL) {
+            val token = "auth0|cascata-edit-${UUID.randomUUID()}"
+            val api = HttpPingoApiClient(PingoApiConfig(host!!), FixtureAuth(token), dispatchers)
+            assertTrue("host de teste inacessível em $host", api.healthCheck())
+
+            val fonte = captura.database()
+            fonte.clearAllTables()
+
+            val cenario = prepararGrafoEditadoComLancamentoHistorico(fonte)
+            motor(api, fonte, FakePreferences(), token).run()
+
+            verificarPullComEdicoesEHistorico(api, cenario)
+            restaurarEVerificarCascataEHistorico(api, token, cenario)
+            restaurarEVerificarCascataEHistorico(api, token, cenario)
+        }
+    }
+
+    private suspend fun prepararGrafoEditadoComLancamentoHistorico(fonte: PingoDatabase): CenarioCascataEditada {
+        val inicio = Instant.now().minusSeconds(300)
+        captura.contaRepository().criarComInstrumentos(
+            listOf(
+                NovaConta(
+                    instituicao = InstituicaoFinanceira.NUBANK,
+                    apelido = "Nubank original",
+                    tipo = TipoConta.CORRENTE,
+                    instrumentos = listOf(
+                        NovoInstrumento(
+                            tipo = TipoInstrumento.CREDITO,
+                            apelido = "Crédito principal",
+                            ultimosDigitos = "1234",
+                            fechamentoDia = 5,
+                            vencimentoDia = 12,
+                        ),
+                        NovoInstrumento(
+                            tipo = TipoInstrumento.CREDITO,
+                            apelido = "Crédito sem dígitos",
+                            fechamentoDia = 28,
+                            vencimentoDia = 5,
+                        ),
+                        NovoInstrumento(tipo = TipoInstrumento.DEBITO, apelido = "Débito antigo"),
+                    ),
+                ),
+            ),
+            inicio,
+        )
+        val conta = captura.contaRepository().observeContas().first().single()
+        val insts = captura.instrumentoRepository().observePorConta(conta.publicId).first()
+        val credito = insts.single { it.apelido == "Crédito principal" }
+        val creditoSemDigitos = insts.single { it.apelido == "Crédito sem dígitos" }
+        val debito = insts.single { it.apelido == "Débito antigo" }
+
+        val momentoEdicao = Instant.now().minusSeconds(120)
+        captura.contaRepository().salvarCadastro(
+            ContaEditada(
+                publicId = conta.publicId,
+                apelido = "Nubank editada",
+                tipo = TipoConta.CORRENTE,
+                instrumentos = listOf(
+                    InstrumentoEditado(
+                        tipo = TipoInstrumento.CREDITO,
+                        apelido = "Crédito editado",
+                        publicId = credito.publicId,
+                        ultimosDigitos = "5678",
+                        fechamentoDia = 8,
+                        vencimentoDia = 15,
+                    ),
+                    InstrumentoEditado(
+                        tipo = TipoInstrumento.CREDITO,
+                        apelido = "Crédito digital editado",
+                        publicId = creditoSemDigitos.publicId,
+                        ultimosDigitos = null,
+                        fechamentoDia = 27,
+                        vencimentoDia = 4,
+                    ),
+                    InstrumentoEditado(
+                        tipo = TipoInstrumento.DEBITO,
+                        apelido = "Débito antigo editado",
+                        publicId = debito.publicId,
+                    ),
+                ),
+            ),
+            momentoEdicao,
+        )
+
+        val historicoId = UUID.randomUUID().toString()
+        captura.lancamentoRepository().salvar(
+            Lancamento(
+                publicId = historicoId,
+                instrumentoPublicId = credito.publicId,
+                valorCentavos = 18750L,
+                dataHora = momentoEdicao,
+                tipo = TipoLancamento.DESPESA,
+                estabelecimento = "Mercado Histórico",
+                status = StatusLancamento.CONFIRMADO,
+                origem = OrigemLancamento.MANUAL,
+                confianca = 1.0,
+                criadoEm = momentoEdicao,
+                atualizadoEm = momentoEdicao,
+            ),
+        )
+
+        captura.instrumentoRepository().arquivar(debito.publicId, Instant.now().minusSeconds(60))
+        captura.contaRepository().arquivar(conta.publicId, Instant.now())
+        assertEquals(1, fonte.lancamentoDao().observeAtivos().first().size)
+
+        return CenarioCascataEditada(
+            contaId = conta.publicId,
+            creditoId = credito.publicId,
+            creditoSemDigitosId = creditoSemDigitos.publicId,
+            debitoId = debito.publicId,
+            historicoId = historicoId,
+        )
+    }
+
+    private suspend fun verificarPullComEdicoesEHistorico(api: HttpPingoApiClient, cenario: CenarioCascataEditada) {
+        val remotos = api.pullChanges(null)
+        val contaRemota = remotos.contas.single { it.publicId == cenario.contaId }
+        assertTrue(contaRemota.arquivada)
+        assertEquals("Nubank editada", contaRemota.apelido)
+
+        val creditoRemoto = remotos.instrumentos.single { it.publicId == cenario.creditoId }
+        assertEquals("Crédito editado", creditoRemoto.apelido)
+        assertEquals("5678", creditoRemoto.ultimosDigitos.valor)
+        assertEquals(8, creditoRemoto.fechamentoDia.valor)
+        assertEquals(15, creditoRemoto.vencimentoDia.valor)
+        assertEquals(true, creditoRemoto.arquivadoPorCascata.valor)
+
+        val historicoRemoto = remotos.lancamentos.single { it.publicId == cenario.historicoId }
+        assertEquals(cenario.creditoId, historicoRemoto.instrumentoPublicId)
+        assertEquals(187.50, historicoRemoto.valor, 0.001)
+    }
+
+    private suspend fun restaurarEVerificarCascataEHistorico(api: HttpPingoApiClient, token: String, cenario: CenarioCascataEditada) {
+        val restauracao = bancoEmMemoria()
+        try {
+            motor(api, restauracao, FakePreferences(), token).run()
+            motor(api, restauracao, FakePreferences(), token).run()
+
+            val conta = restauracao.contaDao().buscar(cenario.contaId)
+            assertEquals("Nubank editada", conta?.apelido)
+            assertTrue(conta?.arquivada == true)
+
+            val credito = restauracao.instrumentoDao().buscar(cenario.creditoId)
+            val creditoSemDigitos = restauracao.instrumentoDao().buscar(cenario.creditoSemDigitosId)
+            val debito = restauracao.instrumentoDao().buscar(cenario.debitoId)
+            assertEquals("Crédito editado", credito?.apelido)
+            assertEquals("5678", credito?.ultimosDigitos)
+            assertEquals(8, credito?.fechamentoDia)
+            assertEquals(15, credito?.vencimentoDia)
+            assertEquals(true, credito?.arquivado)
+            assertEquals(true, credito?.arquivadoPorCascata)
+            assertEquals("Crédito digital editado", creditoSemDigitos?.apelido)
+            assertNull(creditoSemDigitos?.ultimosDigitos)
+            assertEquals(27, creditoSemDigitos?.fechamentoDia)
+            assertEquals(4, creditoSemDigitos?.vencimentoDia)
+            assertEquals(true, creditoSemDigitos?.arquivadoPorCascata)
+            assertEquals("Débito antigo editado", debito?.apelido)
+            assertEquals(true, debito?.arquivado)
+            assertEquals(false, debito?.arquivadoPorCascata)
+
+            val historico = restauracao.lancamentoDao().buscar(cenario.historicoId)
+            assertEquals(cenario.historicoId, historico?.publicId)
+            assertEquals(cenario.creditoId, historico?.instrumentoPublicId)
+            assertEquals(18750L, historico?.valorCentavos)
+            assertEquals("Mercado Histórico", historico?.estabelecimento)
+
+            val repoRestaurado = ContaRepositoryImpl(
+                restauracao.contaDao(),
+                restauracao.instrumentoDao(),
+                RoomTransacaoLocal(restauracao),
+            )
+            repoRestaurado.reativar(cenario.contaId, Instant.now())
+
+            assertEquals(false, restauracao.contaDao().buscar(cenario.contaId)?.arquivada)
+            assertEquals(false, restauracao.instrumentoDao().buscar(cenario.creditoId)?.arquivado)
+            assertEquals(false, restauracao.instrumentoDao().buscar(cenario.creditoId)?.arquivadoPorCascata)
+            assertEquals(false, restauracao.instrumentoDao().buscar(cenario.creditoSemDigitosId)?.arquivado)
+            assertEquals(true, restauracao.instrumentoDao().buscar(cenario.debitoId)?.arquivado)
+            assertEquals(false, restauracao.instrumentoDao().buscar(cenario.debitoId)?.arquivadoPorCascata)
+            assertEquals(cenario.creditoId, restauracao.lancamentoDao().buscar(cenario.historicoId)?.instrumentoPublicId)
+        } finally {
+            restauracao.close()
+        }
+    }
+
+    private data class CenarioCascataEditada(
+        val contaId: String,
+        val creditoId: String,
+        val creditoSemDigitosId: String,
+        val debitoId: String,
+        val historicoId: String,
+    )
 
     @Test
     fun recargaOpcionalRemovidaSincronizaNuloExplicitoERestauraSemRecarga() = runBlocking {
