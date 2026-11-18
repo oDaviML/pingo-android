@@ -160,6 +160,7 @@ private fun CategoriaGerenciamentoCard(
             }
         }
         CategoriaAcoesRow(
+            categoriaId = cat.publicId,
             arquivada = cat.arquivada,
             onRenomear = onRenomear,
             onAlternarArquivo = onAlternarArquivo,
@@ -169,7 +170,13 @@ private fun CategoriaGerenciamentoCard(
 }
 
 @Composable
-private fun CategoriaAcoesRow(arquivada: Boolean, onRenomear: () -> Unit, onAlternarArquivo: () -> Unit, onExcluir: () -> Unit) {
+private fun CategoriaAcoesRow(
+    categoriaId: String,
+    arquivada: Boolean,
+    onRenomear: () -> Unit,
+    onAlternarArquivo: () -> Unit,
+    onExcluir: () -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
@@ -193,7 +200,10 @@ private fun CategoriaAcoesRow(arquivada: Boolean, onRenomear: () -> Unit, onAlte
             onClick = onExcluir,
             type = PingoButtonType.Danger,
             size = PingoButtonSize.Small,
-            modifier = Modifier.weight(1f).heightIn(min = PingoLayout.minTouchTarget),
+            modifier = Modifier
+                .weight(1f)
+                .heightIn(min = PingoLayout.minTouchTarget)
+                .testTag("botao_excluir_categoria_$categoriaId"),
         )
     }
 }

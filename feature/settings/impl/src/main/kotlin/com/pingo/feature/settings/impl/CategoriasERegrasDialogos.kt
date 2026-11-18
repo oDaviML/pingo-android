@@ -187,6 +187,7 @@ private fun ListaDestinosMigracao(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = PingoLayout.minTouchTarget)
+                    .testTag("destino_migracao_${destino.publicId}")
                     .selectable(
                         selected = destino.publicId == selecionadoId,
                         role = Role.RadioButton,

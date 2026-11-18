@@ -598,6 +598,7 @@ private fun SnackbarDeAvisoExportacao(mensagem: String, onDispensar: () -> Unit,
         modifier = modifier
             .fillMaxWidth()
             .testTag("snackbar-exportacao-vazia")
+            .semantics(mergeDescendants = true) {}
             .pingoElevation(level = PingoElevationLevel.Level2, shape = forma)
             .background(color = fundo, shape = forma)
             .padding(horizontal = PingoSpacing.lg, vertical = PingoSpacing.md),

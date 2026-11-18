@@ -104,11 +104,11 @@ private fun BiometriaBody(state: OnboardingBiometriaUiState, onAbrirConfiguracoe
             color = PingoTheme.colors.onSurfaceVariant,
         )
 
-        BiometriaInfoCard()
-
         if (state.semCadastroNoAparelho) {
             SemBiometriaCard(onAbrirConfiguracoesDeSeguranca = onAbrirConfiguracoesDeSeguranca)
         }
+
+        BiometriaInfoCard()
     }
 }
 
@@ -144,7 +144,7 @@ private fun SemBiometriaCard(onAbrirConfiguracoesDeSeguranca: () -> Unit) {
             text = "Configurar no aparelho",
             onClick = onAbrirConfiguracoesDeSeguranca,
             type = PingoButtonType.Outline,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().testTag("botao_configurar_biometria_aparelho"),
         )
     }
 }

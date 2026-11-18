@@ -10,7 +10,8 @@ import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.isToggleable
+import androidx.compose.ui.test.isOff
+import androidx.compose.ui.test.isOn
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -185,25 +186,29 @@ class RelatoriosAssinaturasEToggleTest {
         aguardarTag("aba-INICIO")
         composeRule.onNodeWithContentDescription("Configurações").performClick()
         aguardarTexto("Avisos de assinaturas")
-        composeRule.onNode(isToggleable()).assertIsOff()
+        aguardarSwitch("switch_avisos_assinaturas", ligado = false)
+        composeRule.onNodeWithTag("switch_avisos_assinaturas").performScrollTo().assertIsOff()
         capturarTelaSeSolicitado(contexto, composeRule, "configuracoes")
 
-        composeRule.onNodeWithText("Avisos de assinaturas").performClick()
+        composeRule.onNodeWithTag("switch_avisos_assinaturas").performScrollTo().performClick()
         composeRule.waitUntil(ESPERA_MS) {
             runBlocking { preferences.avisoAssinaturasAtivo.first() }
         }
-        composeRule.onNode(isToggleable()).assertIsOn()
+        aguardarSwitch("switch_avisos_assinaturas", ligado = true)
+        composeRule.onNodeWithTag("switch_avisos_assinaturas").assertIsOn()
 
         abrirNavHost()
         aguardarTag("aba-INICIO")
         composeRule.onNodeWithContentDescription("Configurações").performClick()
         aguardarTexto("Avisos de assinaturas")
-        composeRule.onNode(isToggleable()).assertIsOn()
-        composeRule.onNodeWithText("Avisos de assinaturas").performClick()
+        aguardarSwitch("switch_avisos_assinaturas", ligado = true)
+        composeRule.onNodeWithTag("switch_avisos_assinaturas").performScrollTo().assertIsOn()
+        composeRule.onNodeWithTag("switch_avisos_assinaturas").performScrollTo().performClick()
         composeRule.waitUntil(ESPERA_MS) {
             runBlocking { !preferences.avisoAssinaturasAtivo.first() }
         }
-        composeRule.onNode(isToggleable()).assertIsOff()
+        aguardarSwitch("switch_avisos_assinaturas", ligado = false)
+        composeRule.onNodeWithTag("switch_avisos_assinaturas").assertIsOff()
     }
 
     private suspend fun semearCenario(): CenarioRelatorios {
@@ -387,6 +392,13 @@ class RelatoriosAssinaturasEToggleTest {
     private fun aguardarTexto(texto: String) {
         composeRule.waitUntil(ESPERA_MS) {
             composeRule.onAllNodesWithText(texto, substring = true).fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    private fun aguardarSwitch(tag: String, ligado: Boolean) {
+        val condicao = if (ligado) isOn() else isOff()
+        composeRule.waitUntil(ESPERA_MS) {
+            composeRule.onAllNodes(hasTestTag(tag) and condicao).fetchSemanticsNodes().isNotEmpty()
         }
     }
 

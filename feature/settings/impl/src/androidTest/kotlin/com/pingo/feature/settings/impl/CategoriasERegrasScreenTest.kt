@@ -2,6 +2,7 @@ package com.pingo.feature.settings.impl
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -123,8 +124,9 @@ class CategoriasERegrasScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("Excluir").performClick()
+        composeRule.onNodeWithTag("botao_excluir_categoria_cat-1").performClick()
         composeRule.onNodeWithTag("botao_confirmar_exclusao_migracao").assertIsNotEnabled()
-        composeRule.onNodeWithText("Outros").performClick()
+        composeRule.onNodeWithTag("destino_migracao_cat-2").performClick()
+        composeRule.onNodeWithTag("botao_confirmar_exclusao_migracao").assertIsEnabled()
     }
 }

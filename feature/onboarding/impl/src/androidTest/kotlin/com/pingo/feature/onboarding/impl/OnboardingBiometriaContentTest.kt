@@ -6,6 +6,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.pingo.core.auth.DisponibilidadeAutenticacao
 import com.pingo.core.designsystem.theme.PingoTheme
@@ -63,7 +64,7 @@ class OnboardingBiometriaContentTest {
             }
         }
 
-        composeRule.onNodeWithText("Configurar no aparelho").performClick()
+        composeRule.onNodeWithTag("botao_configurar_biometria_aparelho").performScrollTo().performClick()
 
         assertEquals(1, abriuConfiguracoes)
     }

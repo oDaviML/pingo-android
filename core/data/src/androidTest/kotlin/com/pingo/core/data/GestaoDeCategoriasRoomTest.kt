@@ -51,7 +51,7 @@ class GestaoDeCategoriasRoomTest {
 
     @Test
     fun contaLancamentosERegrasPorCategoriaERegraAprendida() = runBlocking {
-        inserirBase(estabelecimento = "Padaria do Zé", regraEstabelecimento = "padaria do ze")
+        inserirBase(estabelecimento = "Padaria do Zé", regraEstabelecimento = "padaria do zé")
 
         val categorias = gestao.observeCategoriasComContagem().first()
         val regras = gestao.observeRegrasComUso().first()
