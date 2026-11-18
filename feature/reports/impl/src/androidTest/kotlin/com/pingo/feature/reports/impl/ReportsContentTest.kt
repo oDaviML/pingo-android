@@ -3,7 +3,12 @@ package com.pingo.feature.reports.impl
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -94,7 +99,7 @@ class ReportsContentTest {
             onAbrirCategoriaNoMes = { cat, mes -> categoriaAberta = cat to mes },
         )
 
-        composeRule.onNodeWithText("Relatórios").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Relatórios").onFirst().assertIsDisplayed()
         composeRule.onNodeWithText("Outubro 2026").assertIsDisplayed()
         composeRule.onNodeWithText("Despesas por categoria").assertIsDisplayed()
         composeRule.onNodeWithText("R$ 3.718,00").assertIsDisplayed()
@@ -122,8 +127,12 @@ class ReportsContentTest {
         composeRule.onNodeWithText("Despesas por categoria").assertIsDisplayed()
         composeRule.onNodeWithText("Assinaturas").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Total mensal estimado").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("R$ 44,90").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("Netflix").performScrollTo().assertIsDisplayed()
+        composeRule.onNode(hasText("R$ 44,90") and hasAnyAncestor(hasTestTag("relatorios-assinaturas-total")))
+            .performScrollTo()
+            .assertIsDisplayed()
+        composeRule.onNode(hasTestTag("relatorios-assinatura-ass-1") and hasText("Netflix") and hasText("R$ 44,90"))
+            .performScrollTo()
+            .assertIsDisplayed()
     }
 
     @Test
