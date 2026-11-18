@@ -1,5 +1,6 @@
 package com.pingo.feature.home.impl
 
+import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pingo.core.data.CategoriaRepository
@@ -15,6 +16,9 @@ import com.pingo.core.model.Lancamento
 import com.pingo.core.model.organizacao.EstadoBlocoFinanceiro
 import com.pingo.core.model.organizacao.FaturaAbertaInicio
 import com.pingo.core.model.organizacao.SaldoVoucherInicio
+import com.pingo.core.network.update.AtualizacaoDisponivel
+import com.pingo.core.network.update.ControladorDeAtualizacaoApp
+import com.pingo.core.network.update.EstadoAtualizacaoDoApp
 import com.pingo.core.notifications.AcessoNotificacoes
 import com.pingo.core.notifications.DiagnosticoDaCaptura
 import com.pingo.core.notifications.SaudeDaCaptura
@@ -28,11 +32,12 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import java.io.File
 import java.time.Clock
 import java.time.YearMonth
 import javax.inject.Inject
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val acessoNotificacoes: AcessoNotificacoes,
@@ -42,8 +47,31 @@ class HomeViewModel @Inject constructor(
     instrumentoRepository: InstrumentoRepository,
     categoriaRepository: CategoriaRepository,
     private val inicioFinanceiroProjection: InicioFinanceiroProjection,
+    private val controladorDeAtualizacao: ControladorDeAtualizacaoApp,
     private val clock: Clock,
 ) : ViewModel() {
+    @Suppress("LongParameterList")
+    constructor(
+        acessoNotificacoes: AcessoNotificacoes,
+        saudeDaCaptura: SaudeDaCaptura,
+        lancamentoRepository: LancamentoRepository,
+        contaRepository: ContaRepository,
+        instrumentoRepository: InstrumentoRepository,
+        categoriaRepository: CategoriaRepository,
+        inicioFinanceiroProjection: InicioFinanceiroProjection,
+        clock: Clock,
+    ) : this(
+        acessoNotificacoes = acessoNotificacoes,
+        saudeDaCaptura = saudeDaCaptura,
+        lancamentoRepository = lancamentoRepository,
+        contaRepository = contaRepository,
+        instrumentoRepository = instrumentoRepository,
+        categoriaRepository = categoriaRepository,
+        inicioFinanceiroProjection = inicioFinanceiroProjection,
+        controladorDeAtualizacao = ControladorDeAtualizacaoSemOperacao,
+        clock = clock,
+    )
+
     @Suppress("LongParameterList")
     constructor(
         acessoNotificacoes: AcessoNotificacoes,
@@ -61,6 +89,7 @@ class HomeViewModel @Inject constructor(
         instrumentoRepository = instrumentoRepository,
         categoriaRepository = categoriaRepository,
         inicioFinanceiroProjection = InicioFinanceiroProjectionVazia,
+        controladorDeAtualizacao = ControladorDeAtualizacaoSemOperacao,
         clock = clock,
     )
 
@@ -68,6 +97,8 @@ class HomeViewModel @Inject constructor(
     private val mes = MutableStateFlow(mesAtual())
     private val faturasAbertas = MutableStateFlow<EstadoBlocoFinanceiro<List<FaturaAbertaInicio>>>(EstadoBlocoFinanceiro.Carregando)
     private val saldosVoucher = MutableStateFlow<EstadoBlocoFinanceiro<List<SaldoVoucherInicio>>>(EstadoBlocoFinanceiro.Carregando)
+    private var mostrarSheetAtualizacao = false
+    private var estadoAtualizacao: EstadoAtualizacaoDoApp = controladorDeAtualizacao.estado.value
     private var capturaAutomatica = acessoNotificacoes.concedido()
     private var situacao = if (capturaAutomatica) SituacaoDaCaptura.ATIVA else SituacaoDaCaptura.PARADA
     private var motivo = if (capturaAutomatica) null else MotivoParada.PERMISSAO_REVOGADA
@@ -122,13 +153,50 @@ class HomeViewModel @Inject constructor(
                     recompor()
                 }
         }
+        viewModelScope.launch {
+            controladorDeAtualizacao.estado.collect { estado ->
+                estadoAtualizacao = estado
+                recompor()
+            }
+        }
+        viewModelScope.launch {
+            controladorDeAtualizacao.verificarEmSegundoPlano()
+        }
     }
 
     fun atualizarCaptura() {
         capturaAutomatica = acessoNotificacoes.concedido()
+        controladorDeAtualizacao.atualizarPermissaoInstalacao()
         viewModelScope.launch { aplicarDiagnostico(saudeDaCaptura.atual()) }
+        viewModelScope.launch { controladorDeAtualizacao.verificarEmSegundoPlano() }
         recompor()
     }
+
+    fun abrirAtualizacao() {
+        mostrarSheetAtualizacao = true
+        recompor()
+        val atual = estadoAtualizacao
+        if (atual is EstadoAtualizacaoDoApp.Ocioso || (atual is EstadoAtualizacaoDoApp.Falha && atual.info == null)) {
+            verificarAtualizacao()
+        }
+    }
+
+    fun fecharAtualizacao() {
+        mostrarSheetAtualizacao = false
+        recompor()
+    }
+
+    fun verificarAtualizacao() {
+        viewModelScope.launch { controladorDeAtualizacao.verificarManualmente() }
+    }
+
+    fun baixarAtualizacao(info: AtualizacaoDisponivel) {
+        viewModelScope.launch { controladorDeAtualizacao.baixar(info) }
+    }
+
+    fun intentPermissaoFontesDesconhecidas(): Intent = controladorDeAtualizacao.intentPermissaoFontesDesconhecidas()
+
+    fun intentInstalacaoApk(arquivoApk: File): Intent = controladorDeAtualizacao.intentInstalacaoApk(arquivoApk)
 
     fun mesAnterior() {
         moverMes(-1)
@@ -193,6 +261,9 @@ class HomeViewModel @Inject constructor(
             faturasAbertas = estadoFaturas,
             saldosVoucher = estadoVouchers,
             vazia = base.carregado && ativos.isEmpty() && !temBlocoFinanceiroAtivo,
+            versaoApp = controladorDeAtualizacao.versaoInstalada,
+            estadoAtualizacao = estadoAtualizacao,
+            mostrarSheetAtualizacao = mostrarSheetAtualizacao,
         )
     }
 
@@ -225,6 +296,24 @@ class HomeViewModel @Inject constructor(
 
         override fun observeSaldosVoucher(): Flow<EstadoBlocoFinanceiro<List<SaldoVoucherInicio>>> =
             flowOf(EstadoBlocoFinanceiro.Sucesso(emptyList()))
+    }
+
+    private object ControladorDeAtualizacaoSemOperacao : ControladorDeAtualizacaoApp {
+        override val versaoInstalada: String = ""
+        override val codigoVersaoInstalado: Long = 1L
+        override val estado: StateFlow<EstadoAtualizacaoDoApp> = MutableStateFlow(EstadoAtualizacaoDoApp.Ocioso)
+
+        override suspend fun verificarEmSegundoPlano() = Unit
+
+        override suspend fun verificarManualmente() = Unit
+
+        override suspend fun baixar(info: AtualizacaoDisponivel) = Unit
+
+        override fun atualizarPermissaoInstalacao() = Unit
+
+        override fun intentPermissaoFontesDesconhecidas(): Intent = Intent()
+
+        override fun intentInstalacaoApk(arquivoApk: File): Intent = Intent()
     }
 
     private companion object {

@@ -41,13 +41,33 @@ private val PARCELAS_SUGERIDAS = listOf(1, 2, 3, 6, 10, 12, 18, 24)
 
 @Composable
 internal fun PainelDeParcelas(state: NovoLancamentoUiState, onEvent: (NovoLancamentoEvent) -> Unit) {
+    PainelDeParcelasSheet(
+        totalParcelas = state.totalParcelas,
+        modoParcelamento = state.modoParcelamento,
+        resumo = RotulosDoNovoLancamento.resumoParcelas(state),
+        onSelecionarParcelas = { total -> onEvent(NovoLancamentoEvent.SelecionarParcelas(total)) },
+        onSelecionarModo = { modo -> onEvent(NovoLancamentoEvent.SelecionarModoParcelamento(modo)) },
+        onFechar = { onEvent(NovoLancamentoEvent.FecharPainel) },
+    )
+}
+
+@Suppress("LongParameterList")
+@Composable
+internal fun PainelDeParcelasSheet(
+    totalParcelas: Int,
+    modoParcelamento: ModoParcelamento,
+    resumo: String?,
+    onSelecionarParcelas: (Int) -> Unit,
+    onSelecionarModo: (ModoParcelamento) -> Unit,
+    onFechar: () -> Unit,
+) {
     val interacao = remember { MutableInteractionSource() }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(PingoTheme.colors.scrim)
-            .clickable(interactionSource = interacao, indication = null) { onEvent(NovoLancamentoEvent.FecharPainel) },
+            .clickable(interactionSource = interacao, indication = null, onClick = onFechar),
         contentAlignment = Alignment.BottomCenter,
     ) {
         Column(
@@ -61,11 +81,17 @@ internal fun PainelDeParcelas(state: NovoLancamentoUiState, onEvent: (NovoLancam
             verticalArrangement = Arrangement.spacedBy(PingoSpacing.md),
         ) {
             PingoSheetHandle()
-            CabecalhoDeParcelas(onFechar = { onEvent(NovoLancamentoEvent.FecharPainel) })
-            CorpoDeParcelas(state = state, onEvent = onEvent)
+            CabecalhoDeParcelas(onFechar = onFechar)
+            CorpoDeParcelas(
+                totalParcelas = totalParcelas,
+                modoParcelamento = modoParcelamento,
+                resumo = resumo,
+                onSelecionarParcelas = onSelecionarParcelas,
+                onSelecionarModo = onSelecionarModo,
+            )
             PingoButton(
                 text = "Confirmar",
-                onClick = { onEvent(NovoLancamentoEvent.FecharPainel) },
+                onClick = onFechar,
                 fillWidth = true,
                 modifier = Modifier.testTag("parcelas-confirmar"),
             )
@@ -91,7 +117,13 @@ private fun CabecalhoDeParcelas(onFechar: () -> Unit) {
 }
 
 @Composable
-private fun CorpoDeParcelas(state: NovoLancamentoUiState, onEvent: (NovoLancamentoEvent) -> Unit) {
+private fun CorpoDeParcelas(
+    totalParcelas: Int,
+    modoParcelamento: ModoParcelamento,
+    resumo: String?,
+    onSelecionarParcelas: (Int) -> Unit,
+    onSelecionarModo: (ModoParcelamento) -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -99,21 +131,21 @@ private fun CorpoDeParcelas(state: NovoLancamentoUiState, onEvent: (NovoLancamen
         verticalArrangement = Arrangement.spacedBy(PingoSpacing.lg),
     ) {
         ContadorDeParcelas(
-            totalParcelas = state.totalParcelas,
-            onAlterar = { novoTotal -> onEvent(NovoLancamentoEvent.SelecionarParcelas(novoTotal)) },
+            totalParcelas = totalParcelas,
+            onAlterar = onSelecionarParcelas,
         )
         GradeDePresetsDeParcelas(
-            selecionado = state.totalParcelas,
-            onSelecionar = { novoTotal -> onEvent(NovoLancamentoEvent.SelecionarParcelas(novoTotal)) },
+            selecionado = totalParcelas,
+            onSelecionar = onSelecionarParcelas,
         )
-        if (state.totalParcelas > 1) {
+        if (totalParcelas > 1) {
             SeletorDeModoDeParcelamento(
-                modo = state.modoParcelamento,
-                onSelecionar = { modo -> onEvent(NovoLancamentoEvent.SelecionarModoParcelamento(modo)) },
+                modo = modoParcelamento,
+                onSelecionar = onSelecionarModo,
             )
         }
-        RotulosDoNovoLancamento.resumoParcelas(state)?.let { resumo ->
-            ResumoDeParcelamento(texto = resumo)
+        resumo?.let { texto ->
+            ResumoDeParcelamento(texto = texto)
         }
     }
 }

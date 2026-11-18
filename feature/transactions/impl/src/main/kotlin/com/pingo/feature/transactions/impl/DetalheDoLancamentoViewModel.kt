@@ -14,7 +14,10 @@ import com.pingo.core.data.detalhe.MarcarTransferencia
 import com.pingo.core.data.detalhe.ResultadoDaEdicao
 import com.pingo.core.data.detalhe.ResultadoDaTransferencia
 import com.pingo.core.model.Lancamento
+import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.fatura.GeradorDeParcelas
+import com.pingo.core.model.fatura.ModoParcelamento
 import com.pingo.feature.transactions.api.TransactionsRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -112,6 +115,21 @@ class DetalheDoLancamentoViewModel @Inject constructor(
             true
         }
 
+        DetalheDoLancamentoEvent.AbrirCalendario -> {
+            controle.update { it.copy(calendarioVisivel = true) }
+            true
+        }
+
+        DetalheDoLancamentoEvent.FecharCalendario -> {
+            controle.update { it.copy(calendarioVisivel = false) }
+            true
+        }
+
+        is DetalheDoLancamentoEvent.SelecionarData -> {
+            selecionarData(evento.data)
+            true
+        }
+
         else -> false
     }
 
@@ -141,25 +159,21 @@ class DetalheDoLancamentoViewModel @Inject constructor(
             true
         }
 
-        DetalheDoLancamentoEvent.AbrirCalendario -> {
-            controle.update { it.copy(calendarioVisivel = true) }
-            true
-        }
-
-        DetalheDoLancamentoEvent.FecharCalendario -> {
-            controle.update { it.copy(calendarioVisivel = false) }
-            true
-        }
-
-        is DetalheDoLancamentoEvent.SelecionarData -> {
-            selecionarData(evento.data)
-            true
-        }
-
         else -> false
     }
 
     private fun tratarAcao(evento: DetalheDoLancamentoEvent): Boolean = when (evento) {
+        is DetalheDoLancamentoEvent.SelecionarParcelas -> {
+            val validado = evento.totalParcelas.coerceIn(GeradorDeParcelas.MIN_PARCELAS, GeradorDeParcelas.MAX_PARCELAS)
+            controle.update { it.copy(totalParcelas = validado, erros = emptySet()) }
+            true
+        }
+
+        is DetalheDoLancamentoEvent.SelecionarModoParcelamento -> {
+            controle.update { it.copy(modoParcelamento = evento.modo, erros = emptySet()) }
+            true
+        }
+
         DetalheDoLancamentoEvent.Salvar -> {
             salvar()
             true
@@ -258,37 +272,12 @@ class DetalheDoLancamentoViewModel @Inject constructor(
         val registro = registroAtual
         val opcoes = opcoesDoDetalhe(base, atual.instrumentoPublicId, atual.destinoPublicId, atual.categoriaPublicId, atual.tipo)
 
-        mutableUiState.value = DetalheDoLancamentoUiState(
-            carregando = !base.carregado,
-            naoEncontrado = atual.naoEncontrado,
-            ehTransferencia = registro?.transferenciaId != null || atual.tipo == TipoLancamento.TRANSFERENCIA,
-            tipo = tipoDaTela(atual.tipo),
-            valorCentavos = atual.valorCentavos,
-            instrumento = opcoes.instrumento,
-            destino = opcoes.destino,
-            categoria = opcoes.categoria,
-            dataHora = atual.dataHora,
+        mutableUiState.value = construirUiStateDoDetalhe(
+            base = base,
+            atual = atual,
+            registro = registro,
+            opcoes = opcoes,
             hoje = LocalDate.now(clock),
-            estabelecimento = atual.estabelecimento,
-            aplicarCategoriaATodos = atual.aplicarCategoriaATodos,
-            parcelamento = parcelamentoDe(registro),
-            instrumentos = opcoes.instrumentos,
-            destinosDaTransferencia = opcoes.destinos,
-            categorias = opcoes.categorias,
-            origem = registro?.let(::origemDe),
-            par = parDe(registro, base),
-            painel = atual.painel,
-            calendarioVisivel = atual.calendarioVisivel,
-            tecladoVisivel = atual.tecladoVisivel,
-            erros = atual.erros,
-            salvando = atual.salvando,
-            salvo = atual.salvo,
-            dialogoDeExclusao = atual.dialogoDeExclusao,
-            dialogoDeExclusaoParcelas = atual.dialogoDeExclusaoParcelas,
-            excluindo = atual.excluindo,
-            excluido = atual.excluido,
-            ocupado = atual.ocupado,
-            mensagem = atual.mensagem,
         )
     }
 
@@ -335,13 +324,24 @@ class DetalheDoLancamentoViewModel @Inject constructor(
                 tipo = novo,
                 categoriaPublicId = categoria?.takeIf { candidata -> compativel(candidata, novo) }?.publicId,
                 aplicarCategoriaATodos = it.aplicarCategoriaATodos && categoria != null && compativel(categoria, novo),
+                totalParcelas = if (novo == TipoLancamento.DESPESA) it.totalParcelas else 1,
+                modoParcelamento = if (novo == TipoLancamento.DESPESA) it.modoParcelamento else ModoParcelamento.VALOR_TOTAL,
                 erros = emptySet(),
             )
         }
     }
 
     private fun selecionarInstrumento(publicId: String) {
-        controle.update { it.copy(instrumentoPublicId = publicId, painel = null, erros = emptySet()) }
+        val ehCredito = dados.value.instrumentos.firstOrNull { it.publicId == publicId }?.tipo == TipoInstrumento.CREDITO
+        controle.update {
+            it.copy(
+                instrumentoPublicId = publicId,
+                totalParcelas = if (ehCredito) it.totalParcelas else 1,
+                modoParcelamento = if (ehCredito) it.modoParcelamento else ModoParcelamento.VALOR_TOTAL,
+                painel = null,
+                erros = emptySet(),
+            )
+        }
     }
 
     private fun selecionarDestino(publicId: String) {
@@ -473,6 +473,8 @@ class DetalheDoLancamentoViewModel @Inject constructor(
                 dataHora = registro.dataHora,
                 estabelecimento = registro.estabelecimento.orEmpty(),
                 aplicarCategoriaATodos = false,
+                totalParcelas = 1,
+                modoParcelamento = ModoParcelamento.VALOR_TOTAL,
                 painel = null,
                 erros = emptySet(),
             )
@@ -486,6 +488,8 @@ class DetalheDoLancamentoViewModel @Inject constructor(
 
     private fun edicaoDe(atual: ControleDoDetalhe): EdicaoDoLancamento {
         val transferencia = atual.tipo == TipoLancamento.TRANSFERENCIA
+        val ehCredito = dados.value.instrumentos.firstOrNull { it.publicId == atual.instrumentoPublicId }?.tipo == TipoInstrumento.CREDITO
+        val podeParcelar = !transferencia && atual.tipo == TipoLancamento.DESPESA && ehCredito && registroAtual?.totalParcelas == 1
 
         return EdicaoDoLancamento(
             publicId = publicId,
@@ -497,6 +501,8 @@ class DetalheDoLancamentoViewModel @Inject constructor(
             dataHora = atual.dataHora,
             estabelecimento = atual.estabelecimento,
             aplicarCategoriaATodos = atual.aplicarCategoriaATodos && !transferencia,
+            totalParcelas = if (podeParcelar) atual.totalParcelas else 1,
+            modoParcelamento = if (podeParcelar) atual.modoParcelamento else ModoParcelamento.VALOR_TOTAL,
         )
     }
 
@@ -509,6 +515,8 @@ class DetalheDoLancamentoViewModel @Inject constructor(
         val dataHora: Instant = Instant.EPOCH,
         val estabelecimento: String = "",
         val aplicarCategoriaATodos: Boolean = false,
+        val totalParcelas: Int = 1,
+        val modoParcelamento: ModoParcelamento = ModoParcelamento.VALOR_TOTAL,
         val painel: PainelDoDetalhe? = null,
         val calendarioVisivel: Boolean = false,
         val tecladoVisivel: Boolean = false,
@@ -526,6 +534,47 @@ class DetalheDoLancamentoViewModel @Inject constructor(
 
     private companion object {
         const val VALOR_MAXIMO_CENTAVOS = 999_999_999_999L
+
+        private fun construirUiStateDoDetalhe(
+            base: BaseDoDetalhe,
+            atual: ControleDoDetalhe,
+            registro: Lancamento?,
+            opcoes: OpcoesDoDetalhe,
+            hoje: LocalDate,
+        ): DetalheDoLancamentoUiState = DetalheDoLancamentoUiState(
+            carregando = !base.carregado,
+            naoEncontrado = atual.naoEncontrado,
+            ehTransferencia = registro?.transferenciaId != null || atual.tipo == TipoLancamento.TRANSFERENCIA,
+            tipo = tipoDaTela(atual.tipo),
+            valorCentavos = atual.valorCentavos,
+            instrumento = opcoes.instrumento,
+            destino = opcoes.destino,
+            categoria = opcoes.categoria,
+            dataHora = atual.dataHora,
+            hoje = hoje,
+            estabelecimento = atual.estabelecimento,
+            aplicarCategoriaATodos = atual.aplicarCategoriaATodos,
+            totalParcelas = atual.totalParcelas,
+            modoParcelamento = atual.modoParcelamento,
+            parcelamento = parcelamentoDe(registro),
+            instrumentos = opcoes.instrumentos,
+            destinosDaTransferencia = opcoes.destinos,
+            categorias = opcoes.categorias,
+            origem = registro?.let(::origemDe),
+            par = parDe(registro, base),
+            painel = atual.painel,
+            calendarioVisivel = atual.calendarioVisivel,
+            tecladoVisivel = atual.tecladoVisivel,
+            erros = atual.erros,
+            salvando = atual.salvando,
+            salvo = atual.salvo,
+            dialogoDeExclusao = atual.dialogoDeExclusao,
+            dialogoDeExclusaoParcelas = atual.dialogoDeExclusaoParcelas,
+            excluindo = atual.excluindo,
+            excluido = atual.excluido,
+            ocupado = atual.ocupado,
+            mensagem = atual.mensagem,
+        )
     }
 }
 

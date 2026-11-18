@@ -3,6 +3,7 @@ package com.pingo.feature.transactions.impl
 import androidx.compose.runtime.Immutable
 import com.pingo.core.data.detalhe.CampoDoDetalhe
 import com.pingo.core.model.InstituicaoFinanceira
+import com.pingo.core.model.fatura.ModoParcelamento
 import java.time.Instant
 import java.time.LocalDate
 
@@ -10,6 +11,7 @@ enum class PainelDoDetalhe {
     INSTRUMENTO,
     DESTINO,
     CATEGORIA,
+    PARCELAS,
     MARCAR_TRANSFERENCIA,
 }
 
@@ -47,6 +49,9 @@ data class ParDaTransferenciaUi(
 data class ParcelamentoDetalheUi(val parcelaNumero: Int, val totalParcelas: Int, val valorTotalCompraCentavos: Long?)
 
 @Immutable
+internal data class ConfiguracaoPainelDetalhe(val selecionado: String?, val titulo: String, val prefixo: String)
+
+@Immutable
 data class DetalheDoLancamentoUiState(
     val carregando: Boolean = true,
     val naoEncontrado: Boolean = false,
@@ -60,6 +65,8 @@ data class DetalheDoLancamentoUiState(
     val hoje: LocalDate = LocalDate.MIN,
     val estabelecimento: String = "",
     val aplicarCategoriaATodos: Boolean = false,
+    val totalParcelas: Int = 1,
+    val modoParcelamento: ModoParcelamento = ModoParcelamento.VALOR_TOTAL,
     val parcelamento: ParcelamentoDetalheUi? = null,
     val instrumentos: List<OpcaoDeInstrumento> = emptyList(),
     val destinosDaTransferencia: List<OpcaoDeInstrumento> = emptyList(),
@@ -81,6 +88,36 @@ data class DetalheDoLancamentoUiState(
 ) {
     val semInstrumentos: Boolean
         get() = !carregando && instrumentos.isEmpty()
+
+    val podeParcelar: Boolean
+        get() = !carregando &&
+            !ehTransferencia &&
+            parcelamento == null &&
+            tipo == TipoDoLancamentoManual.DESPESA &&
+            instrumento?.ehCredito == true
+
+    val parcelamentoConfigurado: Boolean
+        get() = podeParcelar && totalParcelas > 1
+
+    val valorTotalPreviewCentavos: Long?
+        get() = if (!parcelamentoConfigurado || valorCentavos <= 0L) {
+            null
+        } else {
+            when (modoParcelamento) {
+                ModoParcelamento.VALOR_TOTAL -> valorCentavos
+                ModoParcelamento.VALOR_PARCELA -> valorCentavos * totalParcelas
+            }
+        }
+
+    val valorParcelaPreviewCentavos: Long?
+        get() = if (!parcelamentoConfigurado || valorCentavos <= 0L) {
+            null
+        } else {
+            when (modoParcelamento) {
+                ModoParcelamento.VALOR_TOTAL -> valorCentavos.takeIf { it >= totalParcelas }?.div(totalParcelas)
+                ModoParcelamento.VALOR_PARCELA -> valorCentavos
+            }
+        }
 
     val podeSalvar: Boolean
         get() = !carregando && !naoEncontrado && !salvando && !excluindo && !ocupado && !salvo && !excluido

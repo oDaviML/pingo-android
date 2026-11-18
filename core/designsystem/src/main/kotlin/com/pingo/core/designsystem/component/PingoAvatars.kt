@@ -24,9 +24,9 @@ import com.pingo.core.designsystem.theme.PingoTheme
 enum class PingoInstitution(val label: String, val monogram: String, val containerColor: Color?) {
     Nubank(label = "Nubank", monogram = "N", containerColor = Color(0xFF820AD1)),
     Inter(label = "Inter", monogram = "i", containerColor = Color(0xFFFF7A00)),
-    Itau(label = "Itaú", monogram = "it", containerColor = Color(0xFFEC7000)),
+    Itau(label = "Itaú", monogram = "it", containerColor = Color(0xFFFF6200)),
     MercadoPago(label = "Mercado Pago", monogram = "mp", containerColor = Color(0xFF009EE3)),
-    Caju(label = "Caju", monogram = "c", containerColor = Color(0xFFFF5A5F)),
+    Caju(label = "Caju", monogram = "c", containerColor = Color(0xFFE80537)),
     Outra(label = "Outra", monogram = "?", containerColor = null),
     ;
 
@@ -90,7 +90,7 @@ fun InstitutionAvatar(
             Image(
                 painter = rememberVectorPainter(logo),
                 contentDescription = null,
-                modifier = Modifier.size(size * 0.78f),
+                modifier = Modifier.size(size * 0.70f),
             )
         }
     }

@@ -217,6 +217,7 @@ fun PingoTopBar(
     }
 }
 
+@Suppress("LongParameterList")
 @Composable
 fun PingoHomeTopBar(
     greeting: String,
@@ -225,44 +226,77 @@ fun PingoHomeTopBar(
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
     hasUnreadNotifications: Boolean = false,
+    hasUpdateAvailable: Boolean = false,
+    onUpdateClick: (() -> Unit)? = null,
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
             .padding(start = PingoSpacing.xl, end = PingoSpacing.lg, top = PingoSpacing.md, bottom = PingoSpacing.md),
-        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
+        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         HomeDropMark()
-        Column(modifier = Modifier.weight(1f)) {
-            PingoText(
-                text = greeting,
-                style = PingoTheme.typography.caption,
-                color = PingoTheme.colors.onSurfaceVariant,
-                maxLines = 1,
-            )
-            PingoText(
-                text = name,
-                style = PingoTheme.typography.title,
-                color = PingoTheme.colors.onBackground,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        PingoIconButton(
-            icon = PingoIcons.Bell,
-            contentDescription = "Notificações",
-            onClick = onNotificationsClick,
-            style = PingoIconButtonStyle.Surface,
-            showBadgeDot = hasUnreadNotifications,
-        )
-        PingoIconButton(
-            icon = PingoIcons.Settings,
-            contentDescription = "Configurações",
-            onClick = onSettingsClick,
-            style = PingoIconButtonStyle.Surface,
+        HomeTopBarTitles(greeting = greeting, name = name, modifier = Modifier.weight(1f))
+        HomeTopBarActions(
+            hasUnreadNotifications = hasUnreadNotifications,
+            hasUpdateAvailable = hasUpdateAvailable,
+            onNotificationsClick = onNotificationsClick,
+            onUpdateClick = onUpdateClick,
+            onSettingsClick = onSettingsClick,
         )
     }
+}
+
+@Composable
+private fun HomeTopBarTitles(greeting: String, name: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        PingoText(
+            text = greeting,
+            style = PingoTheme.typography.caption,
+            color = PingoTheme.colors.onSurfaceVariant,
+            maxLines = 1,
+        )
+        PingoText(
+            text = name,
+            style = PingoTheme.typography.title,
+            color = PingoTheme.colors.onBackground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun HomeTopBarActions(
+    hasUnreadNotifications: Boolean,
+    hasUpdateAvailable: Boolean,
+    onNotificationsClick: () -> Unit,
+    onUpdateClick: (() -> Unit)?,
+    onSettingsClick: () -> Unit,
+) {
+    PingoIconButton(
+        icon = PingoIcons.Bell,
+        contentDescription = "Notificações",
+        onClick = onNotificationsClick,
+        style = PingoIconButtonStyle.Surface,
+        showBadgeDot = hasUnreadNotifications,
+    )
+    if (onUpdateClick != null) {
+        PingoIconButton(
+            icon = PingoIcons.Download,
+            contentDescription = if (hasUpdateAvailable) "Atualização disponível" else "Atualizações do aplicativo",
+            onClick = onUpdateClick,
+            style = if (hasUpdateAvailable) PingoIconButtonStyle.Tonal else PingoIconButtonStyle.Surface,
+            showBadgeDot = hasUpdateAvailable,
+        )
+    }
+    PingoIconButton(
+        icon = PingoIcons.Settings,
+        contentDescription = "Configurações",
+        onClick = onSettingsClick,
+        style = PingoIconButtonStyle.Surface,
+    )
 }
 
 @Composable

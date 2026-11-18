@@ -2,6 +2,7 @@ package com.pingo.core.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -63,15 +64,10 @@ fun LancamentoItem(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            TituloDoLancamento(lancamento = lancamento)
+            CabecalhoDoLancamento(lancamento = lancamento)
             DescricaoDoVinculo(lancamento = lancamento, instrumento = instrumento, conta = conta, zona = zona)
+            TagsDoLancamento(lancamento = lancamento)
         }
-        PingoText(
-            text = Valores.assinado(lancamento.valorCentavos, lancamento.tipo),
-            style = PingoTheme.typography.amount,
-            color = Valores.corDoTipo(lancamento.tipo, cores),
-            maxLines = 1,
-        )
     }
 }
 
@@ -92,37 +88,61 @@ private fun tomDoLancamento(tipo: TipoLancamento): PingoCategoryTone = when (tip
 }
 
 @Composable
-private fun TituloDoLancamento(lancamento: Lancamento) {
+private fun CabecalhoDoLancamento(lancamento: Lancamento) {
     val cores = PingoTheme.colors
 
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.xs),
-        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
+        verticalAlignment = Alignment.Top,
     ) {
         PingoText(
             text = lancamento.estabelecimento ?: tituloPadrao(lancamento.tipo),
             style = PingoTheme.typography.bodyStrong,
             color = cores.onBackground,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f, fill = false),
+            modifier = Modifier.weight(1f),
         )
-        if (lancamento.totalParcelas > 1) {
+        PingoText(
+            text = Valores.assinado(lancamento.valorCentavos, lancamento.tipo),
+            style = PingoTheme.typography.amount,
+            color = Valores.corDoTipo(lancamento.tipo, cores),
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
+private fun TagsDoLancamento(lancamento: Lancamento) {
+    val temParcelas = lancamento.totalParcelas > 1
+    val pendente = lancamento.status == StatusLancamento.PENDENTE
+    val manual = lancamento.origem == OrigemLancamento.MANUAL
+    if (!temParcelas && !pendente && !manual) return
+
+    val cores = PingoTheme.colors
+    FlowRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.xs),
+        verticalArrangement = Arrangement.spacedBy(PingoSpacing.xs),
+    ) {
+        if (temParcelas) {
             PingoTag(
                 label = "${lancamento.parcelaNumero}/${lancamento.totalParcelas}",
                 containerColor = cores.primaryContainer,
                 contentColor = cores.onPrimaryContainer,
             )
         }
-        if (lancamento.status == StatusLancamento.PENDENTE) {
+        if (pendente) {
             PingoTag(
                 label = "Pendente",
                 containerColor = cores.warningContainer,
                 contentColor = cores.onWarningContainer,
             )
         }
-        if (lancamento.origem == OrigemLancamento.MANUAL) {
+        if (manual) {
             PingoTag(
                 label = "Manual",
                 containerColor = cores.surfaceVariant,
@@ -160,7 +180,7 @@ private fun DescricaoDoVinculo(lancamento: Lancamento, instrumento: Instrumento?
             color = PingoTheme.colors.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.widthIn(max = 240.dp),
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }

@@ -31,14 +31,23 @@ class ConfirmadorDeAssinaturaPorCategoria @Inject constructor(
             lancamento
         }
 
-    override suspend fun aoEditarLancamento(original: Lancamento, atualizado: Lancamento, novaCategoria: Categoria?): Lancamento = when {
-        ehCategoriaDeAssinaturas(novaCategoria) -> confirmarEVincular(atualizado)
-        original.assinaturaPublicId != null && deveDesvincular(novaCategoria) -> {
-            val assinaturaId = requireNotNull(original.assinaturaPublicId)
-            removerSeOrfa(assinaturaId, atualizado.publicId)
-            atualizado.copy(assinaturaPublicId = null)
+    override suspend fun aoEditarLancamento(original: Lancamento, atualizado: Lancamento, novaCategoria: Categoria?): Lancamento {
+        if (!DetectorDeAssinaturas.elegivelParaDeteccao(atualizado)) {
+            val assinaturaId = original.assinaturaPublicId
+            if (assinaturaId != null) {
+                removerSeOrfa(assinaturaId, atualizado.publicId)
+            }
+            return atualizado.copy(assinaturaPublicId = null)
         }
-        else -> atualizado
+        return when {
+            ehCategoriaDeAssinaturas(novaCategoria) -> confirmarEVincular(atualizado)
+            original.assinaturaPublicId != null && deveDesvincular(novaCategoria) -> {
+                val assinaturaId = requireNotNull(original.assinaturaPublicId)
+                removerSeOrfa(assinaturaId, atualizado.publicId)
+                atualizado.copy(assinaturaPublicId = null)
+            }
+            else -> atualizado
+        }
     }
 
     private suspend fun confirmarEVincular(lancamento: Lancamento): Lancamento {

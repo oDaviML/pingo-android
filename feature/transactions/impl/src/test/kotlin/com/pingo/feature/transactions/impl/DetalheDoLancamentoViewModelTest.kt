@@ -20,6 +20,7 @@ import com.pingo.core.model.TipoCategoria
 import com.pingo.core.model.TipoConta
 import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.fatura.ModoParcelamento
 import com.pingo.core.testing.TestDispatcherRule
 import com.pingo.feature.transactions.api.TransactionsRoute
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -486,6 +487,37 @@ class DetalheDoLancamentoViewModelTest {
 
         assertTrue(cenario.viewModel.uiState.value.excluido)
         assertEquals(listOf("outro"), cenario.lancamentos.observeLancamentos().first().map { it.publicId })
+    }
+
+    @Test
+    fun `compra capturada no credito pode ser editada para parcelamento e trocada de instrumento reseta`() = runTest {
+        val cenario = criarViewModel(lancamentos = listOf(capturado))
+        advanceUntilIdle()
+
+        assertTrue(cenario.viewModel.uiState.value.podeParcelar)
+
+        cenario.viewModel.onEvent(DetalheDoLancamentoEvent.SelecionarParcelas(4))
+        cenario.viewModel.onEvent(DetalheDoLancamentoEvent.SelecionarModoParcelamento(ModoParcelamento.VALOR_PARCELA))
+        advanceUntilIdle()
+        assertTrue(cenario.viewModel.uiState.value.parcelamentoConfigurado)
+        assertEquals(4290L, cenario.viewModel.uiState.value.valorParcelaPreviewCentavos)
+        assertEquals(17160L, cenario.viewModel.uiState.value.valorTotalPreviewCentavos)
+
+        cenario.viewModel.onEvent(DetalheDoLancamentoEvent.SelecionarInstrumento(instrumentoInter.publicId))
+        advanceUntilIdle()
+        assertFalse(cenario.viewModel.uiState.value.podeParcelar)
+        assertEquals(1, cenario.viewModel.uiState.value.totalParcelas)
+
+        cenario.viewModel.onEvent(DetalheDoLancamentoEvent.SelecionarInstrumento(instrumentoNubank.publicId))
+        cenario.viewModel.onEvent(DetalheDoLancamentoEvent.SelecionarParcelas(3))
+        cenario.viewModel.onEvent(DetalheDoLancamentoEvent.SelecionarModoParcelamento(ModoParcelamento.VALOR_TOTAL))
+        cenario.viewModel.onEvent(DetalheDoLancamentoEvent.Salvar)
+        advanceUntilIdle()
+
+        assertTrue(cenario.viewModel.uiState.value.salvo)
+        val parcelas = cenario.lancamentos.listarParcelasDaCompra(capturado.publicId)
+        assertEquals(3, parcelas.size)
+        assertEquals(listOf(1430L, 1430L, 1430L), parcelas.map { it.valorCentavos })
     }
 
     private fun parcelaDe(publicId: String, numero: Int, diasAtras: Long, paiId: String?, totalCompra: Long? = null): Lancamento =

@@ -12,7 +12,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,6 +33,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.pingo.core.designsystem.component.PingoText
 import com.pingo.core.designsystem.theme.PingoLayout
 import com.pingo.core.designsystem.theme.PingoRadius
@@ -91,10 +95,10 @@ fun PingoDonutChart(
     val arcs = computeDonutAngles(slices)
     val chartDescription = buildDonutDescription(centerCaption, totalFormatted, slices)
 
-    Row(
+    Column(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.xl),
-        verticalAlignment = Alignment.CenterVertically,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(PingoSpacing.xl),
     ) {
         DonutRingBox(
             slices = slices,
@@ -111,7 +115,7 @@ fun PingoDonutChart(
             palette = palette,
             selectedSliceId = selectedSliceId,
             onSelectCategory = onSelectCategory,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
@@ -127,7 +131,7 @@ private fun DonutRingBox(
     centerContent: @Composable () -> Unit,
 ) {
     val colors = PingoTheme.colors
-    val strokePx = with(LocalDensity.current) { 24.dp.toPx() }
+    val strokePx = with(LocalDensity.current) { 22.dp.toPx() }
     val tapModifier = if (onSelectCategory != null && arcs.isNotEmpty()) {
         Modifier.pointerInput(arcs) {
             detectTapGestures { offset ->
@@ -141,7 +145,7 @@ private fun DonutRingBox(
 
     Box(
         modifier = Modifier
-            .size(144.dp)
+            .size(196.dp)
             .semantics { contentDescription = chartDescription }
             .then(tapModifier),
         contentAlignment = Alignment.Center,
@@ -193,21 +197,30 @@ private fun DrawScope.drawDonutArcs(
 
 @Composable
 private fun DonutCenterLabel(centerCaption: String, totalFormatted: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        modifier = Modifier.widthIn(max = 128.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         PingoText(
             text = centerCaption,
             style = PingoTheme.typography.caption,
             color = PingoTheme.colors.onSurfaceVariant,
             maxLines = 1,
         )
-        PingoText(
+        BasicText(
             text = totalFormatted,
             style = PingoTheme.typography.title.copy(
                 fontWeight = FontWeight.ExtraBold,
                 fontFeatureSettings = "tnum",
+                color = PingoTheme.colors.onBackground,
             ),
-            color = PingoTheme.colors.onBackground,
             maxLines = 1,
+            softWrap = false,
+            autoSize = TextAutoSize.StepBased(
+                minFontSize = 11.sp,
+                maxFontSize = 18.sp,
+                stepSize = 1.sp,
+            ),
         )
     }
 }

@@ -1,6 +1,9 @@
 package com.pingo.feature.transactions.impl
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
@@ -14,6 +17,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.pingo.core.designsystem.component.AbaInferior
 import com.pingo.core.designsystem.theme.PingoTheme
@@ -298,6 +302,55 @@ class TransactionsContentTest {
             .assert(hasText(ExportadorCsvDeLancamentos.MENSAGEM_VAZIO, substring = true))
 
         assertTrue(eventos.contains(TransactionsEvent.ExportarCsv))
+    }
+
+    @Test
+    fun lancamentoComParcelasEOrigemManualPosicionaSelosAbaixoSemCortarTitulo() {
+        val parceladoManual = LancamentoDaLista(
+            lancamento = despesa.lancamento.copy(
+                publicId = "l-parc",
+                estabelecimento = "Mercado Livre Brasil",
+                valorCentavos = 4991,
+                parcelaNumero = 12,
+                totalParcelas = 12,
+                status = StatusLancamento.PENDENTE,
+                origem = OrigemLancamento.MANUAL,
+            ),
+            categoria = categoriaAlimentacao,
+            instrumento = instrumentoNubank,
+            conta = contaNubank,
+        )
+
+        composeRule.setContent {
+            PingoTheme {
+                Box(modifier = Modifier.width(340.dp)) {
+                    TransactionsContent(
+                        state = estadoPadrao().copy(
+                            dias = listOf(
+                                DiaDeLancamentos(
+                                    data = LocalDate.of(2026, 11, 10),
+                                    rotulo = "HOJE",
+                                    totalCentavos = 4991,
+                                    itens = listOf(parceladoManual),
+                                ),
+                            ),
+                            quantidadeDeLancamentos = 1,
+                        ),
+                        onEvent = {},
+                        onOpenDetalhe = {},
+                        onOpenNovo = {},
+                        onSelecionarAba = {},
+                    )
+                }
+            }
+        }
+
+        val tituloBounds = composeRule.onNodeWithText("Mercado Livre Brasil").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        val parcelaBounds = composeRule.onNodeWithText("12/12").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        composeRule.onNodeWithText("Pendente").assertIsDisplayed()
+        composeRule.onNodeWithText("Manual").assertIsDisplayed()
+
+        assertTrue(parcelaBounds.top > tituloBounds.bottom)
     }
 
     private fun mostrar(

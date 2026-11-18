@@ -7,6 +7,7 @@ import com.pingo.core.model.Instrumento
 import com.pingo.core.model.Lancamento
 import com.pingo.core.model.OrigemLancamento
 import com.pingo.core.model.TipoCategoria
+import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.model.TipoLancamento
 
 internal data class BaseDoDetalhe(
@@ -40,11 +41,16 @@ internal fun opcoesDoDetalhe(
     val categoria = categoriaPublicId?.let { id -> base.categorias.firstOrNull { candidata -> candidata.publicId == id } }
 
     return OpcoesDoDetalhe(
-        instrumento = instrumento?.let { OpcaoDeInstrumento(it.publicId, rotuloDoInstrumento(contasPorId, it)) },
-        destino = destinoPublicId?.let { instrumentosPorId[it] }
-            ?.let { OpcaoDeInstrumento(it.publicId, rotuloDoInstrumento(contasPorId, it)) },
+        instrumento = instrumento?.let {
+            OpcaoDeInstrumento(it.publicId, rotuloDoInstrumento(contasPorId, it), ehCredito = it.tipo == TipoInstrumento.CREDITO)
+        },
+        destino = destinoPublicId?.let { instrumentosPorId[it] }?.let {
+            OpcaoDeInstrumento(it.publicId, rotuloDoInstrumento(contasPorId, it), ehCredito = it.tipo == TipoInstrumento.CREDITO)
+        },
         categoria = categoria?.let { OpcaoDeCategoria(it.publicId, it.nome) },
-        instrumentos = ativos.map { OpcaoDeInstrumento(it.publicId, rotuloDoInstrumento(contasPorId, it)) },
+        instrumentos = ativos.map {
+            OpcaoDeInstrumento(it.publicId, rotuloDoInstrumento(contasPorId, it), ehCredito = it.tipo == TipoInstrumento.CREDITO)
+        },
         destinos = destinos(ativos, instrumento, contasPorId),
         categorias = categoriasPara(base.categorias, tipo),
     )

@@ -43,11 +43,7 @@ internal object RotulosDoNovoLancamento {
         }
     }
 
-    fun parcelamento(estado: NovoLancamentoUiState): String = when {
-        estado.totalParcelas <= 1 -> "À vista (1x)"
-        estado.modoParcelamento == ModoParcelamento.VALOR_PARCELA -> "${estado.totalParcelas}x (valor de cada parcela)"
-        else -> "${estado.totalParcelas}x (valor total)"
-    }
+    fun parcelamento(estado: NovoLancamentoUiState): String = formatarParcelamentoCampo(estado.totalParcelas, estado.modoParcelamento)
 
     fun mensagemDasParcelas(estado: NovoLancamentoUiState): String? = when {
         CampoDeLancamentoManual.PARCELAS in estado.erros ->
@@ -57,10 +53,18 @@ internal object RotulosDoNovoLancamento {
         else -> null
     }
 
-    fun resumoParcelas(estado: NovoLancamentoUiState): String? {
-        val parcela = estado.valorParcelaPreviewCentavos ?: return null
-        val total = estado.valorTotalPreviewCentavos ?: return null
-        return "${estado.totalParcelas} parcelas de ${Valores.formatar(parcela)} · Total ${Valores.formatar(total)}"
+    fun resumoParcelas(estado: NovoLancamentoUiState): String? =
+        formatarResumoParcelas(estado.totalParcelas, estado.valorParcelaPreviewCentavos, estado.valorTotalPreviewCentavos)
+
+    fun formatarParcelamentoCampo(totalParcelas: Int, modoParcelamento: ModoParcelamento): String = when {
+        totalParcelas <= 1 -> "À vista (1x)"
+        modoParcelamento == ModoParcelamento.VALOR_PARCELA -> "${totalParcelas}x (valor de cada parcela)"
+        else -> "${totalParcelas}x (valor total)"
+    }
+
+    fun formatarResumoParcelas(totalParcelas: Int, parcelaCentavos: Long?, totalCentavos: Long?): String? {
+        if (parcelaCentavos == null || totalCentavos == null) return null
+        return "$totalParcelas parcelas de ${Valores.formatar(parcelaCentavos)} · Total ${Valores.formatar(totalCentavos)}"
     }
 
     fun origemIgualAoDestino(estado: NovoLancamentoUiState): Boolean =

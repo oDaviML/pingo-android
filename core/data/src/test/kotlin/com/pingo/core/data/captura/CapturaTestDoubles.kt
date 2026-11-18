@@ -219,6 +219,10 @@ internal class FakeLancamentos(private val instrumentos: FakeInstrumentos) : Lan
         }
     }
 
+    override suspend fun listarParcelasDaCompra(raizPublicId: String): List<Lancamento> = lancamentos
+        .filter { it.excluidoEm == null && (it.publicId == raizPublicId || it.compraPaiPublicId == raizPublicId) }
+        .sortedBy { it.parcelaNumero }
+
     private fun contaDo(lancamento: Lancamento): String? =
         instrumentos.todos().firstOrNull { it.publicId == lancamento.instrumentoPublicId }?.contaPublicId
 }

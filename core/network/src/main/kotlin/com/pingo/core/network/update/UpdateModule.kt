@@ -17,6 +17,10 @@ abstract class UpdateModule {
     @Singleton
     abstract fun bindVerificadorDeAtualizacaoApk(implementation: ServicoDeAtualizacaoGitHub): VerificadorDeAtualizacaoApk
 
+    @Binds
+    @Singleton
+    abstract fun bindControladorDeAtualizacaoApp(implementation: GerenciadorDeAtualizacaoApp): ControladorDeAtualizacaoApp
+
     companion object {
         @Provides
         @Singleton

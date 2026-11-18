@@ -1,6 +1,7 @@
 package com.pingo.core.data.detalhe
 
 import com.pingo.core.data.CategoriaRepository
+import com.pingo.core.data.ConfiguracaoCartaoRepository
 import com.pingo.core.data.InstrumentoRepository
 import com.pingo.core.data.LancamentoRepository
 import com.pingo.core.data.TransacaoLocal
@@ -19,21 +20,48 @@ import com.pingo.core.model.TipoLancamento
 import com.pingo.core.model.assinatura.NormalizadorDeAssinatura
 import com.pingo.core.model.direcaoDaTransferencia
 import com.pingo.core.model.direcaoOposta
+import com.pingo.core.model.fatura.GeradorDeParcelas
+import com.pingo.core.model.fatura.ModoParcelamento
+import com.pingo.core.model.fatura.ParcelaPlanejada
+import com.pingo.core.model.fatura.VigenciaDeCartao
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import java.time.Clock
 import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 
+@Suppress("LongParameterList", "TooManyFunctions")
 class EditarLancamento @Inject constructor(
     private val lancamentoRepository: LancamentoRepository,
     private val instrumentoRepository: InstrumentoRepository,
     private val categoriaRepository: CategoriaRepository,
     private val categoriaAprendida: CategoriaAprendida,
     private val confirmadorDeAssinatura: ConfirmadorDeAssinatura,
+    private val configuracaoCartaoRepository: ConfiguracaoCartaoRepository,
     private val transacaoLocal: TransacaoLocal,
     private val clock: Clock,
 ) {
+    constructor(
+        lancamentoRepository: LancamentoRepository,
+        instrumentoRepository: InstrumentoRepository,
+        categoriaRepository: CategoriaRepository,
+        categoriaAprendida: CategoriaAprendida,
+        confirmadorDeAssinatura: ConfirmadorDeAssinatura,
+        transacaoLocal: TransacaoLocal,
+        clock: Clock,
+    ) : this(
+        lancamentoRepository = lancamentoRepository,
+        instrumentoRepository = instrumentoRepository,
+        categoriaRepository = categoriaRepository,
+        categoriaAprendida = categoriaAprendida,
+        confirmadorDeAssinatura = confirmadorDeAssinatura,
+        configuracaoCartaoRepository = SemConfiguracaoCartaoNaEdicao,
+        transacaoLocal = transacaoLocal,
+        clock = clock,
+    )
+
     constructor(
         lancamentoRepository: LancamentoRepository,
         instrumentoRepository: InstrumentoRepository,
@@ -47,6 +75,7 @@ class EditarLancamento @Inject constructor(
         categoriaRepository = categoriaRepository,
         categoriaAprendida = categoriaAprendida,
         confirmadorDeAssinatura = ConfirmadorDeAssinatura.NoOp,
+        configuracaoCartaoRepository = SemConfiguracaoCartaoNaEdicao,
         transacaoLocal = transacaoLocal,
         clock = clock,
     )
@@ -79,6 +108,7 @@ class EditarLancamento @Inject constructor(
         return when {
             invalidos.isNotEmpty() -> ResultadoDaEdicao.Invalido(invalidos)
             edicao.tipo == TipoLancamento.TRANSFERENCIA -> editarTransferencia(original, edicao, instrumento, destino)
+            edicao.totalParcelas > 1 -> aplicarEdicaoParcelada(original, edicao, requireNotNull(instrumento), categoria)
             else -> aplicarEdicao(original, edicao, instrumento, categoria)
         }
     }
@@ -154,6 +184,28 @@ class EditarLancamento @Inject constructor(
         if (edicao.aplicarCategoriaATodos && dados.categoria == null) {
             add(CampoDoDetalhe.CATEGORIA)
         }
+        validarParcelamentoNaEdicao(dados)
+    }
+
+    private fun MutableSet<CampoDoDetalhe>.validarParcelamentoNaEdicao(dados: ValidacaoDaEdicao) {
+        val edicao = dados.edicao
+        if (edicao.totalParcelas !in GeradorDeParcelas.MIN_PARCELAS..GeradorDeParcelas.MAX_PARCELAS) {
+            add(CampoDoDetalhe.PARCELAS)
+            return
+        }
+        if (edicao.totalParcelas <= 1) {
+            return
+        }
+        val originalElegivel = dados.original.totalParcelas == 1 && dados.original.compraPaiPublicId == null
+        val instrumentoCredito = dados.instrumento?.tipo == TipoInstrumento.CREDITO
+        if (!originalElegivel || edicao.tipo != TipoLancamento.DESPESA || !instrumentoCredito) {
+            add(CampoDoDetalhe.PARCELAS)
+        } else if (
+            edicao.modoParcelamento == ModoParcelamento.VALOR_TOTAL &&
+            edicao.valorCentavos in 1 until edicao.totalParcelas
+        ) {
+            add(CampoDoDetalhe.VALOR)
+        }
     }
 
     private data class ValidacaoDaEdicao(
@@ -184,13 +236,65 @@ class EditarLancamento @Inject constructor(
     ): ResultadoDaEdicao {
         val agora = clock.instant()
         val estabelecimento = edicao.estabelecimento?.trim()?.takeIf { it.isNotEmpty() }
+        val baseAtualizada = construirBaseAtualizada(original, edicao, instrumento, categoria, agora)
+        val lancamento = confirmadorDeAssinatura.aoEditarLancamento(original, baseAtualizada, categoria)
+
+        lancamentoRepository.salvar(lancamento)
+        aprender(edicao, estabelecimento, categoria, agora)
+
+        return ResultadoDaEdicao.Salvo(lancamento)
+    }
+
+    private suspend fun aplicarEdicaoParcelada(
+        original: Lancamento,
+        edicao: EdicaoDoLancamento,
+        instrumento: Instrumento,
+        categoria: Categoria?,
+    ): ResultadoDaEdicao {
+        val agora = clock.instant()
+        val estabelecimento = edicao.estabelecimento?.trim()?.takeIf { it.isNotEmpty() }
+        val vigencias = configuracaoCartaoRepository.listarPorInstrumento(instrumento.publicId)
+        val parcelas = GeradorDeParcelas.planejar(
+            valorBaseCentavos = edicao.valorCentavos,
+            totalParcelas = edicao.totalParcelas,
+            modo = edicao.modoParcelamento,
+            dataHoraInicial = edicao.dataHora,
+            instrumento = instrumento,
+            vigencias = vigencias,
+        )
+        val primeiraPlanejada = parcelas.first()
+        val edicaoPrimeira = edicao.copy(valorCentavos = primeiraPlanejada.valorCentavos, dataHora = primeiraPlanejada.dataHora)
+        val primeiraBase = construirBaseAtualizada(original, edicaoPrimeira, instrumento, categoria, agora).copy(
+            tipo = TipoLancamento.DESPESA,
+            compraPaiPublicId = null,
+            parcelaNumero = primeiraPlanejada.numero,
+            totalParcelas = primeiraPlanejada.totalParcelas,
+            valorTotalCompraCentavos = primeiraPlanejada.valorTotalCompraCentavos,
+        )
+        val primeiraSalva = confirmadorDeAssinatura.aoEditarLancamento(original, primeiraBase, categoria)
+        val restantes = parcelas.drop(1).map { parcela -> montarParcelaFilha(original, primeiraSalva, parcela, agora) }
+
+        lancamentoRepository.salvarTodos(listOf(primeiraSalva) + restantes)
+        aprender(edicao, estabelecimento, categoria, agora)
+
+        return ResultadoDaEdicao.Salvo(primeiraSalva)
+    }
+
+    private fun construirBaseAtualizada(
+        original: Lancamento,
+        edicao: EdicaoDoLancamento,
+        instrumento: Instrumento?,
+        categoria: Categoria?,
+        agora: Instant,
+    ): Lancamento {
+        val estabelecimento = edicao.estabelecimento?.trim()?.takeIf { it.isNotEmpty() }
         val motivo = motivoReavaliado(original, instrumento, categoria, estabelecimento)
-        val beneficioAtualizado = if (instrumento?.tipo == TipoInstrumento.VOUCHER && original.beneficio == null) {
+        val beneficio = if (instrumento?.tipo == TipoInstrumento.VOUCHER && original.beneficio == null) {
             instrumento.beneficio
         } else {
             original.beneficio
         }
-        val baseAtualizada = original.copy(
+        return original.copy(
             tipo = edicao.tipo,
             valorCentavos = edicao.valorCentavos,
             instrumentoPublicId = instrumento?.publicId,
@@ -204,15 +308,31 @@ class EditarLancamento @Inject constructor(
             tipoSemTransferencia = null,
             atualizadoEm = agora,
             estabelecimentoNormalizado = NormalizadorDeAssinatura.normalizar(estabelecimento)?.take(LIMITE_NORMALIZADO),
-            beneficio = beneficioAtualizado,
+            beneficio = beneficio,
         )
-        val lancamento = confirmadorDeAssinatura.aoEditarLancamento(original, baseAtualizada, categoria)
-
-        lancamentoRepository.salvar(lancamento)
-        aprender(edicao, estabelecimento, categoria, agora)
-
-        return ResultadoDaEdicao.Salvo(lancamento)
     }
+
+    private fun montarParcelaFilha(original: Lancamento, primeira: Lancamento, parcela: ParcelaPlanejada, agora: Instant): Lancamento =
+        Lancamento(
+            publicId = UUID.randomUUID().toString(),
+            instrumentoPublicId = primeira.instrumentoPublicId,
+            categoriaPublicId = primeira.categoriaPublicId,
+            compraPaiPublicId = original.publicId,
+            valorCentavos = parcela.valorCentavos,
+            dataHora = parcela.dataHora,
+            tipo = TipoLancamento.DESPESA,
+            estabelecimento = primeira.estabelecimento,
+            status = StatusLancamento.CONFIRMADO,
+            origem = OrigemLancamento.MANUAL,
+            instituicaoOrigem = original.instituicaoOrigem,
+            confianca = 1.0,
+            parcelaNumero = parcela.numero,
+            totalParcelas = parcela.totalParcelas,
+            valorTotalCompraCentavos = null,
+            criadoEm = agora,
+            atualizadoEm = agora,
+            estabelecimentoNormalizado = primeira.estabelecimentoNormalizado,
+        )
 
     private suspend fun editarTransferencia(
         original: Lancamento,
@@ -329,4 +449,12 @@ class EditarLancamento @Inject constructor(
     private companion object {
         const val LIMITE_NORMALIZADO = 200
     }
+}
+
+private object SemConfiguracaoCartaoNaEdicao : ConfiguracaoCartaoRepository {
+    override fun observePorInstrumento(instrumentoPublicId: String): Flow<List<VigenciaDeCartao>> = emptyFlow()
+
+    override suspend fun listarPorInstrumento(instrumentoPublicId: String): List<VigenciaDeCartao> = emptyList()
+
+    override suspend fun listarAtivas(): List<VigenciaDeCartao> = emptyList()
 }

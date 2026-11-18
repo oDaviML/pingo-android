@@ -1,11 +1,15 @@
 package com.pingo.core.designsystem
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.pingo.core.designsystem.component.CategoryAvatar
 import com.pingo.core.designsystem.component.InstitutionAvatar
@@ -23,6 +27,8 @@ import com.pingo.core.designsystem.component.PingoSkeletonList
 import com.pingo.core.designsystem.component.PingoStatusTag
 import com.pingo.core.designsystem.component.PingoText
 import com.pingo.core.designsystem.component.SectionHeader
+import com.pingo.core.designsystem.component.chart.PingoDonutChart
+import com.pingo.core.designsystem.component.chart.PingoDonutSlice
 import com.pingo.core.designsystem.icon.PingoIcons
 import com.pingo.core.designsystem.theme.PingoTheme
 import org.junit.Assert.assertTrue
@@ -38,6 +44,7 @@ class PingoComponentsTest {
     @Test
     fun topBarVariantsAndSectionHeaderTriggerActions() {
         var notifications = false
+        var update = false
         var settings = false
         var saved = false
         var closed = false
@@ -50,6 +57,8 @@ class PingoComponentsTest {
                         greeting = "Boa tarde,",
                         name = "Lucas",
                         hasUnreadNotifications = true,
+                        hasUpdateAvailable = true,
+                        onUpdateClick = { update = true },
                         onNotificationsClick = { notifications = true },
                         onSettingsClick = { settings = true },
                     )
@@ -73,12 +82,14 @@ class PingoComponentsTest {
         composeRule.onNodeWithText("Lucas").assertIsDisplayed()
         composeRule.onNodeWithText("Lançamentos").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Notificações").performClick()
+        composeRule.onNodeWithContentDescription("Atualização disponível").performClick()
         composeRule.onNodeWithContentDescription("Configurações").performClick()
         composeRule.onNodeWithContentDescription("Fechar").performClick()
         composeRule.onNodeWithText("Salvar").performClick()
         composeRule.onNodeWithText("Ver tudo").performClick()
 
         assertTrue(notifications)
+        assertTrue(update)
         assertTrue(settings)
         assertTrue(closed)
         assertTrue(saved)
@@ -140,5 +151,36 @@ class PingoComponentsTest {
         composeRule.onNodeWithText("Trocar categoria").assertIsDisplayed()
         composeRule.onNodeWithText("Padaria do Zé").assertIsDisplayed()
         composeRule.onNodeWithText("Opções").assertIsDisplayed()
+    }
+
+    @Test
+    fun donutChartStacksCenteredRingAboveFullWidthLegendAndSelectsSlice() {
+        var selected: String? = null
+        val slices = listOf(
+            PingoDonutSlice(id = "cat-contas", label = "Contas da casa", amount = 1084.58, percentage = 30),
+            PingoDonutSlice(id = "cat-alim", label = "Alimentação", amount = 562.77, percentage = 15),
+        )
+
+        composeRule.setContent {
+            PingoTheme {
+                Box(modifier = Modifier.width(320.dp)) {
+                    PingoDonutChart(
+                        slices = slices,
+                        totalFormatted = "R$ 3.653,69",
+                        selectedSliceId = selected,
+                        onSelectCategory = { selected = it },
+                    )
+                }
+            }
+        }
+
+        val totalBounds = composeRule.onNodeWithText("R$ 3.653,69").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        val legendBounds = composeRule.onNodeWithText("Contas da casa").assertIsDisplayed().fetchSemanticsNode().boundsInRoot
+        composeRule.onNodeWithText("Alimentação").assertIsDisplayed().performClick()
+        composeRule.onNodeWithText("30%").assertIsDisplayed()
+        composeRule.onNodeWithText("15%").assertIsDisplayed()
+
+        assertTrue(legendBounds.top > totalBounds.bottom)
+        assertTrue(selected == "cat-alim")
     }
 }

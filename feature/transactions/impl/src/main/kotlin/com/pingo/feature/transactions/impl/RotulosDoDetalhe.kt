@@ -17,6 +17,37 @@ internal object RotulosDoDetalhe {
 
     fun valorDoLancamento(transferencia: Boolean): String = if (transferencia) "Valor transferido" else "Valor do lançamento"
 
+    fun legendaDoValor(state: DetalheDoLancamentoUiState): String {
+        val erro = CampoDoDetalhe.VALOR in state.erros
+        val parcelaPreview = state.valorParcelaPreviewCentavos
+        val totalPreview = state.valorTotalPreviewCentavos
+
+        return when {
+            erro && state.parcelamentoConfigurado && state.valorCentavos > 0L ->
+                "Valor insuficiente para ${state.totalParcelas} parcelas"
+            erro -> "O valor precisa ser maior que zero"
+            parcelaPreview != null && totalPreview != null ->
+                "${state.totalParcelas}x de ${Valores.formatar(parcelaPreview)} · Total ${Valores.formatar(totalPreview)}"
+            else -> valorDoLancamento(state.ehTransferencia)
+        }
+    }
+
+    fun parcelamento(state: DetalheDoLancamentoUiState): String =
+        RotulosDoNovoLancamento.formatarParcelamentoCampo(state.totalParcelas, state.modoParcelamento)
+
+    fun resumoParcelas(state: DetalheDoLancamentoUiState): String? = RotulosDoNovoLancamento.formatarResumoParcelas(
+        totalParcelas = state.totalParcelas,
+        parcelaCentavos = state.valorParcelaPreviewCentavos,
+        totalCentavos = state.valorTotalPreviewCentavos,
+    )
+
+    fun mensagemDasParcelas(state: DetalheDoLancamentoUiState): String? = when {
+        CampoDoDetalhe.PARCELAS in state.erros ->
+            "Parcelamento disponível apenas em despesa no crédito"
+        state.parcelamentoConfigurado && state.valorCentavos > 0L -> resumoParcelas(state)
+        else -> null
+    }
+
     fun legendaDoValor(erro: Boolean, transferencia: Boolean): String =
         if (erro) "O valor precisa ser maior que zero" else valorDoLancamento(transferencia)
 
@@ -30,6 +61,7 @@ internal object RotulosDoDetalhe {
         CampoDoDetalhe.INSTRUMENTO -> mensagemDoInstrumento(state)
         CampoDoDetalhe.DESTINO -> "Escolha uma conta de destino diferente da origem"
         CampoDoDetalhe.CATEGORIA -> "Escolha uma categoria para este lançamento"
+        CampoDoDetalhe.PARCELAS -> "Parcelamento disponível apenas em despesa no crédito"
     }
 
     private fun mensagemDoInstrumento(state: DetalheDoLancamentoUiState): String = when {

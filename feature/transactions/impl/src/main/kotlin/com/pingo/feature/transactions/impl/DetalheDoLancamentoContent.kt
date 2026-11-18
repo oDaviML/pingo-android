@@ -224,7 +224,7 @@ private fun BlocoDeValor(state: DetalheDoLancamentoUiState, onEvent: (DetalheDoL
             )
         }
         PingoText(
-            text = RotulosDoDetalhe.legendaDoValor(erro = erro, transferencia = state.ehTransferencia),
+            text = RotulosDoDetalhe.legendaDoValor(state),
             style = PingoTheme.typography.caption,
             color = corLegenda,
             textAlign = TextAlign.Center,
@@ -247,6 +247,9 @@ private fun CamposDoLancamento(state: DetalheDoLancamentoUiState, onEvent: (Deta
         ),
         onClick = { onEvent(DetalheDoLancamentoEvent.AbrirPainel(PainelDoDetalhe.INSTRUMENTO)) },
     )
+    if (state.podeParcelar) {
+        CampoParcelamentoDoDetalhe(state = state, onEvent = onEvent)
+    }
     CampoDeSelecao(
         campo = CampoSelecionavel(
             rotulo = "Categoria",
@@ -268,6 +271,22 @@ private fun CamposDoLancamento(state: DetalheDoLancamentoUiState, onEvent: (Deta
             modifier = Modifier.testTag("aplicar-a-todos-detalhe"),
         )
     }
+}
+
+@Composable
+private fun CampoParcelamentoDoDetalhe(state: DetalheDoLancamentoUiState, onEvent: (DetalheDoLancamentoEvent) -> Unit) {
+    CampoDeSelecao(
+        campo = CampoSelecionavel(
+            rotulo = "Parcelamento",
+            texto = RotulosDoDetalhe.parcelamento(state),
+            preenchido = state.totalParcelas > 1,
+            icone = PingoIcons.Repeat,
+            testTag = "campo-parcelas-detalhe",
+            erro = CampoDoDetalhe.PARCELAS in state.erros,
+            mensagem = RotulosDoDetalhe.mensagemDasParcelas(state),
+        ),
+        onClick = { onEvent(DetalheDoLancamentoEvent.AbrirPainel(PainelDoDetalhe.PARCELAS)) },
+    )
 }
 
 @Composable

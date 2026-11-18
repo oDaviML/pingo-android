@@ -14,6 +14,7 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,6 +41,10 @@ import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
 import com.pingo.core.model.TemaDoApp
+import com.pingo.core.network.update.FormatadorDeChangelog
+import com.pingo.core.ui.ChangelogAtualizacaoBloco
+import com.pingo.core.ui.ItemChangelogUi
+import com.pingo.core.ui.SecaoChangelogUi
 
 @Composable
 internal fun AparenciaCartao(aparencia: SettingsAparenciaUi) {
@@ -266,10 +271,18 @@ private fun StatusAtualizacaoCard(titulo: String, descricao: String) {
 @Composable
 private fun AtualizacaoDisponivelCard(estado: EstadoAtualizacaoAppUi.Disponivel, sobre: SettingsSobreUi) {
     val info = estado.info
+    val changelog = remember(info.notas) {
+        FormatadorDeChangelog.formatar(info.notas).secoes.map { secao ->
+            SecaoChangelogUi(
+                titulo = secao.titulo,
+                itens = secao.itens.map { item -> ItemChangelogUi(item.destaque, item.descricao) },
+            )
+        }
+    }
     PingoCard(modifier = Modifier.fillMaxWidth()) {
         PingoText(text = "Nova versão disponível: v${info.versao}", style = PingoTheme.typography.bodyStrong)
-        if (info.notas.isNotBlank()) {
-            PingoText(text = info.notas, style = PingoTheme.typography.bodySmall, color = PingoTheme.colors.onSurfaceVariant)
+        if (changelog.isNotEmpty()) {
+            ChangelogAtualizacaoBloco(secoes = changelog)
         }
         PingoButton(
             text = "Baixar atualização",

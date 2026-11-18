@@ -2,6 +2,7 @@ package com.pingo.core.data.detalhe
 
 import com.pingo.core.model.Lancamento
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.fatura.ModoParcelamento
 import java.time.Instant
 
 enum class CampoDoDetalhe {
@@ -9,6 +10,7 @@ enum class CampoDoDetalhe {
     INSTRUMENTO,
     DESTINO,
     CATEGORIA,
+    PARCELAS,
 }
 
 data class EdicaoDoLancamento(
@@ -21,6 +23,8 @@ data class EdicaoDoLancamento(
     val dataHora: Instant,
     val estabelecimento: String? = null,
     val aplicarCategoriaATodos: Boolean = false,
+    val totalParcelas: Int = 1,
+    val modoParcelamento: ModoParcelamento = ModoParcelamento.VALOR_TOTAL,
 )
 
 sealed interface ResultadoDaEdicao {

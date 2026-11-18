@@ -1,7 +1,10 @@
 package com.pingo.feature.home.impl
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -42,6 +46,7 @@ fun HomeScreen(
     mostrarBarraInferior: Boolean = true,
     onAbrirFaturas: (String) -> Unit = { onSelecionarAba(AbaInferior.CONTAS) },
 ) {
+    val context = LocalContext.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -59,6 +64,15 @@ fun HomeScreen(
         onSelecionarAba = onSelecionarAba,
         mostrarBarraInferior = mostrarBarraInferior,
         onAbrirFaturas = onAbrirFaturas,
+        acoesAtualizacao = AcoesAtualizacaoHome(
+            onAbrir = viewModel::abrirAtualizacao,
+            onFechar = viewModel::fecharAtualizacao,
+            onVerificar = viewModel::verificarAtualizacao,
+            onBaixar = viewModel::baixarAtualizacao,
+            onInstalar = { arquivo -> runCatching { context.startActivity(viewModel.intentInstalacaoApk(arquivo)) } },
+            onPermitirFontes = { runCatching { context.startActivity(viewModel.intentPermissaoFontesDesconhecidas()) } },
+            onAbrirRelease = { url -> runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } },
+        ),
     )
 }
 
@@ -76,36 +90,43 @@ fun HomeContent(
     zona: ZoneId = ZoneId.systemDefault(),
     mostrarBarraInferior: Boolean = true,
     onAbrirFaturas: (String) -> Unit = { onSelecionarAba(AbaInferior.CONTAS) },
+    acoesAtualizacao: AcoesAtualizacaoHome = AcoesAtualizacaoHome(),
 ) {
     val animarTopoId = rememberNovoCapturadoNoTopo(state = state)
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(PingoTheme.colors.background),
     ) {
-        CorpoDaInicio(
-            state = state,
-            onOpenSettings = onOpenSettings,
-            onOpenCaptura = onOpenCaptura,
-            onOpenRevisao = onOpenRevisao,
-            onOpenNovo = onOpenNovo,
-            onMesAnterior = onMesAnterior,
-            onMesProximo = onMesProximo,
-            onSelecionarAba = onSelecionarAba,
-            onAbrirFaturas = onAbrirFaturas,
-            zona = zona,
-            animarTopoId = animarTopoId.value,
-            onAnimacaoConcluida = { animarTopoId.value = null },
-            modifier = Modifier.weight(1f),
-        )
-
-        if (mostrarBarraInferior) {
-            PingoBottomBar(
-                selecionada = AbaInferior.INICIO,
-                onSelecionar = onSelecionarAba,
-                onNovo = onOpenNovo,
+        Column(modifier = Modifier.fillMaxSize()) {
+            CorpoDaInicio(
+                state = state,
+                onOpenSettings = onOpenSettings,
+                onOpenCaptura = onOpenCaptura,
+                onOpenRevisao = onOpenRevisao,
+                onOpenNovo = onOpenNovo,
+                onMesAnterior = onMesAnterior,
+                onMesProximo = onMesProximo,
+                onSelecionarAba = onSelecionarAba,
+                onAbrirFaturas = onAbrirFaturas,
+                onOpenAtualizacao = acoesAtualizacao.onAbrir,
+                zona = zona,
+                animarTopoId = animarTopoId.value,
+                onAnimacaoConcluida = { animarTopoId.value = null },
+                modifier = Modifier.weight(1f),
             )
+
+            if (mostrarBarraInferior) {
+                PingoBottomBar(
+                    selecionada = AbaInferior.INICIO,
+                    onSelecionar = onSelecionarAba,
+                    onNovo = onOpenNovo,
+                )
+            }
+        }
+        if (state.mostrarSheetAtualizacao) {
+            AtualizacaoDoInicioSheet(state = state, acoes = acoesAtualizacao)
         }
     }
 }
@@ -149,6 +170,7 @@ private fun CorpoDaInicio(
     onMesProximo: () -> Unit,
     onSelecionarAba: (AbaInferior) -> Unit,
     onAbrirFaturas: (String) -> Unit,
+    onOpenAtualizacao: () -> Unit,
     zona: ZoneId,
     animarTopoId: String?,
     onAnimacaoConcluida: () -> Unit,
@@ -167,6 +189,8 @@ private fun CorpoDaInicio(
             },
             onSettingsClick = onOpenSettings,
             hasUnreadNotifications = state.pendentes > 0 || state.capturaParada,
+            hasUpdateAvailable = state.temAtualizacaoDisponivel,
+            onUpdateClick = onOpenAtualizacao,
         )
 
         SecoesDaInicio(

@@ -8,8 +8,10 @@ android {
 
 dependencies {
     implementation(project(":feature:home:api"))
+    implementation(project(":core:common"))
     implementation(project(":core:data"))
     implementation(project(":core:datastore"))
+    implementation(project(":core:network"))
     implementation(project(":core:notifications"))
     testImplementation(project(":core:testing"))
     testImplementation(libs.junit)

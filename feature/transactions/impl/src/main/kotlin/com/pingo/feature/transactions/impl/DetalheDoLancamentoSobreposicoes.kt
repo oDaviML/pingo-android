@@ -45,29 +45,23 @@ internal fun SobreposicoesDoDetalhe(state: DetalheDoLancamentoUiState, onEvent: 
 @Composable
 internal fun PainelAtualDoDetalhe(state: DetalheDoLancamentoUiState, onEvent: (DetalheDoLancamentoEvent) -> Unit) {
     val painel = state.painel ?: return
-    val selecionado = when (painel) {
-        PainelDoDetalhe.INSTRUMENTO -> state.instrumento?.publicId
-        PainelDoDetalhe.DESTINO -> state.destino?.publicId
-        PainelDoDetalhe.MARCAR_TRANSFERENCIA, PainelDoDetalhe.CATEGORIA -> null
+    if (painel == PainelDoDetalhe.PARCELAS) {
+        PainelDeParcelasSheet(
+            totalParcelas = state.totalParcelas,
+            modoParcelamento = state.modoParcelamento,
+            resumo = RotulosDoDetalhe.resumoParcelas(state),
+            onSelecionarParcelas = { total -> onEvent(DetalheDoLancamentoEvent.SelecionarParcelas(total)) },
+            onSelecionarModo = { modo -> onEvent(DetalheDoLancamentoEvent.SelecionarModoParcelamento(modo)) },
+            onFechar = { onEvent(DetalheDoLancamentoEvent.FecharPainel) },
+        )
+        return
     }
-    val titulo = when (painel) {
-        PainelDoDetalhe.INSTRUMENTO -> if (state.ehTransferencia) "Conta de origem" else "Instrumento"
-        PainelDoDetalhe.DESTINO -> "Conta de destino"
-        PainelDoDetalhe.MARCAR_TRANSFERENCIA -> "Escolha a conta de destino"
-        PainelDoDetalhe.CATEGORIA -> "Categoria"
-    }
-    val prefixo = when (painel) {
-        PainelDoDetalhe.INSTRUMENTO -> "instrumento-detalhe"
-        PainelDoDetalhe.DESTINO -> "destino-detalhe"
-        PainelDoDetalhe.MARCAR_TRANSFERENCIA -> "destino-marcacao"
-        PainelDoDetalhe.CATEGORIA -> "categoria-detalhe"
-    }
-
+    val config = configuracaoDoPainel(state, painel)
     PainelDeSelecao(
-        titulo = titulo,
+        titulo = config.titulo,
         opcoes = opcoesDoPainel(state, painel),
-        selecionado = selecionado,
-        prefixo = prefixo,
+        selecionado = config.selecionado,
+        prefixo = config.prefixo,
         testTag = "painel-detalhe",
         onSelecionar = { publicId -> onEvent(eventoDeSelecao(painel, publicId)) },
         onFechar = { onEvent(DetalheDoLancamentoEvent.FecharPainel) },
