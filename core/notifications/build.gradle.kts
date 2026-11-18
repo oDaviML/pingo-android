@@ -10,6 +10,7 @@ android {
 dependencies {
     api(project(":core:model"))
     api(project(":core:data"))
+    implementation(project(":core:analytics"))
     implementation(project(":core:common"))
     implementation(project(":core:datastore"))
     implementation(project(":core:network"))
@@ -17,6 +18,7 @@ dependencies {
     implementation(project(":core:ui"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.guava)
     implementation(libs.hilt.androidx.work)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)

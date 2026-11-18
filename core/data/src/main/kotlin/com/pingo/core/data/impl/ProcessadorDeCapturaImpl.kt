@@ -1,5 +1,7 @@
 package com.pingo.core.data.impl
 
+import com.pingo.core.analytics.ResultadoTelemetriaCaptura
+import com.pingo.core.analytics.TelemetriaDeCaptura
 import com.pingo.core.common.AppDispatchers
 import com.pingo.core.data.CategoriaRepository
 import com.pingo.core.data.InstrumentoRepository
@@ -117,30 +119,65 @@ class ProcessadorDeCapturaImpl @Inject constructor(
         }
         val instrumentoResolvido = resolucaoCaju?.instrumento ?: resolucaoPadrao?.instrumento
         val motivoInstrumento = if (resolucaoCaju != null) resolucaoCaju.motivo else resolucaoPadrao?.motivo
-        val categoria = resolverCategoria(transacao, depositoCaju)
-        val candidatos = instrumentoResolvido?.let { candidatosDeTransferencia(captura, it, dataHora) }.orEmpty()
-        val motivo = motivoDe(transacao, motivoInstrumento, categoria, depositoCaju)
-            ?: if (candidatos.size > 1) MotivoPendencia.TRANSFERENCIA_AMBIGUA else null
         val agora = clock.instant()
-        val lancamento = lancamentoDe(
-            DadosDoLancamento(
-                captura = captura,
-                instrumento = instrumentoResolvido,
-                resolucaoCaju = resolucaoCaju,
-                depositoCaju = depositoCaju,
-                categoria = categoria,
-                dataHora = dataHora,
-                motivo = motivo,
-                hash = hash,
-                par = candidatos.singleOrNull(),
-                agora = agora,
-            ),
+        val candidatos = instrumentoResolvido?.let { candidatosDeTransferencia(captura, it, dataHora) }.orEmpty()
+        val lancamento = criarLancamento(
+            captura,
+            resolucaoCaju,
+            depositoCaju,
+            instrumentoResolvido,
+            motivoInstrumento,
+            candidatos,
+            dataHora,
+            hash,
+            agora,
         )
         salvar(lancamento, candidatos.singleOrNull())
         if (resolucaoCaju != null) {
             reconciliadorVoucher.confirmarEfeitoAposGravar(lancamento, resolucaoCaju, agora)
         }
+        registrarTelemetria(captura.instituicao, lancamento.status)
         return ResultadoProcessamento.Gravado(lancamento)
+    }
+
+    @Suppress("LongParameterList")
+    private suspend fun criarLancamento(
+        captura: CapturaParaProcessar,
+        resolucaoCaju: ResolucaoCapturaCaju?,
+        depositoCaju: Boolean,
+        instrumentoResolvido: Instrumento?,
+        motivoInstrumento: MotivoPendencia?,
+        candidatos: List<Lancamento>,
+        dataHora: Instant,
+        hash: String,
+        agora: Instant,
+    ): Lancamento {
+        val categoria = resolverCategoria(captura.transacao, depositoCaju)
+        val motivo = motivoDe(captura.transacao, motivoInstrumento, categoria, depositoCaju)
+            ?: if (candidatos.size > 1) MotivoPendencia.TRANSFERENCIA_AMBIGUA else null
+        return lancamentoDe(
+            DadosDoLancamento(
+                captura,
+                instrumentoResolvido,
+                resolucaoCaju,
+                depositoCaju,
+                categoria,
+                dataHora,
+                motivo,
+                hash,
+                candidatos.singleOrNull(),
+                agora,
+            ),
+        )
+    }
+
+    private fun registrarTelemetria(instituicao: InstituicaoFinanceira, status: StatusLancamento) {
+        val resultado = if (status == StatusLancamento.CONFIRMADO) {
+            ResultadoTelemetriaCaptura.RECONHECIDA
+        } else {
+            ResultadoTelemetriaCaptura.REVISAO
+        }
+        TelemetriaDeCaptura.registrarCaptura(contexto.analytics, instituicao.name, resultado)
     }
 
     private suspend fun resolverSeCaju(captura: CapturaParaProcessar, depositoCaju: Boolean, dataHora: Instant): ResolucaoCapturaCaju? {

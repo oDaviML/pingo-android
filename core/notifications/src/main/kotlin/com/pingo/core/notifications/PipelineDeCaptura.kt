@@ -1,5 +1,8 @@
 package com.pingo.core.notifications
 
+import com.pingo.core.analytics.AnalyticsFacade
+import com.pingo.core.analytics.ResultadoTelemetriaCaptura
+import com.pingo.core.analytics.TelemetriaDeCaptura
 import com.pingo.core.common.AppDispatchers
 import com.pingo.core.data.captura.CapturaParaProcessar
 import com.pingo.core.data.captura.ProcessadorDeCaptura
@@ -22,15 +25,35 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
+@Suppress("LongParameterList")
 class PipelineDeCaptura @Inject constructor(
     private val instituicaoResolver: InstituicaoResolver,
     private val parserEngine: ParserEngine,
     private val regrasParaCaptura: RegrasParaCaptura,
     private val capturaDataSource: CapturaDataSource,
     private val processadorDeCaptura: ProcessadorDeCaptura,
+    private val analytics: AnalyticsFacade,
     private val clock: Clock,
     private val dispatchers: AppDispatchers,
 ) {
+    constructor(
+        instituicaoResolver: InstituicaoResolver,
+        parserEngine: ParserEngine,
+        regrasParaCaptura: RegrasParaCaptura,
+        capturaDataSource: CapturaDataSource,
+        processadorDeCaptura: ProcessadorDeCaptura,
+        clock: Clock,
+        dispatchers: AppDispatchers,
+    ) : this(
+        instituicaoResolver = instituicaoResolver,
+        parserEngine = parserEngine,
+        regrasParaCaptura = regrasParaCaptura,
+        capturaDataSource = capturaDataSource,
+        processadorDeCaptura = processadorDeCaptura,
+        analytics = AnalyticsSemOpcao,
+        clock = clock,
+        dispatchers = dispatchers,
+    )
     private val transacoesRecentes =
         MutableSharedFlow<TransacaoCapturada>(extraBufferCapacity = 16, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
@@ -113,6 +136,20 @@ class PipelineDeCaptura @Inject constructor(
     ): ResultadoCaptura {
         capturaDataSource.registrarLeitura(instituicao, clock.instant())
         capturaDataSource.incrementarContador(mesDaCaptura(notificacao), contador)
+        val telemetria = if (contador == ContadorCaptura.IGNORADAS) {
+            ResultadoTelemetriaCaptura.IGNORADA
+        } else {
+            ResultadoTelemetriaCaptura.NAO_ENTENDIDA
+        }
+        TelemetriaDeCaptura.registrarCaptura(analytics, instituicao.name, telemetria)
         return resultado
+    }
+
+    private object AnalyticsSemOpcao : AnalyticsFacade {
+        override fun setAnalyticsEnabled(enabled: Boolean) = Unit
+
+        override fun logEvent(name: String, attributes: Map<String, String>) = Unit
+
+        override fun recordError(throwable: Throwable) = Unit
     }
 }

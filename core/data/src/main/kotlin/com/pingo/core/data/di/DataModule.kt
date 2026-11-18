@@ -6,6 +6,7 @@ import com.pingo.core.data.CategoriaRepository
 import com.pingo.core.data.ConfiguracaoCartaoRepository
 import com.pingo.core.data.ContaRepository
 import com.pingo.core.data.FaturaRepository
+import com.pingo.core.data.GestaoDeCategoriasRepository
 import com.pingo.core.data.InstrumentoRepository
 import com.pingo.core.data.LancamentoRepository
 import com.pingo.core.data.RegraCategoriaRepository
@@ -23,6 +24,7 @@ import com.pingo.core.data.impl.ContaRepositoryImpl
 import com.pingo.core.data.impl.ContasFinanceiroProjectionImpl
 import com.pingo.core.data.impl.CoordenadorDeContaFinanceiroImpl
 import com.pingo.core.data.impl.FaturaRepositoryImpl
+import com.pingo.core.data.impl.GestaoDeCategoriasRepositoryImpl
 import com.pingo.core.data.impl.InicioFinanceiroProjectionImpl
 import com.pingo.core.data.impl.InstrumentoRepositoryImpl
 import com.pingo.core.data.impl.LancamentoRepositoryImpl
@@ -74,6 +76,10 @@ abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindRegraCategoriaRepository(implementation: RegraCategoriaRepositoryImpl): RegraCategoriaRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindGestaoDeCategoriasRepository(implementation: GestaoDeCategoriasRepositoryImpl): GestaoDeCategoriasRepository
 
     @Binds
     @Singleton

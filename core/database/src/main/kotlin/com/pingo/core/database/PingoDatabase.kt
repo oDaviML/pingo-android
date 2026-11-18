@@ -8,6 +8,7 @@ import com.pingo.core.database.dao.CategoriaDao
 import com.pingo.core.database.dao.ConfiguracaoCartaoDao
 import com.pingo.core.database.dao.ContaDao
 import com.pingo.core.database.dao.FaturaDao
+import com.pingo.core.database.dao.GestaoDeCategoriasDao
 import com.pingo.core.database.dao.InstrumentoDao
 import com.pingo.core.database.dao.LancamentoDao
 import com.pingo.core.database.dao.RecargaProgramadaVoucherDao
@@ -71,6 +72,8 @@ abstract class PingoDatabase : RoomDatabase() {
     abstract fun referenciaSaldoVoucherDao(): ReferenciaSaldoVoucherDao
 
     abstract fun recargaProgramadaVoucherDao(): RecargaProgramadaVoucherDao
+
+    abstract fun gestaoDeCategoriasDao(): GestaoDeCategoriasDao
 
     companion object {
         const val NAME = "pingo.db"

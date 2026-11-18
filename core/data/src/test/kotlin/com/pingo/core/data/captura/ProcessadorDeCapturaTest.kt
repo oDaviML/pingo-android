@@ -1,8 +1,12 @@
 package com.pingo.core.data.captura
 
+import com.pingo.core.analytics.AnalyticsFacade
+import com.pingo.core.analytics.TelemetriaDeCaptura
 import com.pingo.core.data.categoria.AmbienteCategorias
+import com.pingo.core.data.impl.ContextoDeCaptura
 import com.pingo.core.data.impl.FakeTransacaoLocal
 import com.pingo.core.data.impl.ProcessadorDeCapturaImpl
+import com.pingo.core.data.reconciliacao.ReconciliadorVoucherCaptura
 import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.Lancamento
 import com.pingo.core.model.MotivoPendencia
@@ -645,6 +649,54 @@ class ProcessadorDeCapturaTest {
         assertEquals(cartao.publicId, gravado.instrumentoPublicId)
         assertEquals(StatusLancamento.CONFIRMADO, gravado.status)
         assertTrue(ambiente.contas.porId(conta.publicId)?.arquivada == true)
+    }
+
+    @Test
+    fun `emite telemetria reconhecida e revisao sem incluir texto bruto`() = runTest {
+        val categorias = AmbienteCategorias().comPadroes()
+        val eventos = mutableListOf<Pair<String, Map<String, String>>>()
+        val analytics = object : AnalyticsFacade {
+            override fun setAnalyticsEnabled(enabled: Boolean) = Unit
+
+            override fun logEvent(name: String, attributes: Map<String, String>) {
+                eventos += name to attributes
+            }
+
+            override fun recordError(throwable: Throwable) = Unit
+        }
+        ambiente.instrumentos.criar(InstituicaoFinanceira.ITAU)
+        val contexto = ContextoDeCaptura(
+            ambiente.transacoes,
+            ambiente.clock,
+            FakeAppDispatchers(StandardTestDispatcher(testScheduler)),
+            ReconciliadorVoucherCaptura.NoOp,
+            analytics,
+        )
+        val processador = ProcessadorDeCapturaImpl(
+            ambiente.lancamentos,
+            ambiente.instrumentos,
+            categorias.repositorio,
+            categorias.aprendida,
+            contexto,
+        )
+
+        processador.processar(captura(textoBruto = "SEGREDO_TEXTO_BRUTO_1"))
+        processador.processar(
+            captura(
+                instituicao = InstituicaoFinanceira.INTER,
+                valorCentavos = 1990,
+                postTime = AGORA_DA_CAPTURA.plusSeconds(120),
+                textoBruto = "SEGREDO_TEXTO_BRUTO_2",
+            ),
+        )
+
+        assertEquals(2, eventos.size)
+        assertEquals(TelemetriaDeCaptura.EVENTO_CAPTURA_PROCESSADA, eventos[0].first)
+        assertEquals("itau", eventos[0].second["instituicao"])
+        assertEquals("reconhecida", eventos[0].second["resultado"])
+        assertEquals("inter", eventos[1].second["instituicao"])
+        assertEquals("revisao", eventos[1].second["resultado"])
+        assertTrue(eventos.all { (_, attrs) -> attrs.values.none { it.contains("SEGREDO") } })
     }
 
     private class AmbienteDeCaptura {

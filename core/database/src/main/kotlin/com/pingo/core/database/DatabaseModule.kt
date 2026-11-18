@@ -6,6 +6,7 @@ import com.pingo.core.database.dao.CategoriaDao
 import com.pingo.core.database.dao.ConfiguracaoCartaoDao
 import com.pingo.core.database.dao.ContaDao
 import com.pingo.core.database.dao.FaturaDao
+import com.pingo.core.database.dao.GestaoDeCategoriasDao
 import com.pingo.core.database.dao.InstrumentoDao
 import com.pingo.core.database.dao.LancamentoDao
 import com.pingo.core.database.dao.RecargaProgramadaVoucherDao
@@ -63,4 +64,7 @@ object DatabaseModule {
 
     @Provides
     fun provideRecargaProgramadaVoucherDao(database: PingoDatabase): RecargaProgramadaVoucherDao = database.recargaProgramadaVoucherDao()
+
+    @Provides
+    fun provideGestaoDeCategoriasDao(database: PingoDatabase): GestaoDeCategoriasDao = database.gestaoDeCategoriasDao()
 }
