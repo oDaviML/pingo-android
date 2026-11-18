@@ -1,9 +1,13 @@
 package com.pingo.core.notifications
 
+import android.Manifest
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.os.ParcelFileDescriptor
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import androidx.work.Configuration
 import androidx.work.ListenableWorker
 import androidx.work.WorkInfo
@@ -136,6 +140,91 @@ class AvisoDeAssinaturaWorkManagerTest {
         assertTrue(texto.contains("R$ 55,90"))
         assertTrue(texto.contains("20/11/2026"))
         assertFalse(notificacao.extras.keySet().any { it.contains("textoBruto", ignoreCase = true) })
+    }
+
+    @Test
+    fun workerComNotificadorRealEntregaNoNotificationManagerEDumpsysSemTextoBruto() = runBlocking {
+        val gerenciador = context.getSystemService(NotificationManager::class.java)
+        val item = assinatura("sub-real-1", LocalDate.of(2026, 11, 20))
+        val idNotificacao = NotificacoesDeAssinatura.idDe(item.publicId)
+        val markerBruto = "MARCADOR_TEXTO_BRUTO_PROIBIDO_9981"
+        val alvo = JanelaDeAvisoDeAssinatura.calcularAlvo(LocalDate.of(2026, 11, 20))
+        val preferences = FakePreferences(ativo = true)
+        val repo = FakeAssinaturaRepository(listOf(item))
+        val notificadorReal = NotificadorDeAssinaturaDoAndroid(context, NotificacoesDoSistemaDoAndroid(context))
+
+        InstrumentationRegistry.getInstrumentation().uiAutomation.grantRuntimePermission(
+            context.packageName,
+            Manifest.permission.POST_NOTIFICATIONS,
+        )
+        executarShell("appops set ${context.packageName} POST_NOTIFICATION allow")
+        gerenciador.cancel(idNotificacao)
+        assertTrue("Notificador deve estar habilitado", notificadorReal.podeNotificar())
+
+        try {
+            val agendador = WorkManagerAgendadorDeAvisosDeAssinatura(
+                context = context,
+                preferences = preferences,
+                assinaturaRepository = repo,
+                clock = Clock.fixed(alvo.minusSeconds(3600), ZoneOffset.UTC),
+                dispatchers = DefaultAppDispatchers,
+            )
+            agendador.reconciliarTodas()
+            val nomeUnico = JanelaDeAvisoDeAssinatura.nomeTrabalhoUnico(item.publicId, LocalDate.of(2026, 11, 20))
+            val workInfo = workManager.getWorkInfosForUniqueWork(nomeUnico).get().single()
+            assertFalse(workInfo.tags.any { it.contains(markerBruto) })
+            assertFalse(workInfo.outputData.keyValueMap.toString().contains(markerBruto))
+
+            val executor = ExecutorDeAvisoDeAssinatura(
+                preferences = preferences,
+                assinaturaRepository = repo,
+                notificadorDeAssinatura = notificadorReal,
+                clock = Clock.fixed(alvo, ZoneOffset.UTC),
+            )
+            val resultado = construirWorker(
+                executor = executor,
+                dados = AvisoDeAssinaturaWorker.dadosDeEntrada(item.publicId, LocalDate.of(2026, 11, 20), alvo),
+            ).doWork()
+
+            assertEquals(ListenableWorker.Result.success(), resultado)
+            var ativa = gerenciador.activeNotifications.firstOrNull { it.id == idNotificacao }
+            var tentativas = 0
+            while (ativa == null && tentativas < 30) {
+                kotlinx.coroutines.delay(100L)
+                ativa = gerenciador.activeNotifications.firstOrNull { it.id == idNotificacao }
+                tentativas++
+            }
+            assertNotNull("Notificação não apareceu em activeNotifications", ativa)
+            val textoAtivo = ativa!!.notification.extras.getCharSequence(android.app.Notification.EXTRA_TEXT)?.toString().orEmpty()
+            assertTrue(textoAtivo.contains("Netflix"))
+            assertTrue(textoAtivo.contains("R$ 55,90"))
+            assertTrue(textoAtivo.contains("20/11/2026"))
+            assertFalse(textoAtivo.contains(markerBruto))
+            assertFalse(ativa.notification.extras.keySet().any { it.contains("textoBruto", ignoreCase = true) })
+
+            val dumpsys = executarShell("dumpsys notification --noredact")
+            assertTrue(dumpsys.contains(context.packageName))
+            assertFalse(dumpsys.contains(markerBruto))
+
+            gerenciador.cancel(idNotificacao)
+            var canceladas = 0
+            while (gerenciador.activeNotifications.any { it.id == idNotificacao } && canceladas < 30) {
+                kotlinx.coroutines.delay(50L)
+                canceladas++
+            }
+            preferences.setAvisoAssinaturasAtivo(false)
+            assertFalse(executor.executar(item.publicId, LocalDate.of(2026, 11, 20).toString(), alvo.toEpochMilli()))
+            assertFalse(gerenciador.activeNotifications.any { it.id == idNotificacao })
+        } finally {
+            gerenciador.cancel(idNotificacao)
+        }
+    }
+
+    private fun executarShell(comando: String): String {
+        val descriptor = InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(comando)
+        return ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { stream ->
+            stream.readBytes().decodeToString()
+        }
     }
 
     private fun construirWorker(executor: ExecutorDeAvisoDeAssinatura, dados: androidx.work.Data): AvisoDeAssinaturaWorker =

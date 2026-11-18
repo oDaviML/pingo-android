@@ -22,6 +22,12 @@ import com.pingo.core.data.di.DetalheEntryPoint
 import com.pingo.core.data.impl.ContaRepositoryImpl
 import com.pingo.core.data.impl.RoomTransacaoLocal
 import com.pingo.core.database.PingoDatabase
+import com.pingo.core.database.entity.AssinaturaEntity
+import com.pingo.core.database.entity.ConfiguracaoCartaoEntity
+import com.pingo.core.database.entity.FaturaEntity
+import com.pingo.core.database.entity.LancamentoEntity
+import com.pingo.core.database.entity.RecargaProgramadaVoucherEntity
+import com.pingo.core.database.entity.ReferenciaSaldoVoucherEntity
 import com.pingo.core.datastore.CapturaDataSource
 import com.pingo.core.datastore.CapturaDataSourceImpl
 import com.pingo.core.datastore.SyncStatus
@@ -35,12 +41,21 @@ import com.pingo.core.model.MotivoPendencia
 import com.pingo.core.model.NovaConta
 import com.pingo.core.model.NovoInstrumento
 import com.pingo.core.model.OrigemLancamento
+import com.pingo.core.model.StatusAssinatura
+import com.pingo.core.model.StatusFatura
 import com.pingo.core.model.StatusLancamento
 import com.pingo.core.model.TipoConta
 import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.voucher.StatusRecargaProgramada
+import com.pingo.core.model.voucher.TipoReferenciaSaldoVoucher
 import com.pingo.core.network.HttpPingoApiClient
+import com.pingo.core.network.PingoApiClient
 import com.pingo.core.network.PingoApiConfig
+import com.pingo.core.network.sync.PullChangesResult
+import com.pingo.core.network.sync.PushChangesPayload
+import com.pingo.core.network.sync.PushChangesResult
+import com.pingo.core.network.sync.jsonDeSync
 import com.pingo.core.notifications.AcessoNotificacoesDoSistema
 import com.pingo.core.notifications.CapturaController
 import com.pingo.core.notifications.CapturaControllerImpl
@@ -58,6 +73,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.serialization.encodeToString
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -70,6 +86,7 @@ import org.junit.runner.RunWith
 import java.io.File
 import java.time.Clock
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 import kotlin.time.Duration.Companion.seconds
 
@@ -760,6 +777,469 @@ class SyncHttpIntegrationTest {
         }
     }
 
+    @Test
+    fun grafoF2CompletoSincronizaRestauraPreservaLegadoEIsolaUsuariosSemTextoBruto() = runBlocking {
+        assumeTrue("informe -e $ARG_HOST=<url do Pingo.Api.TestHost>", !host.isNullOrBlank())
+
+        withTimeout(TEMPO_TOTAL) {
+            val sufixo = UUID.randomUUID().toString()
+            val tokenUsuarioA = "auth0|sync-f2-a-$sufixo"
+            val tokenUsuarioB = "auth0|sync-f2-b-$sufixo"
+            val apiA = EspiaoPingoApiClient(HttpPingoApiClient(PingoApiConfig(host!!), FixtureAuth(tokenUsuarioA), dispatchers))
+            val apiB = HttpPingoApiClient(PingoApiConfig(host), FixtureAuth(tokenUsuarioB), dispatchers)
+            val cenario = semearGrafoF2Completo(captura.database(), sufixo)
+
+            motor(apiA, captura.database(), FakePreferences(), tokenUsuarioA).run()
+
+            val payloadsJson = apiA.pushes.joinToString("\n") { jsonDeSync.encodeToString(it) }
+            assertFalse(payloadsJson.contains(cenario.marcadorTextoBruto))
+            assertFalse(payloadsJson.contains("textoBruto"))
+
+            val pullServidor = apiA.pulls.last()
+            val pullJson = jsonDeSync.encodeToString(pullServidor)
+            assertFalse(pullJson.contains(cenario.marcadorTextoBruto))
+
+            val bancoUsuarioB = bancoEmMemoria()
+            try {
+                motor(apiB, bancoUsuarioB, FakePreferences(), tokenUsuarioB).run()
+                assertFalse(bancoUsuarioB.contaDao().observeAtivas().first().any { it.publicId in cenario.contaIds })
+                assertNull(bancoUsuarioB.configuracaoCartaoDao().buscar(cenario.configHistoricaId))
+                assertNull(bancoUsuarioB.faturaDao().buscar(cenario.faturaFechadaId))
+                assertNull(bancoUsuarioB.assinaturaDao().buscar(cenario.assinaturaConfirmadaId))
+                assertNull(bancoUsuarioB.referenciaSaldoVoucherDao().buscar(cenario.refAjusteId))
+                assertNull(bancoUsuarioB.recargaProgramadaVoucherDao().buscar(cenario.recargaConfirmadaId))
+            } finally {
+                bancoUsuarioB.close()
+            }
+
+            val restaurado = bancoEmMemoria()
+            try {
+                val prefsRestaurado = FakePreferences()
+                motor(apiA, restaurado, prefsRestaurado, tokenUsuarioA).run()
+                verificarGrafoF2Restaurado(restaurado, cenario)
+
+                motor(apiA, restaurado, prefsRestaurado, tokenUsuarioA).run()
+                verificarGrafoF2Restaurado(restaurado, cenario)
+            } finally {
+                restaurado.close()
+            }
+        }
+    }
+
+    private suspend fun semearGrafoF2Completo(banco: PingoDatabase, sufixo: String): CenarioF2 {
+        val base = Instant.parse("2026-10-01T12:00:00Z")
+        val vigenciaNova = Instant.parse("2026-11-01T00:00:00Z")
+        val instanteCaju = Instant.parse("2026-10-15T14:00:00Z")
+        val markerBruto = "TEXTO_BRUTO_SIGILOSO_CAJU_F2_$sufixo"
+        val configHistId = UUID.randomUUID().toString()
+        val configAtualId = UUID.randomUUID().toString()
+        val faturaFechadaId = UUID.randomUUID().toString()
+        val faturaAbertaId = UUID.randomUUID().toString()
+        val assConfirmadaId = UUID.randomUUID().toString()
+        val assRecusadaId = UUID.randomUUID().toString()
+        val assLegadaId = UUID.randomUUID().toString()
+        val lancAssinaturaId = UUID.randomUUID().toString()
+        val lancCajuId = UUID.randomUUID().toString()
+        val refAberturaId = UUID.randomUUID().toString()
+        val refAjusteId = UUID.randomUUID().toString()
+        val refSaldoId = UUID.randomUUID().toString()
+        val recargaConfirmadaId = UUID.randomUUID().toString()
+        val recargaPendenteId = UUID.randomUUID().toString()
+        val dataFutura = LocalDate.now().plusDays(15)
+
+        captura.contaRepository().criarComInstrumentos(
+            listOf(
+                NovaConta(
+                    instituicao = InstituicaoFinanceira.NUBANK,
+                    apelido = "Nubank F2",
+                    tipo = TipoConta.CORRENTE,
+                    instrumentos = listOf(
+                        NovoInstrumento(TipoInstrumento.CREDITO, "Roxinho F2", "4455", fechamentoDia = 10, vencimentoDia = 18),
+                    ),
+                ),
+                NovaConta(
+                    instituicao = InstituicaoFinanceira.CAJU,
+                    apelido = "Caju F2",
+                    tipo = TipoConta.BENEFICIO,
+                    instrumentos = listOf(
+                        NovoInstrumento(
+                            tipo = TipoInstrumento.VOUCHER,
+                            apelido = "Caju VA",
+                            beneficio = BeneficioVoucher.VA,
+                            saldoCentavos = 50_000L,
+                            diaRecarga = 5,
+                            valorRecargaCentavos = 60_000L,
+                        ),
+                    ),
+                ),
+            ),
+            base,
+        )
+        val contasCriadas = banco.contaDao().observeAtivas().first()
+        val nuConta = contasCriadas.first { it.apelido == "Nubank F2" }
+        val cajuConta = contasCriadas.first { it.apelido == "Caju F2" }
+        val nuCartao = banco.instrumentoDao().listarPorConta(nuConta.publicId).single()
+        val cajuVoucher = banco.instrumentoDao().listarPorConta(cajuConta.publicId).single()
+
+        banco.configuracaoCartaoDao().upsert(
+            ConfiguracaoCartaoEntity(
+                publicId = configHistId,
+                instrumentoPublicId = nuCartao.publicId,
+                vigenciaInicio = base,
+                fechamentoDia = 5,
+                vencimentoDia = 12,
+                criadoEm = base,
+                atualizadoEm = base,
+                excluidoEm = null,
+            ),
+        )
+        banco.configuracaoCartaoDao().upsert(
+            ConfiguracaoCartaoEntity(
+                publicId = configAtualId,
+                instrumentoPublicId = nuCartao.publicId,
+                vigenciaInicio = vigenciaNova,
+                fechamentoDia = 10,
+                vencimentoDia = 18,
+                criadoEm = vigenciaNova,
+                atualizadoEm = vigenciaNova,
+                excluidoEm = null,
+            ),
+        )
+        banco.faturaDao().upsert(
+            FaturaEntity(
+                publicId = faturaFechadaId,
+                instrumentoPublicId = nuCartao.publicId,
+                competencia = LocalDate.of(2026, 10, 1),
+                dataFechamento = LocalDate.of(2026, 10, 5),
+                dataVencimento = LocalDate.of(2026, 10, 12),
+                totalCentavos = 4490L,
+                totalPagoCentavos = 0L,
+                status = StatusFatura.FECHADA,
+                dataPagamento = null,
+                pagamentoLancamentoPublicId = null,
+                criadoEm = base,
+                atualizadoEm = base,
+                excluidoEm = null,
+            ),
+        )
+        banco.faturaDao().upsert(
+            FaturaEntity(
+                publicId = faturaAbertaId,
+                instrumentoPublicId = nuCartao.publicId,
+                competencia = LocalDate.of(2026, 11, 1),
+                dataFechamento = LocalDate.of(2026, 11, 10),
+                dataVencimento = LocalDate.of(2026, 11, 18),
+                totalCentavos = 0L,
+                totalPagoCentavos = 0L,
+                status = StatusFatura.ABERTA,
+                dataPagamento = null,
+                pagamentoLancamentoPublicId = null,
+                criadoEm = vigenciaNova,
+                atualizadoEm = vigenciaNova,
+                excluidoEm = null,
+            ),
+        )
+        banco.assinaturaDao().upsert(
+            AssinaturaEntity(
+                publicId = assConfirmadaId,
+                estabelecimento = "Netflix",
+                estabelecimentoNormalizado = "netflix",
+                valorReferenciaCentavos = 4490L,
+                ultimaCobranca = LocalDate.of(2026, 10, 3),
+                proximaCobrancaEstimada = LocalDate.of(2026, 11, 3),
+                status = StatusAssinatura.CONFIRMADA,
+                criadoEm = base,
+                atualizadoEm = base,
+                excluidoEm = null,
+                instrumentoPublicId = nuCartao.publicId,
+            ),
+        )
+        banco.assinaturaDao().upsert(
+            AssinaturaEntity(
+                publicId = assRecusadaId,
+                estabelecimento = "Prime",
+                estabelecimentoNormalizado = "prime",
+                valorReferenciaCentavos = 1990L,
+                ultimaCobranca = LocalDate.of(2026, 10, 2),
+                proximaCobrancaEstimada = null,
+                status = StatusAssinatura.RECUSADA,
+                criadoEm = base,
+                atualizadoEm = base,
+                excluidoEm = null,
+                instrumentoPublicId = nuCartao.publicId,
+            ),
+        )
+        banco.assinaturaDao().upsert(
+            AssinaturaEntity(
+                publicId = assLegadaId,
+                estabelecimento = "Spotify Legado",
+                estabelecimentoNormalizado = "spotify legado",
+                valorReferenciaCentavos = 2190L,
+                ultimaCobranca = LocalDate.of(2026, 10, 4),
+                proximaCobrancaEstimada = LocalDate.of(2026, 11, 4),
+                status = StatusAssinatura.CONFIRMADA,
+                criadoEm = base,
+                atualizadoEm = base,
+                excluidoEm = null,
+                instrumentoPublicId = null,
+            ),
+        )
+        banco.lancamentoDao().upsert(
+            LancamentoEntity(
+                publicId = lancAssinaturaId,
+                instrumentoPublicId = nuCartao.publicId,
+                categoriaPublicId = null,
+                faturaPublicId = faturaFechadaId,
+                assinaturaPublicId = assConfirmadaId,
+                compraPaiPublicId = null,
+                estornoDePublicId = null,
+                transferenciaId = null,
+                valorCentavos = 4490L,
+                dataHora = Instant.parse("2026-10-03T15:00:00Z"),
+                tipo = TipoLancamento.DESPESA,
+                tipoSemTransferencia = null,
+                estabelecimento = "Netflix",
+                status = StatusLancamento.CONFIRMADO,
+                origem = OrigemLancamento.MANUAL,
+                instituicaoOrigem = InstituicaoFinanceira.NUBANK,
+                confianca = 1.0,
+                motivoPendencia = null,
+                hashDuplicata = null,
+                observacao = null,
+                parcelaNumero = 1,
+                totalParcelas = 1,
+                valorTotalCompraCentavos = null,
+                criadoEm = base,
+                atualizadoEm = base,
+                excluidoEm = null,
+                textoBruto = null,
+                estabelecimentoNormalizado = "netflix",
+                beneficio = null,
+                saldoObservadoCentavos = null,
+            ),
+        )
+        banco.lancamentoDao().upsert(
+            LancamentoEntity(
+                publicId = lancCajuId,
+                instrumentoPublicId = cajuVoucher.publicId,
+                categoriaPublicId = null,
+                faturaPublicId = null,
+                assinaturaPublicId = null,
+                compraPaiPublicId = null,
+                estornoDePublicId = null,
+                transferenciaId = null,
+                valorCentavos = 60_000L,
+                dataHora = instanteCaju,
+                tipo = TipoLancamento.RECEITA,
+                tipoSemTransferencia = null,
+                estabelecimento = "Recarga Caju",
+                status = StatusLancamento.CONFIRMADO,
+                origem = OrigemLancamento.NOTIFICACAO,
+                instituicaoOrigem = InstituicaoFinanceira.CAJU,
+                confianca = 0.95,
+                motivoPendencia = null,
+                hashDuplicata = "hash-caju-$sufixo",
+                observacao = null,
+                parcelaNumero = 1,
+                totalParcelas = 1,
+                valorTotalCompraCentavos = null,
+                criadoEm = instanteCaju,
+                atualizadoEm = instanteCaju,
+                excluidoEm = null,
+                textoBruto = markerBruto,
+                estabelecimentoNormalizado = "recarga caju",
+                beneficio = BeneficioVoucher.VA,
+                saldoObservadoCentavos = 110_000L,
+            ),
+        )
+        banco.referenciaSaldoVoucherDao().upsert(
+            ReferenciaSaldoVoucherEntity(
+                publicId = refAberturaId,
+                instrumentoPublicId = cajuVoucher.publicId,
+                tipoReferencia = TipoReferenciaSaldoVoucher.ABERTURA,
+                saldoCentavos = 50_000L,
+                deltaCentavos = null,
+                instanteReferencia = base,
+                lancamentoPublicId = null,
+                criadoEm = base,
+                atualizadoEm = base,
+                excluidoEm = null,
+            ),
+        )
+        banco.referenciaSaldoVoucherDao().upsert(
+            ReferenciaSaldoVoucherEntity(
+                publicId = refSaldoId,
+                instrumentoPublicId = cajuVoucher.publicId,
+                tipoReferencia = TipoReferenciaSaldoVoucher.OBSERVADO_APOS_TRANSACAO,
+                saldoCentavos = 110_000L,
+                deltaCentavos = null,
+                instanteReferencia = instanteCaju,
+                lancamentoPublicId = lancCajuId,
+                criadoEm = instanteCaju,
+                atualizadoEm = instanteCaju,
+                excluidoEm = null,
+            ),
+        )
+        banco.referenciaSaldoVoucherDao().upsert(
+            ReferenciaSaldoVoucherEntity(
+                publicId = refAjusteId,
+                instrumentoPublicId = cajuVoucher.publicId,
+                tipoReferencia = TipoReferenciaSaldoVoucher.AJUSTE,
+                saldoCentavos = 95_000L,
+                deltaCentavos = -15_000L,
+                instanteReferencia = instanteCaju.plusSeconds(3600),
+                lancamentoPublicId = null,
+                criadoEm = instanteCaju.plusSeconds(3600),
+                atualizadoEm = instanteCaju.plusSeconds(3600),
+                excluidoEm = null,
+            ),
+        )
+        banco.recargaProgramadaVoucherDao().upsert(
+            RecargaProgramadaVoucherEntity(
+                publicId = recargaConfirmadaId,
+                instrumentoPublicId = cajuVoucher.publicId,
+                beneficio = BeneficioVoucher.VA,
+                competenciaMes = LocalDate.of(2026, 10, 1),
+                dataPrevista = LocalDate.of(2026, 10, 15),
+                valorPrevistoCentavos = 60_000L,
+                status = StatusRecargaProgramada.SUBSTITUIDA,
+                lancamentoPublicId = lancCajuId,
+                criadoEm = base,
+                atualizadoEm = instanteCaju,
+                excluidoEm = null,
+            ),
+        )
+        banco.recargaProgramadaVoucherDao().upsert(
+            RecargaProgramadaVoucherEntity(
+                publicId = recargaPendenteId,
+                instrumentoPublicId = cajuVoucher.publicId,
+                beneficio = BeneficioVoucher.VA,
+                competenciaMes = dataFutura.withDayOfMonth(1),
+                dataPrevista = dataFutura,
+                valorPrevistoCentavos = 60_000L,
+                status = StatusRecargaProgramada.PENDENTE,
+                lancamentoPublicId = null,
+                criadoEm = instanteCaju,
+                atualizadoEm = instanteCaju,
+                excluidoEm = null,
+            ),
+        )
+
+        return CenarioF2(
+            contaIds = setOf(nuConta.publicId, cajuConta.publicId),
+            cartaoId = nuCartao.publicId,
+            voucherId = cajuVoucher.publicId,
+            configHistoricaId = configHistId,
+            configAtualId = configAtualId,
+            faturaFechadaId = faturaFechadaId,
+            faturaAbertaId = faturaAbertaId,
+            assinaturaConfirmadaId = assConfirmadaId,
+            assinaturaRecusadaId = assRecusadaId,
+            assinaturaLegadaId = assLegadaId,
+            lancAssinaturaId = lancAssinaturaId,
+            lancCajuId = lancCajuId,
+            refAberturaId = refAberturaId,
+            refAjusteId = refAjusteId,
+            refSaldoId = refSaldoId,
+            recargaConfirmadaId = recargaConfirmadaId,
+            recargaPendenteId = recargaPendenteId,
+            marcadorTextoBruto = markerBruto,
+        )
+    }
+
+    private suspend fun verificarGrafoF2Restaurado(banco: PingoDatabase, cenario: CenarioF2) {
+        val cfgHist = banco.configuracaoCartaoDao().buscar(cenario.configHistoricaId)
+        val cfgAtual = banco.configuracaoCartaoDao().buscar(cenario.configAtualId)
+        assertEquals(5, cfgHist?.fechamentoDia)
+        assertEquals(12, cfgHist?.vencimentoDia)
+        assertEquals(10, cfgAtual?.fechamentoDia)
+        assertEquals(18, cfgAtual?.vencimentoDia)
+
+        val fatFechada = banco.faturaDao().buscar(cenario.faturaFechadaId)
+        val fatAberta = banco.faturaDao().buscar(cenario.faturaAbertaId)
+        assertEquals(StatusFatura.FECHADA, fatFechada?.status)
+        assertEquals(LocalDate.of(2026, 10, 5), fatFechada?.dataFechamento)
+        assertEquals(4490L, fatFechada?.totalCentavos)
+        assertEquals(StatusFatura.ABERTA, fatAberta?.status)
+
+        val assConf = banco.assinaturaDao().buscar(cenario.assinaturaConfirmadaId)
+        val assRec = banco.assinaturaDao().buscar(cenario.assinaturaRecusadaId)
+        val assLeg = banco.assinaturaDao().buscar(cenario.assinaturaLegadaId)
+        assertEquals(StatusAssinatura.CONFIRMADA, assConf?.status)
+        assertEquals(cenario.cartaoId, assConf?.instrumentoPublicId)
+        assertEquals(StatusAssinatura.RECUSADA, assRec?.status)
+        assertEquals(cenario.cartaoId, assRec?.instrumentoPublicId)
+        assertEquals(StatusAssinatura.CONFIRMADA, assLeg?.status)
+        assertNull(assLeg?.instrumentoPublicId)
+
+        val lancAss = banco.lancamentoDao().buscar(cenario.lancAssinaturaId)
+        val lancCaju = banco.lancamentoDao().buscar(cenario.lancCajuId)
+        assertEquals(cenario.faturaFechadaId, lancAss?.faturaPublicId)
+        assertEquals(cenario.assinaturaConfirmadaId, lancAss?.assinaturaPublicId)
+        assertEquals(BeneficioVoucher.VA, lancCaju?.beneficio)
+        assertEquals(110_000L, lancCaju?.saldoObservadoCentavos)
+        assertNull(lancCaju?.textoBruto)
+
+        val refAjuste = banco.referenciaSaldoVoucherDao().buscar(cenario.refAjusteId)
+        val refSaldo = banco.referenciaSaldoVoucherDao().buscar(cenario.refSaldoId)
+        assertEquals(TipoReferenciaSaldoVoucher.AJUSTE, refAjuste?.tipoReferencia)
+        assertEquals(95_000L, refAjuste?.saldoCentavos)
+        assertEquals(-15_000L, refAjuste?.deltaCentavos)
+        assertEquals(cenario.lancCajuId, refSaldo?.lancamentoPublicId)
+
+        val recConf = banco.recargaProgramadaVoucherDao().buscar(cenario.recargaConfirmadaId)
+        val recPend = banco.recargaProgramadaVoucherDao().buscar(cenario.recargaPendenteId)
+        assertEquals(StatusRecargaProgramada.SUBSTITUIDA, recConf?.status)
+        assertEquals(cenario.lancCajuId, recConf?.lancamentoPublicId)
+        assertEquals(StatusRecargaProgramada.PENDENTE, recPend?.status)
+
+        assertEquals(1, banco.faturaDao().listarPorInstrumento(cenario.cartaoId).count { it.publicId == cenario.faturaFechadaId })
+        assertEquals(
+            1,
+            banco.recargaProgramadaVoucherDao().listarPorInstrumento(cenario.voucherId).count {
+                it.publicId ==
+                    cenario.recargaConfirmadaId
+            },
+        )
+    }
+
+    private data class CenarioF2(
+        val contaIds: Set<String>,
+        val cartaoId: String,
+        val voucherId: String,
+        val configHistoricaId: String,
+        val configAtualId: String,
+        val faturaFechadaId: String,
+        val faturaAbertaId: String,
+        val assinaturaConfirmadaId: String,
+        val assinaturaRecusadaId: String,
+        val assinaturaLegadaId: String,
+        val lancAssinaturaId: String,
+        val lancCajuId: String,
+        val refAberturaId: String,
+        val refAjusteId: String,
+        val refSaldoId: String,
+        val recargaConfirmadaId: String,
+        val recargaPendenteId: String,
+        val marcadorTextoBruto: String,
+    )
+
+    private class EspiaoPingoApiClient(private val delegate: PingoApiClient) : PingoApiClient by delegate {
+        val pushes = mutableListOf<PushChangesPayload>()
+        val pulls = mutableListOf<PullChangesResult>()
+
+        override suspend fun pushChanges(payload: PushChangesPayload): PushChangesResult {
+            pushes += payload
+            return delegate.pushChanges(payload)
+        }
+
+        override suspend fun pullChanges(cursor: String?): PullChangesResult {
+            val result = delegate.pullChanges(cursor)
+            pulls += result
+            return result
+        }
+    }
+
     @After
     fun limpaOBancoCompartilhado() {
         runBlocking {
@@ -827,7 +1307,7 @@ class SyncHttpIntegrationTest {
         }
     }
 
-    private fun motor(api: HttpPingoApiClient, banco: PingoDatabase, preferencias: FakePreferences, token: String) = SyncEngine(
+    private fun motor(api: PingoApiClient, banco: PingoDatabase, preferencias: FakePreferences, token: String) = SyncEngine(
         api = api,
         database = banco,
         preferences = preferencias,
