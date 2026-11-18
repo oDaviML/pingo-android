@@ -19,6 +19,7 @@ object DetectorDeAssinaturas {
     const val PERCENTUAL_MAXIMO_VALOR: Long = 110L
 
     fun elegivelParaDeteccao(lancamento: Lancamento): Boolean = lancamento.excluidoEm == null &&
+        lancamento.estornoDePublicId == null &&
         lancamento.status == StatusLancamento.CONFIRMADO &&
         lancamento.tipo == TipoLancamento.DESPESA &&
         lancamento.instrumentoPublicId != null &&

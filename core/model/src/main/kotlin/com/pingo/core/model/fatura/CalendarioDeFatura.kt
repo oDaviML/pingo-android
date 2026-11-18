@@ -13,6 +13,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import kotlin.math.abs
 
 object CalendarioDeFatura {
     val ZONA_SAO_PAULO: ZoneId = ZoneId.of("America/Sao_Paulo")
@@ -160,5 +161,6 @@ object CalendarioDeFatura {
         .asSequence()
         .filter { entraNaFatura(it) }
         .filter { faturaPublicId == null || it.faturaPublicId == faturaPublicId }
-        .sumOf { it.valorCentavos }
+        .sumOf { if (it.estornoDePublicId != null) -abs(it.valorCentavos) else it.valorCentavos }
+        .coerceAtLeast(0L)
 }

@@ -44,10 +44,12 @@ class CalendarioDeFaturaTest {
         status: StatusLancamento = StatusLancamento.CONFIRMADO,
         faturaPublicId: String? = "fat-1",
         excluidoEm: Instant? = null,
+        estornoDePublicId: String? = null,
     ) = Lancamento(
         publicId = publicId,
         instrumentoPublicId = "card-1",
         faturaPublicId = faturaPublicId,
+        estornoDePublicId = estornoDePublicId,
         valorCentavos = valorCentavos,
         dataHora = agoraFixo,
         tipo = tipo,
@@ -213,5 +215,27 @@ class CalendarioDeFaturaTest {
         assertEquals(StatusFatura.FECHADA, CalendarioDeFatura.statusDoCiclo(fechamento, LocalDate.of(2026, 5, 10)))
         assertEquals(StatusFatura.PAGA, CalendarioDeFatura.statusDoCiclo(fechamento, LocalDate.of(2026, 5, 10), paga = true))
         assertEquals(LocalDate.of(2026, 2, 28), CalendarioDeFatura.diaAjustadoNoMes(YearMonth.of(2026, 2), 31))
+    }
+
+    @Test
+    fun `estorno abate total da fatura com valor positivo ou negativo e limita total minimo em zero`() {
+        val compra = lancamento("l-1", 34_990L)
+        val compra2 = lancamento("l-2", 4_290L)
+        val estornoPositivo = lancamento("l-3", 15_000L, estornoDePublicId = "l-1")
+        val estornoNegativo = lancamento("l-4", -15_000L, estornoDePublicId = "l-1")
+        val estornoMaiorQueCompras = lancamento("l-5", 50_000L, estornoDePublicId = "l-1")
+
+        assertEquals(
+            24_280L,
+            CalendarioDeFatura.calcularTotalFaturaCentavos(listOf(compra, compra2, estornoPositivo), "fat-1"),
+        )
+        assertEquals(
+            24_280L,
+            CalendarioDeFatura.calcularTotalFaturaCentavos(listOf(compra, compra2, estornoNegativo), "fat-1"),
+        )
+        assertEquals(
+            0L,
+            CalendarioDeFatura.calcularTotalFaturaCentavos(listOf(compra, estornoMaiorQueCompras), "fat-1"),
+        )
     }
 }

@@ -5,11 +5,13 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.pingo.core.data.captura.CapturaParaProcessar
 import com.pingo.core.data.captura.ResultadoProcessamento
 import com.pingo.core.data.detalhe.EdicaoDoLancamento
+import com.pingo.core.data.detalhe.ResultadoDaTransferencia
 import com.pingo.core.data.fatura.ResultadoCompletarDatasCartao
 import com.pingo.core.data.manual.NovoLancamentoManual
 import com.pingo.core.data.manual.ResultadoLancamentoManual
 import com.pingo.core.data.voucher.ResultadoAjusteVoucher
 import com.pingo.core.data.voucher.ValorAjusteSaldoVoucher
+import com.pingo.core.database.entity.InstrumentoEntity
 import com.pingo.core.model.BeneficioVoucher
 import com.pingo.core.model.ContaEditada
 import com.pingo.core.model.InstituicaoFinanceira
@@ -48,6 +50,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
+import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 class F2IntegracaoRoomTest {
@@ -143,14 +146,34 @@ class F2IntegracaoRoomTest {
                     tipo = TipoConta.CORRENTE,
                     instrumentos = listOf(
                         NovoInstrumento(TipoInstrumento.CREDITO, "Click", "9999", fechamentoDia = 5, vencimentoDia = 12),
-                        NovoInstrumento(TipoInstrumento.CREDITO, "Legado", "0001"),
                     ),
                 ),
             ),
             ambiente.relogio.instante,
         ).single()
         val click = criada.instrumentos.first { it.apelido == "Click" }
-        val legado = criada.instrumentos.first { it.apelido == "Legado" }
+        val legadoId = UUID.randomUUID().toString()
+        ambiente.database.instrumentoDao().upsert(
+            InstrumentoEntity(
+                publicId = legadoId,
+                contaPublicId = criada.conta.publicId,
+                tipo = TipoInstrumento.CREDITO,
+                apelido = "Legado",
+                ultimosDigitos = "0001",
+                arquivado = false,
+                arquivadoPorCascata = false,
+                fechamentoDia = null,
+                vencimentoDia = null,
+                beneficio = null,
+                saldoCentavos = null,
+                diaRecarga = null,
+                valorRecargaCentavos = null,
+                limiteCreditoCentavos = null,
+                criadoEm = ambiente.relogio.instante,
+                atualizadoEm = ambiente.relogio.instante,
+                excluidoEm = null,
+            ),
+        )
 
         ambiente.manualF2().registrar(
             NovoLancamentoManual(
@@ -176,12 +199,6 @@ class F2IntegracaoRoomTest {
                         ultimosDigitos = "9999",
                         fechamentoDia = 15,
                         vencimentoDia = 22,
-                    ),
-                    InstrumentoEditado(
-                        tipo = TipoInstrumento.CREDITO,
-                        apelido = "Legado",
-                        publicId = legado.publicId,
-                        ultimosDigitos = "0001",
                     ),
                 ),
             ),
@@ -212,7 +229,7 @@ class F2IntegracaoRoomTest {
             ambiente.manualF2().registrar(
                 NovoLancamentoManual(
                     tipo = TipoLancamento.DESPESA,
-                    instrumentoPublicId = legado.publicId,
+                    instrumentoPublicId = legadoId,
                     valorCentavos = 7000L,
                     dataHora = saoPaulo(2026, 11, 1, 10),
                     estabelecimento = "Livro",
@@ -225,10 +242,10 @@ class F2IntegracaoRoomTest {
         val resumoAntes = ambiente.contasProjectionF2().observeContas().first()
         val legadoIndicador = resumoAntes.contasAtivas.single().instrumentos
             .filterIsInstance<IndicadorDeInstrumento.Credito>()
-            .first { it.instrumento.publicId == legado.publicId }
+            .first { it.instrumento.publicId == legadoId }
         assertTrue(legadoIndicador.estadoFatura is EstadoFaturaCartao.ConfiguracaoIncompleta)
 
-        assertTrue(ambiente.completarDatasF2()(legado.publicId, 10, 17) is ResultadoCompletarDatasCartao.Sucesso)
+        assertTrue(ambiente.completarDatasF2()(legadoId, 10, 17) is ResultadoCompletarDatasCartao.Sucesso)
         val legadoAtualizado = ambiente.lancamentosF2.buscar(salvoLegado.publicId)
         assertNotNull(legadoAtualizado?.faturaPublicId)
     }
@@ -236,22 +253,29 @@ class F2IntegracaoRoomTest {
     @Test
     fun transferenciaExclusaoEDesfazerReconciliamFaturaSemDuplicar() = runBlocking {
         ambiente.relogio.instante = saoPaulo(2026, 11, 2, 12)
-        val conta = ambiente.contasF2().criarComInstrumentos(
+        val contas = ambiente.contasF2().criarComInstrumentos(
             listOf(
                 NovaConta(
                     instituicao = InstituicaoFinanceira.INTER,
                     apelido = "Inter",
                     tipo = TipoConta.CORRENTE,
                     instrumentos = listOf(
-                        NovoInstrumento(TipoInstrumento.DEBITO, "Corrente"),
                         NovoInstrumento(TipoInstrumento.CREDITO, "Cartao", "4444", fechamentoDia = 10, vencimentoDia = 18),
+                    ),
+                ),
+                NovaConta(
+                    instituicao = InstituicaoFinanceira.NUBANK,
+                    apelido = "Nubank",
+                    tipo = TipoConta.CORRENTE,
+                    instrumentos = listOf(
+                        NovoInstrumento(TipoInstrumento.DEBITO, "Corrente"),
                     ),
                 ),
             ),
             ambiente.relogio.instante,
-        ).single()
-        val debito = conta.instrumentos.first { it.tipo == TipoInstrumento.DEBITO }
-        val credito = conta.instrumentos.first { it.tipo == TipoInstrumento.CREDITO }
+        )
+        val credito = contas.first { it.conta.instituicao == InstituicaoFinanceira.INTER }.instrumentos.single()
+        val debitoOutro = contas.first { it.conta.instituicao == InstituicaoFinanceira.NUBANK }.instrumentos.single()
 
         val compra = (
             ambiente.manualF2().registrar(
@@ -269,7 +293,7 @@ class F2IntegracaoRoomTest {
             ambiente.manualF2().registrar(
                 NovoLancamentoManual(
                     tipo = TipoLancamento.TRANSFERENCIA,
-                    instrumentoPublicId = debito.publicId,
+                    instrumentoPublicId = debitoOutro.publicId,
                     destinoPublicId = credito.publicId,
                     valorCentavos = 12000L,
                     dataHora = ambiente.relogio.instante.plusSeconds(60),
@@ -304,10 +328,10 @@ class F2IntegracaoRoomTest {
         ambiente.lancamentosF2.salvar(excluido.copy(excluidoEm = null, atualizadoEm = ambiente.relogio.instante.plusSeconds(180)))
         assertEquals(15000L, ambiente.database.faturaDao().listarPorInstrumento(credito.publicId).single().totalCentavos)
 
-        ambiente.marcadorF2().marcar(compra.publicId, debito.publicId)
+        assertTrue(ambiente.marcadorF2().marcar(compra.publicId, debitoOutro.publicId) is ResultadoDaTransferencia.Marcada)
         assertEquals(0L, ambiente.database.faturaDao().listarPorInstrumento(credito.publicId).single().totalCentavos)
 
-        ambiente.marcadorF2().desfazer(compra.publicId)
+        assertTrue(ambiente.marcadorF2().desfazer(compra.publicId) is ResultadoDaTransferencia.Desfeita)
         assertEquals(15000L, ambiente.database.faturaDao().listarPorInstrumento(credito.publicId).single().totalCentavos)
     }
 
@@ -382,7 +406,7 @@ class F2IntegracaoRoomTest {
 
     @Test
     fun recargaMaterializaComClampESubstituiEmAmbasOrdens() = runBlocking {
-        ambiente.relogio.instante = saoPaulo(2026, 1, 15, 9)
+        ambiente.relogio.instante = saoPaulo(2026, 1, 1, 9)
         val caju = ambiente.contasF2().criarComInstrumentos(
             listOf(
                 NovaConta(
@@ -428,7 +452,7 @@ class F2IntegracaoRoomTest {
         assertEquals(0L, saldoDoInstrumento(vt.publicId))
 
         ambiente.relogio.instante = saoPaulo(2026, 2, 28, 12)
-        assertEquals(2, ambiente.materializarRecargasF2()())
+        assertEquals(4, ambiente.materializarRecargasF2()())
         assertEquals(0, ambiente.materializarRecargasF2()())
         assertEquals(60000L, saldoDoInstrumento(vt.publicId))
 
@@ -567,7 +591,7 @@ class F2IntegracaoRoomTest {
                 instrumentoPublicId = cartaoA.publicId,
                 categoriaPublicId = "cat-outros-despesa",
                 dataHora = m2,
-                estabelecimento = "SPOTIFY *123",
+                estabelecimento = "SPOTIFY   ",
             ),
         )
         ambiente.manualF2().registrar(
@@ -622,8 +646,9 @@ class F2IntegracaoRoomTest {
         assertEquals(2, inicioFaturas.dados.size)
 
         val relatorioOut = ambiente.relatoriosProjectionF2().observeRelatorioMensal(YearMonth.of(2026, 10)).first()
-        assertEquals(2190L, relatorioOut.relatorio.totalDespesasCentavos)
-        assertEquals(VariacaoCategoria.Percentual(0), relatorioOut.categorias.single().variacaoMesAnterior)
+        assertEquals(4380L, relatorioOut.relatorio.totalDespesasCentavos)
+        assertEquals(2, relatorioOut.categorias.size)
+        assertTrue(relatorioOut.categorias.all { it.variacaoMesAnterior == VariacaoCategoria.Percentual(0) })
     }
 
     @Test
@@ -708,7 +733,7 @@ class F2IntegracaoRoomTest {
 
     @Test
     fun excluirMaterializarEDesfazerRecargaReconciliadaNaoDuplicaSaldo() = runBlocking {
-        ambiente.relogio.instante = saoPaulo(2026, 11, 5, 9)
+        ambiente.relogio.instante = saoPaulo(2026, 11, 1, 9)
         val caju = ambiente.contasF2().criarComInstrumentos(
             listOf(
                 NovaConta(
@@ -727,10 +752,11 @@ class F2IntegracaoRoomTest {
                     ),
                 ),
             ),
-            saoPaulo(2026, 10, 1, 9),
+            saoPaulo(2026, 11, 1, 9),
         ).single()
         val va = caju.instrumentos.single()
 
+        ambiente.relogio.instante = saoPaulo(2026, 11, 5, 10, 5)
         val captura = ambiente.processadorF2().processar(
             cajuDeposito(60000L, "AUXÍLIO ALIMENTAÇÃO", 70000L, saoPaulo(2026, 11, 5, 10)),
         ) as ResultadoProcessamento.Gravado

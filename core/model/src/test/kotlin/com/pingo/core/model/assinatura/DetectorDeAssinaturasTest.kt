@@ -190,4 +190,32 @@ class DetectorDeAssinaturasTest {
         assertFalse(DetectorDeAssinaturas.correspondeACobrancaConfirmada(novaCobranca, confirmada1, "card-2"))
         assertFalse(DetectorDeAssinaturas.correspondeACobrancaConfirmada(novaCobranca, confirmada1, null))
     }
+
+    @Test
+    fun `estorno eh ignorado na elegibilidade deteccao de sugestoes e correspondencia confirmada`() {
+        val d1 = instanteSaoPaulo(2026, 3, 1)
+        val d2 = instanteSaoPaulo(2026, 3, 31)
+        val d3 = instanteSaoPaulo(2026, 4, 30)
+        val estorno1 = despesa("e-1", "card-1", "Netflix", 3_990L, d1).copy(estornoDePublicId = "orig-1")
+        val estorno2 = despesa("e-2", "card-1", "Netflix", 3_990L, d2).copy(estornoDePublicId = "orig-2")
+        val cobranca = despesa("c-1", "card-1", "Netflix", 3_990L, d1)
+
+        assertFalse(DetectorDeAssinaturas.elegivelParaDeteccao(estorno1))
+        assertTrue(DetectorDeAssinaturas.detectarSugestoes(listOf(cobranca, estorno2)).isEmpty())
+        assertTrue(DetectorDeAssinaturas.detectarSugestoes(listOf(estorno1, estorno2)).isEmpty())
+
+        val confirmada = Assinatura(
+            publicId = "a1",
+            estabelecimento = "Netflix",
+            estabelecimentoNormalizado = "netflix",
+            valorReferenciaCentavos = 3_990L,
+            ultimaCobranca = LocalDate.of(2026, 3, 31),
+            proximaCobrancaEstimada = LocalDate.of(2026, 4, 30),
+            status = StatusAssinatura.CONFIRMADA,
+            criadoEm = d1,
+            atualizadoEm = d1,
+        )
+        val estorno3 = despesa("e-3", "card-1", "Netflix", 3_990L, d3).copy(estornoDePublicId = "orig-3")
+        assertFalse(DetectorDeAssinaturas.correspondeACobrancaConfirmada(estorno3, confirmada, "card-1"))
+    }
 }
