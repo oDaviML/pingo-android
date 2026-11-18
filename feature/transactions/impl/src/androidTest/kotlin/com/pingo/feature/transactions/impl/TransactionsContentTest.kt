@@ -284,6 +284,22 @@ class TransactionsContentTest {
         assertEquals(1, voltou)
     }
 
+    @Test
+    fun botaoExportarCsvEmiteEventoEMostraAvisoDeFiltroVazio() {
+        val eventos = mutableListOf<TransactionsEvent>()
+        mostrar(
+            estadoPadrao().copy(avisoExportacaoCsv = ExportadorCsvDeLancamentos.MENSAGEM_VAZIO),
+            eventos = eventos,
+        )
+
+        composeRule.onNodeWithTag("botao_exportar_csv").assertIsDisplayed().performClick()
+        composeRule.onNodeWithTag("snackbar-exportacao-vazia")
+            .assertIsDisplayed()
+            .assert(hasText(ExportadorCsvDeLancamentos.MENSAGEM_VAZIO, substring = true))
+
+        assertTrue(eventos.contains(TransactionsEvent.ExportarCsv))
+    }
+
     private fun mostrar(
         state: TransactionsUiState,
         eventos: MutableList<TransactionsEvent> = mutableListOf(),

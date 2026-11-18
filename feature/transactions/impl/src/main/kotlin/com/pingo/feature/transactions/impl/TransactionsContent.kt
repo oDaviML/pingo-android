@@ -129,6 +129,15 @@ private fun SecaoDaLista(
                         .padding(PingoSpacing.xl),
                 )
             }
+            state.avisoExportacaoCsv?.let { aviso ->
+                SnackbarDeAvisoExportacao(
+                    mensagem = aviso,
+                    onDispensar = { onEvent(TransactionsEvent.DispensarAvisoExportacao) },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(PingoSpacing.xl),
+                )
+            }
         }
     }
 }
@@ -152,6 +161,7 @@ private fun CabecalhoDaTela(state: TransactionsUiState, onEvent: (TransactionsEv
                 filtrosAtivos = state.filtrosAtivos,
                 onTexto = { onEvent(TransactionsEvent.BuscaAlterada(it)) },
                 onAbrirFiltros = { onEvent(TransactionsEvent.AbrirFiltros) },
+                onExportarCsv = { onEvent(TransactionsEvent.ExportarCsv) },
             )
             ChipsDeFiltrosAtivos(state = state, onAbrirFiltros = { onEvent(TransactionsEvent.AbrirFiltros) })
         }
@@ -159,7 +169,13 @@ private fun CabecalhoDaTela(state: TransactionsUiState, onEvent: (TransactionsEv
 }
 
 @Composable
-private fun CampoDeBusca(texto: String, filtrosAtivos: Int, onTexto: (String) -> Unit, onAbrirFiltros: () -> Unit) {
+private fun CampoDeBusca(
+    texto: String,
+    filtrosAtivos: Int,
+    onTexto: (String) -> Unit,
+    onAbrirFiltros: () -> Unit,
+    onExportarCsv: () -> Unit,
+) {
     val forma = RoundedCornerShape(PingoRadius.md)
 
     Row(
@@ -169,6 +185,7 @@ private fun CampoDeBusca(texto: String, filtrosAtivos: Int, onTexto: (String) ->
     ) {
         CampoDeTextoDeBusca(texto = texto, onTexto = onTexto, modifier = Modifier.weight(1f))
         BotaoDeFiltros(filtrosAtivos = filtrosAtivos, onAbrirFiltros = onAbrirFiltros, forma = forma)
+        BotaoDeExportarCsv(onExportar = onExportarCsv, forma = forma)
     }
 }
 
@@ -282,6 +299,34 @@ private fun BotaoDeFiltros(filtrosAtivos: Int, onAbrirFiltros: () -> Unit, forma
             contentDescription = null,
             modifier = Modifier.size(20.dp),
             tint = if (ativo) cores.onPrimaryContainer else cores.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun BotaoDeExportarCsv(onExportar: () -> Unit, forma: Shape) {
+    val cores = PingoTheme.colors
+
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .testTag("botao_exportar_csv")
+            .clip(forma)
+            .background(color = cores.surfaceVariant, shape = forma)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                role = Role.Button,
+                onClick = onExportar,
+            )
+            .semantics { contentDescription = "Exportar CSV" },
+        contentAlignment = Alignment.Center,
+    ) {
+        PingoIcon(
+            imageVector = PingoIcons.Download,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = cores.onSurfaceVariant,
         )
     }
 }
@@ -535,5 +580,34 @@ private fun BotaoDesfazerExclusao(onDesfazer: () -> Unit, cor: Color) {
     ) {
         PingoIcon(imageVector = PingoIcons.Undo, contentDescription = null, modifier = Modifier.size(16.dp), tint = cor)
         PingoText(text = "Desfazer", style = PingoTheme.typography.label, color = cor)
+    }
+}
+
+@Composable
+private fun SnackbarDeAvisoExportacao(mensagem: String, onDispensar: () -> Unit, modifier: Modifier = Modifier) {
+    val cores = PingoTheme.colors
+    val fundo = if (cores.isLight) cores.onBackground else Color(0xFF04222A)
+    val forma = RoundedCornerShape(PingoRadius.md)
+
+    LaunchedEffect(mensagem) {
+        delay(4000)
+        onDispensar()
+    }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag("snackbar-exportacao-vazia")
+            .pingoElevation(level = PingoElevationLevel.Level2, shape = forma)
+            .background(color = fundo, shape = forma)
+            .padding(horizontal = PingoSpacing.lg, vertical = PingoSpacing.md),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        PingoText(
+            text = mensagem,
+            style = PingoTheme.typography.bodySmall,
+            color = Color.White,
+            modifier = Modifier.weight(1f),
+        )
     }
 }

@@ -104,6 +104,19 @@ class TransactionsViewModel @Inject constructor(
             is TransactionsEvent.AbrirTrocaCategoria -> abrirTrocaDeCategoria(evento.publicId)
             TransactionsEvent.FecharTrocaCategoria -> controle.update { it.copy(troca = null) }
             is TransactionsEvent.TrocarCategoria -> trocarCategoria(evento.publicId, evento.categoriaPublicId)
+            TransactionsEvent.ExportarCsv,
+            TransactionsEvent.ConsumirExportacaoCsv,
+            TransactionsEvent.DispensarAvisoExportacao,
+            -> tratarEventoExportacao(evento)
+        }
+    }
+
+    private fun tratarEventoExportacao(evento: TransactionsEvent) {
+        when (evento) {
+            TransactionsEvent.ExportarCsv -> exportarCsv()
+            TransactionsEvent.ConsumirExportacaoCsv -> controle.update { it.copy(exportacaoCsvPronta = null) }
+            TransactionsEvent.DispensarAvisoExportacao -> controle.update { it.copy(avisoExportacaoCsv = null) }
+            else -> Unit
         }
     }
 
@@ -167,6 +180,8 @@ class TransactionsViewModel @Inject constructor(
             estadoVazio = estadoVazio(base, filtrados),
             mensagemDeExclusao = atual.mensagem,
             trocaDeCategoria = atual.troca,
+            exportacaoCsvPronta = atual.exportacaoCsvPronta,
+            avisoExportacaoCsv = atual.avisoExportacaoCsv,
         )
     }
 
@@ -261,6 +276,42 @@ class TransactionsViewModel @Inject constructor(
         }
     }
 
+    private fun exportarCsv() {
+        val base = dados.value
+        val atual = controle.value
+        val contasPorId = base.contas.associateBy { it.publicId }
+        val instrumentosPorId = base.instrumentos.associateBy { it.publicId }
+        val categoriasPorId = base.categorias.associateBy { it.publicId }
+        val filtrados = ListaDeLancamentos.filtrar(base.lancamentos, atual.busca, atual.filtros, instrumentosPorId, zonaCalendario)
+
+        when (
+            val resultado = ExportadorCsvDeLancamentos.exportar(
+                lancamentos = filtrados,
+                categoriasPorId = categoriasPorId,
+                instrumentosPorId = instrumentosPorId,
+                contasPorId = contasPorId,
+                zona = zonaCalendario,
+            )
+        ) {
+            is ResultadoExportacaoCsv.Sucesso -> {
+                controle.update {
+                    it.copy(
+                        exportacaoCsvPronta = ExportacaoCsvPronta(conteudoCsv = resultado.conteudoCsv),
+                        avisoExportacaoCsv = null,
+                    )
+                }
+            }
+            is ResultadoExportacaoCsv.Vazio -> {
+                controle.update {
+                    it.copy(
+                        exportacaoCsvPronta = null,
+                        avisoExportacaoCsv = resultado.mensagem,
+                    )
+                }
+            }
+        }
+    }
+
     private fun atualizarFiltros(transformacao: (FiltrosDeLancamentos) -> FiltrosDeLancamentos) {
         controle.update { it.copy(filtros = transformacao(it.filtros)) }
     }
@@ -281,6 +332,8 @@ class TransactionsViewModel @Inject constructor(
         val filtrosVisiveis: Boolean = false,
         val mensagem: MensagemDeExclusao? = null,
         val troca: TrocaDeCategoria? = null,
+        val exportacaoCsvPronta: ExportacaoCsvPronta? = null,
+        val avisoExportacaoCsv: String? = null,
     )
 
     private data class BaseDeDados(

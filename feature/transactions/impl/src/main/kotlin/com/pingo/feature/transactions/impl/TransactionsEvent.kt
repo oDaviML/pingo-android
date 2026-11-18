@@ -33,4 +33,10 @@ sealed interface TransactionsEvent {
     data object FecharTrocaCategoria : TransactionsEvent
 
     data class TrocarCategoria(val publicId: String, val categoriaPublicId: String) : TransactionsEvent
+
+    data object ExportarCsv : TransactionsEvent
+
+    data object ConsumirExportacaoCsv : TransactionsEvent
+
+    data object DispensarAvisoExportacao : TransactionsEvent
 }

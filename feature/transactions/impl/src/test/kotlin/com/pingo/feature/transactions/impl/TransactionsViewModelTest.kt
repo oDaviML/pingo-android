@@ -447,6 +447,49 @@ class TransactionsViewModelTest {
         assertEquals("l-virada-sp", estado.dias.single().itens.single().lancamento.publicId)
     }
 
+    @Test
+    fun `exportar csv usa exatamente os lancamentos filtrados ativos e limpa ao consumir`() = runTest {
+        val viewModel = criarViewModel()
+        advanceUntilIdle()
+
+        viewModel.onEvent(TransactionsEvent.SelecionarTipo(TipoLancamento.DESPESA))
+        viewModel.onEvent(TransactionsEvent.BuscaAlterada("padaria"))
+        advanceUntilIdle()
+
+        viewModel.onEvent(TransactionsEvent.ExportarCsv)
+        advanceUntilIdle()
+
+        val pronta = viewModel.uiState.value.exportacaoCsvPronta
+        assertNotNull(pronta)
+        assertTrue(pronta!!.conteudoCsv.contains("Padaria do Zé"))
+        assertFalse(pronta.conteudoCsv.contains("Salário"))
+        assertFalse(pronta.conteudoCsv.contains("Loja Sem Cartão"))
+        assertNull(viewModel.uiState.value.avisoExportacaoCsv)
+
+        viewModel.onEvent(TransactionsEvent.ConsumirExportacaoCsv)
+        advanceUntilIdle()
+        assertNull(viewModel.uiState.value.exportacaoCsvPronta)
+    }
+
+    @Test
+    fun `exportar csv sem lancamentos no filtro atual exibe aviso claro`() = runTest {
+        val viewModel = criarViewModel()
+        advanceUntilIdle()
+
+        viewModel.onEvent(TransactionsEvent.BuscaAlterada("sem-resultado"))
+        advanceUntilIdle()
+
+        viewModel.onEvent(TransactionsEvent.ExportarCsv)
+        advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.exportacaoCsvPronta)
+        assertEquals(ExportadorCsvDeLancamentos.MENSAGEM_VAZIO, viewModel.uiState.value.avisoExportacaoCsv)
+
+        viewModel.onEvent(TransactionsEvent.DispensarAvisoExportacao)
+        advanceUntilIdle()
+        assertNull(viewModel.uiState.value.avisoExportacaoCsv)
+    }
+
     private fun criarViewModel(
         lancamentos: List<Lancamento> = listaCompleta(),
         repositorio: FakeLancamentoRepository = FakeLancamentoRepository(lancamentos),

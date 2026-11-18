@@ -24,6 +24,8 @@ data class TransactionsUiState(
     val estadoVazio: EstadoVazioDosLancamentos? = null,
     val mensagemDeExclusao: MensagemDeExclusao? = null,
     val trocaDeCategoria: TrocaDeCategoria? = null,
+    val exportacaoCsvPronta: ExportacaoCsvPronta? = null,
+    val avisoExportacaoCsv: String? = null,
 )
 
 @Immutable
@@ -77,6 +79,9 @@ data class TrocaDeCategoria(
     val categoriaAtualPublicId: String?,
     val opcoes: List<OpcaoDeCategoria>,
 )
+
+@Immutable
+data class ExportacaoCsvPronta(val conteudoCsv: String, val nomeArquivo: String = "pingo-lancamentos.csv")
 
 enum class EstadoVazioDosLancamentos {
     SEM_LANCAMENTOS,
