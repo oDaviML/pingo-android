@@ -120,6 +120,16 @@ class UserPreferencesDataSourceImpl @Inject constructor(@param:ApplicationContex
         }
     }
 
+    override val avisoAssinaturasAtivo: Flow<Boolean> = context.userPreferencesDataStore.data.map { preferences ->
+        preferences[Keys.AVISO_ASSINATURAS_ATIVO] ?: false
+    }
+
+    override suspend fun setAvisoAssinaturasAtivo(ativo: Boolean) {
+        context.userPreferencesDataStore.edit { preferences ->
+            preferences[Keys.AVISO_ASSINATURAS_ATIVO] = ativo
+        }
+    }
+
     override suspend fun clear() {
         context.userPreferencesDataStore.edit { preferences -> preferences.clear() }
     }
@@ -136,6 +146,7 @@ class UserPreferencesDataSourceImpl @Inject constructor(@param:ApplicationContex
             val CONSENT_AT = stringPreferencesKey("consent_at")
             val CONTAS_CONFIGURADAS = booleanPreferencesKey("contas_configuradas")
             val CONTAS_ONBOARDING_PENDENTES = stringSetPreferencesKey("contas_onboarding_pendentes")
+            val AVISO_ASSINATURAS_ATIVO = booleanPreferencesKey("aviso_assinaturas_ativo")
         }
     }
 }

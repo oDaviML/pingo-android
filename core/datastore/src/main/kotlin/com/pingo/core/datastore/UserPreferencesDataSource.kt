@@ -1,6 +1,7 @@
 package com.pingo.core.datastore
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import java.time.Instant
 
 enum class SyncStatus {
@@ -45,6 +46,11 @@ interface UserPreferencesDataSource {
     suspend fun contasOnboardingPendentes(): List<String>
 
     suspend fun setContasOnboardingPendentes(publicIds: List<String>)
+
+    val avisoAssinaturasAtivo: Flow<Boolean>
+        get() = flowOf(false)
+
+    suspend fun setAvisoAssinaturasAtivo(ativo: Boolean) = Unit
 
     suspend fun clear()
 }

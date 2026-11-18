@@ -90,4 +90,24 @@ class UserPreferencesDataSourceTest {
 
         assertFalse(dataSource.contasConfiguradas())
     }
+
+    @Test
+    fun avisoDeAssinaturasComecaDesligadoEPersisteAteLimpar() = runBlocking {
+        dataSource.clear()
+
+        assertFalse(dataSource.avisoAssinaturasAtivo.first())
+
+        dataSource.setAvisoAssinaturasAtivo(true)
+
+        assertTrue(dataSource.avisoAssinaturasAtivo.first())
+
+        dataSource.setAvisoAssinaturasAtivo(false)
+
+        assertFalse(dataSource.avisoAssinaturasAtivo.first())
+
+        dataSource.setAvisoAssinaturasAtivo(true)
+        dataSource.clear()
+
+        assertFalse(dataSource.avisoAssinaturasAtivo.first())
+    }
 }
