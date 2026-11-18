@@ -9,7 +9,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 internal object AndroidConfig {
     const val TEST_INSTRUMENTATION_RUNNER = "androidx.test.runner.AndroidJUnitRunner"
     const val GROUP_PREFIX = "com.pingo"
-    const val PROJECT_VERSION = "0.3.0"
+    const val PROJECT_VERSION = "0.4.0"
 }
 
 internal val Project.libs: VersionCatalog
