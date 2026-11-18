@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -26,11 +28,14 @@ import com.pingo.core.designsystem.component.PingoButton
 import com.pingo.core.designsystem.component.PingoButtonType
 import com.pingo.core.designsystem.component.PingoCard
 import com.pingo.core.designsystem.component.PingoElevationLevel
+import com.pingo.core.designsystem.component.PingoIcon
 import com.pingo.core.designsystem.component.PingoLargeTopBar
-import com.pingo.core.designsystem.component.PingoSpinner
+import com.pingo.core.designsystem.component.PingoSkeletonList
 import com.pingo.core.designsystem.component.PingoText
 import com.pingo.core.designsystem.component.SectionHeader
 import com.pingo.core.designsystem.component.pingoElevation
+import com.pingo.core.designsystem.icon.PingoIcons
+import com.pingo.core.designsystem.theme.PingoLayout
 import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
@@ -50,12 +55,43 @@ internal fun AccountsContent(
     onSelecionarAba: (AbaInferior) -> Unit,
     onOpenNovo: (() -> Unit)? = null,
     mostrarBarraInferior: Boolean = true,
+    onAbrirFaturas: (String) -> Unit = {},
+    onEvent: (AccountsEvent) -> Unit = {},
 ) {
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(PingoTheme.colors.background),
     ) {
+        CorpoPrincipalContas(
+            state = state,
+            onNovaConta = onNovaConta,
+            onAbrirConta = onAbrirConta,
+            onTentarDeNovo = onTentarDeNovo,
+            onSelecionarAba = onSelecionarAba,
+            onOpenNovo = onOpenNovo,
+            mostrarBarraInferior = mostrarBarraInferior,
+            onAbrirFaturas = onAbrirFaturas,
+            onEvent = onEvent,
+        )
+        ModaisDeContas(state = state, onEvent = onEvent)
+    }
+}
+
+@Suppress("LongParameterList")
+@Composable
+private fun CorpoPrincipalContas(
+    state: AccountsUiState,
+    onNovaConta: () -> Unit,
+    onAbrirConta: (String) -> Unit,
+    onTentarDeNovo: () -> Unit,
+    onSelecionarAba: (AbaInferior) -> Unit,
+    onOpenNovo: (() -> Unit)?,
+    mostrarBarraInferior: Boolean,
+    onAbrirFaturas: (String) -> Unit,
+    onEvent: (AccountsEvent) -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -73,7 +109,13 @@ internal fun AccountsContent(
                     state.carregando -> CarregandoContas()
                     state.falha -> FalhaAoLerContas(onTentarDeNovo = onTentarDeNovo)
                     state.vazia -> ContasVazias(onNovaConta = onNovaConta)
-                    else -> ListaDeContas(state = state, onNovaConta = onNovaConta, onAbrirConta = onAbrirConta)
+                    else -> ListaDeContas(
+                        state = state,
+                        onNovaConta = onNovaConta,
+                        onAbrirConta = onAbrirConta,
+                        onAbrirFaturas = onAbrirFaturas,
+                        onEvent = onEvent,
+                    )
                 }
             }
         }
@@ -89,21 +131,42 @@ internal fun AccountsContent(
 }
 
 @Composable
+private fun ModaisDeContas(state: AccountsUiState, onEvent: (AccountsEvent) -> Unit) {
+    state.modalCompletarDatas?.let { modal ->
+        CompletarDatasBottomSheet(
+            state = modal,
+            onAlterarFechamento = { onEvent(AccountsEvent.AlterarFechamentoModal(it)) },
+            onAlterarVencimento = { onEvent(AccountsEvent.AlterarVencimentoModal(it)) },
+            onSalvar = { onEvent(AccountsEvent.SalvarDatasCartao) },
+            onFechar = { onEvent(AccountsEvent.FecharModalCompletarDatas) },
+        )
+    }
+    state.modalAjustarSaldo?.let { modal ->
+        AjustarSaldoBottomSheet(
+            state = modal,
+            onAlterarModo = { onEvent(AccountsEvent.AlterarModoAjuste(it)) },
+            onAlterarValor = { onEvent(AccountsEvent.AlterarValorAjuste(it)) },
+            onAlterarObservacao = { onEvent(AccountsEvent.AlterarObservacaoAjuste(it)) },
+            onSalvar = { onEvent(AccountsEvent.SalvarAjusteVoucher) },
+            onFechar = { onEvent(AccountsEvent.FecharModalAjustarSaldo) },
+        )
+    }
+}
+
+@Composable
 private fun CarregandoContas() {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .testTag("contas-carregando"),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.spacedBy(PingoSpacing.md),
     ) {
-        PingoSpinner(size = 28.dp)
-        Spacer(modifier = Modifier.height(PingoSpacing.sm))
         PingoText(
             text = "Carregando contas…",
-            style = PingoTheme.typography.body,
+            style = PingoTheme.typography.bodySmall,
             color = PingoTheme.colors.onSurfaceVariant,
         )
+        PingoSkeletonList(count = 4)
     }
 }
 
@@ -149,7 +212,13 @@ private fun ContasVazias(onNovaConta: () -> Unit) {
 }
 
 @Composable
-private fun ListaDeContas(state: AccountsUiState, onNovaConta: () -> Unit, onAbrirConta: (String) -> Unit) {
+private fun ListaDeContas(
+    state: AccountsUiState,
+    onNovaConta: () -> Unit,
+    onAbrirConta: (String) -> Unit,
+    onAbrirFaturas: (String) -> Unit,
+    onEvent: (AccountsEvent) -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -159,7 +228,13 @@ private fun ListaDeContas(state: AccountsUiState, onNovaConta: () -> Unit, onAbr
         state.grupos.forEach { grupo ->
             SectionHeader(title = grupo.instituicao.nomeDeExibicao())
             grupo.contas.forEach { item ->
-                ContaCard(conta = item, onAbrirConta = onAbrirConta)
+                BlocoContaAtiva(
+                    conta = item,
+                    hoje = state.hoje,
+                    onAbrirConta = onAbrirConta,
+                    onAbrirFaturas = onAbrirFaturas,
+                    onEvent = onEvent,
+                )
             }
         }
 
@@ -181,21 +256,75 @@ private fun ListaDeContas(state: AccountsUiState, onNovaConta: () -> Unit, onAbr
 }
 
 @Composable
-private fun ContaCard(conta: ContaDaLista, onAbrirConta: (String) -> Unit) {
-    val linhas = if (conta.instrumentos.isEmpty()) {
-        listOf("Nenhum instrumento ativo")
-    } else {
-        conta.instrumentos.map { it.rotuloNaListaDeContas() }
+private fun BlocoContaAtiva(
+    conta: ContaDaLista,
+    hoje: java.time.LocalDate,
+    onAbrirConta: (String) -> Unit,
+    onAbrirFaturas: (String) -> Unit,
+    onEvent: (AccountsEvent) -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(PingoSpacing.sm),
+    ) {
+        CabecalhoContaCard(conta = conta, onAbrirConta = onAbrirConta)
+        if (conta.indicadores.isEmpty()) {
+            PingoText(
+                text = "Nenhum instrumento ativo",
+                style = PingoTheme.typography.bodySmall,
+                color = PingoTheme.colors.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = PingoSpacing.xs),
+            )
+        } else {
+            SubcardsDaConta(
+                conta = conta.conta,
+                indicadores = conta.indicadores,
+                hoje = hoje,
+                onAbrirFaturas = onAbrirFaturas,
+                onEvent = onEvent,
+            )
+        }
     }
+}
 
-    CartaoDeConta(
-        instituicao = conta.conta.instituicao,
-        titulo = conta.conta.apelido,
-        selo = conta.conta.tipo.rotuloDeExibicao(),
-        linhas = linhas,
-        testTag = "conta-${conta.conta.publicId}",
-        onClick = { onAbrirConta(conta.conta.publicId) },
-    )
+@Composable
+private fun CabecalhoContaCard(conta: ContaDaLista, onAbrirConta: (String) -> Unit) {
+    val shape = RoundedCornerShape(PingoRadius.xl)
+    PingoCard(
+        modifier = Modifier
+            .testTag("conta-${conta.conta.publicId}")
+            .heightIn(min = PingoLayout.minTouchTarget)
+            .pingoElevation(level = PingoElevationLevel.Level1, shape = shape)
+            .clickable(role = Role.Button, onClick = { onAbrirConta(conta.conta.publicId) }),
+        contentPadding = PingoSpacing.md,
+        gap = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AvatarDaInstituicao(instituicao = conta.conta.instituicao, size = 36.dp)
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                PingoText(
+                    text = conta.conta.apelido,
+                    style = PingoTheme.typography.bodyStrong,
+                    color = PingoTheme.colors.onBackground,
+                )
+                PingoText(
+                    text = "${conta.conta.instituicao.nomeDeExibicao()} · ${conta.conta.tipo.rotuloDeExibicao()}",
+                    style = PingoTheme.typography.caption,
+                    color = PingoTheme.colors.onSurfaceVariant,
+                )
+            }
+            PingoIcon(
+                imageVector = PingoIcons.Pencil,
+                contentDescription = "Editar conta ${conta.conta.apelido}",
+                modifier = Modifier.size(18.dp),
+                tint = PingoTheme.colors.onSurfaceVariant,
+            )
+        }
+    }
 }
 
 @Composable
@@ -229,6 +358,7 @@ private fun CartaoDeConta(
     PingoCard(
         modifier = Modifier
             .testTag(testTag)
+            .heightIn(min = PingoLayout.minTouchTarget)
             .pingoElevation(level = PingoElevationLevel.Level1, shape = shape)
             .clickable(role = Role.Button, onClick = onClick),
         contentPadding = PingoSpacing.lg,

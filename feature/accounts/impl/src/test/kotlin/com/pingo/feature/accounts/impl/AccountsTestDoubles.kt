@@ -1,13 +1,21 @@
 package com.pingo.feature.accounts.impl
 
 import com.pingo.core.data.CadastroSalvo
+import com.pingo.core.data.CategoriaRepository
 import com.pingo.core.data.ContaRepository
 import com.pingo.core.data.InstrumentoRepository
+import com.pingo.core.data.ResultadoCategoria
+import com.pingo.core.data.projecao.ContasFinanceiroProjection
+import com.pingo.core.model.Categoria
 import com.pingo.core.model.Conta
 import com.pingo.core.model.ContaEditada
 import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.Instrumento
 import com.pingo.core.model.NovaConta
+import com.pingo.core.model.TipoCategoria
+import com.pingo.core.model.fatura.FaturasDoCartao
+import com.pingo.core.model.organizacao.ResumoContasFinanceiro
+import com.pingo.core.model.voucher.DetalheVoucher
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -124,4 +132,46 @@ internal class FakeInstrumentoRepository : InstrumentoRepository {
         instrumentos.value = instrumentos.value.map { if (it.publicId == publicId) transformar(it) else it }
         porConta = porConta.map { if (it.publicId == publicId) transformar(it) else it }
     }
+}
+
+internal class FakeContasFinanceiroProjection : ContasFinanceiroProjection {
+    val resumo = MutableStateFlow(ResumoContasFinanceiro(emptyList(), emptyList()))
+    val faturasPorInstrumento = MutableStateFlow<Map<String, FaturasDoCartao?>>(emptyMap())
+    val detalheVoucher = MutableStateFlow<DetalheVoucher?>(null)
+    var falhaAoObservarContas: Throwable? = null
+    var falhaAoObservarFaturas: Throwable? = null
+
+    override fun observeContas(): Flow<ResumoContasFinanceiro> = flow {
+        falhaAoObservarContas?.let { throw it }
+        emitAll(resumo)
+    }
+
+    override fun observeFaturasDoCartao(instrumentoPublicId: String): Flow<FaturasDoCartao?> = flow {
+        falhaAoObservarFaturas?.let { throw it }
+        emitAll(faturasPorInstrumento.map { it[instrumentoPublicId] })
+    }
+
+    override fun observeDetalheVoucher(instrumentoPublicId: String): Flow<DetalheVoucher?> = detalheVoucher
+}
+
+internal class FakeCategoriaRepository : CategoriaRepository {
+    val categorias = MutableStateFlow<List<Categoria>>(emptyList())
+
+    override fun observeCategorias(): Flow<List<Categoria>> = categorias
+
+    override fun observeEscolhiveis(): Flow<List<Categoria>> = categorias
+
+    override suspend fun buscar(publicId: String): Categoria? = categorias.value.firstOrNull { it.publicId == publicId }
+
+    override suspend fun criar(nome: String, tipo: TipoCategoria, agora: Instant): ResultadoCategoria = error("Não esperado em teste")
+
+    override suspend fun renomear(publicId: String, novoNome: String, quando: Instant): ResultadoCategoria = error("Não esperado em teste")
+
+    override suspend fun arquivar(publicId: String, quando: Instant) = Unit
+
+    override suspend fun salvar(categoria: Categoria) = Unit
+
+    override suspend fun salvarTodas(categorias: List<Categoria>) = Unit
+
+    override suspend fun excluir(publicId: String, quando: Instant) = Unit
 }

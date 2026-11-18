@@ -6,6 +6,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pingo.core.designsystem.component.AbaInferior
 
+@Suppress("LongParameterList")
 @Composable
 fun AccountsScreen(
     onSelecionarAba: (AbaInferior) -> Unit,
@@ -14,6 +15,7 @@ fun AccountsScreen(
     viewModel: AccountsViewModel = hiltViewModel(),
     onOpenNovo: (() -> Unit)? = null,
     mostrarBarraInferior: Boolean = true,
+    onAbrirFaturas: (String) -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -25,5 +27,7 @@ fun AccountsScreen(
         onSelecionarAba = onSelecionarAba,
         onOpenNovo = onOpenNovo,
         mostrarBarraInferior = mostrarBarraInferior,
+        onAbrirFaturas = onAbrirFaturas,
+        onEvent = viewModel::onEvent,
     )
 }
