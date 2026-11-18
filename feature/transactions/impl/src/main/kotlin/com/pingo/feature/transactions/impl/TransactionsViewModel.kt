@@ -14,6 +14,7 @@ import com.pingo.core.model.Lancamento
 import com.pingo.core.model.TipoCategoria
 import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.relatorio.AgregadorDeRelatorioMensal
 import com.pingo.feature.transactions.api.TransactionsRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,6 +53,7 @@ class TransactionsViewModel @Inject constructor(
     )
 
     private val filtrosIniciais = filtrosDeDrillDown(savedStateHandle)
+    private val zonaCalendario = if (filtrosIniciais != null) AgregadorDeRelatorioMensal.ZONA_SAO_PAULO else clock.zone
     private val controle = MutableStateFlow(ControleDaTela(filtros = filtrosIniciais ?: FiltrosDeLancamentos()))
     private val dados = MutableStateFlow(BaseDeDados())
     private val mutableUiState = MutableStateFlow(TransactionsUiState())
@@ -143,7 +145,7 @@ class TransactionsViewModel @Inject constructor(
         val contasPorId = base.contas.associateBy { it.publicId }
         val instrumentosPorId = base.instrumentos.associateBy { it.publicId }
         val categoriasPorId = base.categorias.associateBy { it.publicId }
-        val filtrados = ListaDeLancamentos.filtrar(base.lancamentos, atual.busca, atual.filtros, instrumentosPorId, clock.zone)
+        val filtrados = ListaDeLancamentos.filtrar(base.lancamentos, atual.busca, atual.filtros, instrumentosPorId, zonaCalendario)
 
         mutableUiState.value = TransactionsUiState(
             carregando = !base.carregado,
@@ -158,8 +160,8 @@ class TransactionsViewModel @Inject constructor(
                 categoriasPorId = categoriasPorId,
                 instrumentosPorId = instrumentosPorId,
                 contasPorId = contasPorId,
-                hoje = LocalDate.now(clock),
-                zona = clock.zone,
+                hoje = LocalDate.ofInstant(clock.instant(), zonaCalendario),
+                zona = zonaCalendario,
             ),
             quantidadeDeLancamentos = filtrados.size,
             filtrosAtivos = atual.filtros.ativos,
@@ -177,8 +179,9 @@ class TransactionsViewModel @Inject constructor(
     }
 
     private fun mesesDisponiveis(lancamentos: List<Lancamento>): List<YearMonth> {
-        val doBase = lancamentos.map { YearMonth.from(it.dataHora.atZone(clock.zone)) }
-        return (doBase + YearMonth.now(clock)).distinct().sortedDescending()
+        val doBase = lancamentos.map { YearMonth.from(it.dataHora.atZone(zonaCalendario)) }
+        val atual = YearMonth.from(clock.instant().atZone(zonaCalendario))
+        return (doBase + atual).distinct().sortedDescending()
     }
 
     private fun opcoesDeVinculo(contas: List<Conta>, instrumentos: List<Instrumento>): List<OpcaoDeVinculo> {
@@ -264,13 +267,13 @@ class TransactionsViewModel @Inject constructor(
     }
 
     private fun mesInicial(lancamentos: List<Lancamento>): YearMonth {
-        val atual = YearMonth.now(clock)
+        val atual = YearMonth.from(clock.instant().atZone(zonaCalendario))
 
-        if (lancamentos.any { YearMonth.from(it.dataHora.atZone(clock.zone)) == atual }) {
+        if (lancamentos.any { YearMonth.from(it.dataHora.atZone(zonaCalendario)) == atual }) {
             return atual
         }
 
-        return lancamentos.maxOfOrNull { YearMonth.from(it.dataHora.atZone(clock.zone)) } ?: atual
+        return lancamentos.maxOfOrNull { YearMonth.from(it.dataHora.atZone(zonaCalendario)) } ?: atual
     }
 
     private data class ControleDaTela(

@@ -67,9 +67,23 @@ class ReportsContentTest {
 
         composeRule.onNodeWithTag("relatorios-vazio").assertIsDisplayed()
         composeRule.onNodeWithText("Sem dados neste mês").assertIsDisplayed()
-        composeRule.onNodeWithText("Lançar manualmente").performClick()
+        composeRule.onNodeWithTag("relatorios-assinaturas-vazio").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Lançar manualmente").performScrollTo().performClick()
 
         assertTrue(abriuNovo)
+    }
+
+    @Test
+    fun sugestoesSemConfirmadasMantemEstadoVazioDeAssinaturasConfirmadasVisivel() {
+        mostrar(
+            state = estadoPreenchido().copy(
+                sugestoesAssinatura = listOf(sugestaoSpotify()),
+                assinaturasConfirmadas = emptyList(),
+            ),
+        )
+
+        composeRule.onNodeWithText("Spotify").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("relatorios-assinaturas-vazio").performScrollTo().assertIsDisplayed()
     }
 
     @Test

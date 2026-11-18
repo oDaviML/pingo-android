@@ -184,9 +184,7 @@ private fun ConteudoMesVazio(state: ReportsUiState, onEvent: (ReportsEvent) -> U
         onAcao = onOpenNovo,
         modifier = Modifier.testTag("relatorios-vazio"),
     )
-    if (state.sugestoesAssinatura.isNotEmpty() || state.assinaturasConfirmadas.isNotEmpty()) {
-        SecaoAssinaturas(state = state, onEvent = onEvent)
-    }
+    SecaoAssinaturas(state = state, onEvent = onEvent)
 }
 
 @Composable

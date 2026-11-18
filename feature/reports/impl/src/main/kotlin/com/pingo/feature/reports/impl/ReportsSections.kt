@@ -39,10 +39,7 @@ import com.pingo.core.ui.iconeDaCategoria
 import java.time.YearMonth
 
 @Composable
-internal fun SecaoDespesasPorCategoria(
-    state: ReportsUiState,
-    onAbrirCategoriaNoMes: (String, YearMonth) -> Unit,
-) {
+internal fun SecaoDespesasPorCategoria(state: ReportsUiState, onAbrirCategoriaNoMes: (String, YearMonth) -> Unit) {
     val shape = RoundedCornerShape(PingoRadius.xl)
     SectionHeader(title = "Despesas por categoria")
     PingoCard(
@@ -72,10 +69,7 @@ internal fun SecaoDespesasPorCategoria(
 }
 
 @Composable
-internal fun SecaoComparativoMensal(
-    state: ReportsUiState,
-    onAbrirCategoriaNoMes: (String, YearMonth) -> Unit,
-) {
+internal fun SecaoComparativoMensal(state: ReportsUiState, onAbrirCategoriaNoMes: (String, YearMonth) -> Unit) {
     val itens = buildList {
         state.comparativoGeral?.let(::add)
         addAll(state.comparativos)
@@ -105,10 +99,7 @@ internal fun SecaoComparativoMensal(
 }
 
 @Composable
-internal fun SecaoPorCategoria(
-    state: ReportsUiState,
-    onAbrirCategoriaNoMes: (String, YearMonth) -> Unit,
-) {
+internal fun SecaoPorCategoria(state: ReportsUiState, onAbrirCategoriaNoMes: (String, YearMonth) -> Unit) {
     if (state.categorias.isEmpty()) return
 
     val shape = RoundedCornerShape(PingoRadius.xl)
@@ -227,10 +218,6 @@ internal fun SecaoAssinaturas(state: ReportsUiState, onEvent: (ReportsEvent) -> 
         verticalArrangement = Arrangement.spacedBy(PingoSpacing.md),
     ) {
         SectionHeader(title = "Assinaturas")
-        if (state.sugestoesAssinatura.isEmpty() && state.assinaturasConfirmadas.isEmpty()) {
-            AssinaturasVaziasCard()
-            return
-        }
         state.sugestoesAssinatura.forEach { sugestao ->
             val emProcessamento = sugestao.chaveTexto in state.assinaturasEmProcessamento
             PingoSubscriptionSuggestionCard(
@@ -246,6 +233,8 @@ internal fun SecaoAssinaturas(state: ReportsUiState, onEvent: (ReportsEvent) -> 
         }
         if (state.assinaturasConfirmadas.isNotEmpty()) {
             ListaAssinaturasConfirmadas(state = state, onEvent = onEvent)
+        } else {
+            AssinaturasVaziasCard()
         }
     }
 }

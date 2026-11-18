@@ -417,6 +417,36 @@ class TransactionsViewModelTest {
         assertEquals(0, estado.filtrosAtivos)
     }
 
+    @Test
+    fun `drill down com clock utc inclui lancamento na virada do mes em sao paulo`() = runTest {
+        val viradaSp = lancamentoDeTeste(
+            publicId = "l-virada-sp",
+            dataHora = Instant.parse("2026-11-01T01:30:00Z"),
+            valorCentavos = 4500,
+            estabelecimento = "Jantar Virada",
+            instrumentoPublicId = instrumentoNubank.publicId,
+            categoriaPublicId = alimentacao.publicId,
+        )
+        val utcClock = Clock.fixed(Instant.parse("2026-11-01T01:30:00Z"), ZoneOffset.UTC)
+        val savedStateHandle = SavedStateHandle(
+            mapOf(
+                TransactionsRoute.ARG_CATEGORIA_ID to alimentacao.publicId,
+                TransactionsRoute.ARG_MES to "2026-10",
+            ),
+        )
+        val viewModel = criarViewModel(
+            lancamentos = listOf(viradaSp),
+            clock = utcClock,
+            savedStateHandle = savedStateHandle,
+        )
+        advanceUntilIdle()
+
+        val estado = viewModel.uiState.value
+        assertEquals(YearMonth.of(2026, 10), estado.filtros.mes)
+        assertEquals(1, estado.quantidadeDeLancamentos)
+        assertEquals("l-virada-sp", estado.dias.single().itens.single().lancamento.publicId)
+    }
+
     private fun criarViewModel(
         lancamentos: List<Lancamento> = listaCompleta(),
         repositorio: FakeLancamentoRepository = FakeLancamentoRepository(lancamentos),

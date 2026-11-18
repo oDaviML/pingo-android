@@ -50,6 +50,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
+import java.time.ZoneOffset
 import kotlin.system.measureTimeMillis
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -264,6 +265,25 @@ class ReportsViewModelTest {
         assertFalse(viewModel.uiState.value.falha)
         assertFalse(viewModel.uiState.value.carregando)
         assertEquals("R$ 1.500,00", viewModel.uiState.value.totalDespesasFormatado)
+    }
+
+    @Test
+    fun `mes inicial usa fuso sao paulo mesmo quando clock do dispositivo esta em utc`() = runTest {
+        val viradaUtcClock = Clock.fixed(Instant.parse("2026-11-01T01:30:00Z"), ZoneOffset.UTC)
+        val relatorios = FakeRelatoriosProjection(mapOf(outubro to relatorioPreenchido(outubro)))
+        val viewModel = ReportsViewModel(
+            relatoriosProjection = relatorios,
+            assinaturaRepository = FakeAssinaturaRepository(),
+            instrumentoRepository = FakeInstrumentoRepo(listOf(cartaoNubank)),
+            contaRepository = FakeContaRepo(listOf(contaNubank)),
+            dispatchers = FakeAppDispatchers(dispatcherRule.testDispatcher),
+            clock = viradaUtcClock,
+        )
+        advanceUntilIdle()
+
+        val estado = viewModel.uiState.value
+        assertEquals(outubro, estado.mes)
+        assertFalse(estado.podeAvancarMes)
     }
 
     @Test

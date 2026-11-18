@@ -9,6 +9,7 @@ import com.pingo.core.data.InstrumentoRepository
 import com.pingo.core.data.projecao.RelatoriosProjection
 import com.pingo.core.model.assinatura.ChaveAssinatura
 import com.pingo.core.model.assinatura.SugestaoDeAssinatura
+import com.pingo.core.model.relatorio.AgregadorDeRelatorioMensal
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,7 +36,7 @@ class ReportsViewModel @Inject constructor(
     private val dispatchers: AppDispatchers,
     private val clock: Clock,
 ) : ViewModel() {
-    private val mesSelecionado = MutableStateFlow(YearMonth.now(clock))
+    private val mesSelecionado = MutableStateFlow(mesAtual())
     private val tentativa = MutableStateFlow(0)
     private val estadoBase = MutableStateFlow<EstadoBase>(EstadoBase.Carregando(mesSelecionado.value))
     private val processamento = MutableStateFlow<Set<String>>(emptySet())
@@ -64,10 +65,10 @@ class ReportsViewModel @Inject constructor(
             ReportsEvent.MesAnterior -> alterarMes(mesSelecionado.value.minusMonths(1))
             ReportsEvent.MesProximo -> {
                 val proximo = mesSelecionado.value.plusMonths(1)
-                if (proximo <= YearMonth.now(clock)) alterarMes(proximo)
+                if (proximo <= mesAtual()) alterarMes(proximo)
             }
             is ReportsEvent.SelecionarMes -> {
-                if (evento.mes <= YearMonth.now(clock)) alterarMes(evento.mes)
+                if (evento.mes <= mesAtual()) alterarMes(evento.mes)
             }
             ReportsEvent.TentarDeNovo -> tentativa.update { it + 1 }
             is ReportsEvent.ConfirmarSugestao -> confirmarSugestao(evento.chave)
@@ -78,6 +79,8 @@ class ReportsViewModel @Inject constructor(
             ReportsEvent.DispensarMensagemErro -> mensagemErroAcao.value = null
         }
     }
+
+    private fun mesAtual(): YearMonth = YearMonth.from(clock.instant().atZone(AgregadorDeRelatorioMensal.ZONA_SAO_PAULO))
 
     private fun alterarMes(novoMes: YearMonth) {
         if (novoMes != mesSelecionado.value) {
@@ -114,7 +117,7 @@ class ReportsViewModel @Inject constructor(
     ) { detalhado, confirmadas, sugestoes, contas, instrumentos ->
         val ui = mapearEstadoRelatorio(
             mes = mes,
-            mesAtual = YearMonth.now(clock),
+            mesAtual = mesAtual(),
             detalhado = detalhado,
             confirmadas = confirmadas,
             sugestoes = sugestoes,
@@ -144,14 +147,14 @@ class ReportsViewModel @Inject constructor(
                         carregando = true,
                         mes = base.mes,
                         rotuloMes = rotuloMesCompleto(base.mes),
-                        podeAvancarMes = base.mes < YearMonth.now(clock),
+                        podeAvancarMes = base.mes < mesAtual(),
                     )
                     is EstadoBase.Erro -> ReportsUiState(
                         carregando = false,
                         falha = true,
                         mes = base.mes,
                         rotuloMes = rotuloMesCompleto(base.mes),
-                        podeAvancarMes = base.mes < YearMonth.now(clock),
+                        podeAvancarMes = base.mes < mesAtual(),
                     )
                     is EstadoBase.Sucesso -> base.ui.copy(
                         assinaturasEmProcessamento = emProcessamento,
