@@ -101,6 +101,7 @@ class DetalheDoLancamentoRoomTest {
 
     @After
     fun fechaBanco() {
+        composeRule.waitForIdle()
         database.close()
     }
 

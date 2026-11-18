@@ -1,6 +1,7 @@
 package com.pingo.navigation
 
 import android.app.Activity
+import android.content.Intent
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -59,6 +60,12 @@ fun PingoNavHost(session: SessionState, destinoInicial: DestinoInicial?, onConse
         return
     }
 
+    val activity = LocalActivity.current
+    val intencao = activity?.intent
+    if (intencao?.hasExtra(NotificacoesDeRevisao.EXTRA_PUBLIC_ID) == true) {
+        intencao.removeFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+
     val navController = rememberNavController()
     RedirectToOnboardingOnLogout(session = session, navController = navController)
     NavegacaoComBarraInferior(
@@ -67,7 +74,7 @@ fun PingoNavHost(session: SessionState, destinoInicial: DestinoInicial?, onConse
         onConsentAccepted = onConsentAccepted,
     )
     ContextoInicial(
-        activity = LocalActivity.current,
+        activity = activity,
         destinoInicial = destinoInicial,
         navController = navController,
     )
