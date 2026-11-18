@@ -48,6 +48,7 @@ import com.pingo.feature.reports.impl.ReportsScreen
 import com.pingo.feature.review.api.ReviewRoute
 import com.pingo.feature.review.impl.ReviewScreen
 import com.pingo.feature.settings.api.SettingsRoute
+import com.pingo.feature.settings.impl.CategoriasERegrasScreen
 import com.pingo.feature.settings.impl.SettingsScreen
 import com.pingo.feature.transactions.api.TransactionsRoute
 import com.pingo.feature.transactions.impl.DetalheDoLancamentoScreen
@@ -260,7 +261,12 @@ private fun NavGraphBuilder.telasDeApoio(navController: NavHostController) {
         SettingsScreen(
             onBack = { navController.popBackStack() },
             onAccountDeleted = { navController.toOnboarding() },
+            onLoggedOut = { navController.toOnboarding() },
+            onAbrirCategoriasERegras = { navController.navigate(SettingsRoute.CATEGORIAS_E_REGRAS_ROUTE) },
         )
+    }
+    composable(SettingsRoute.CATEGORIAS_E_REGRAS_ROUTE) {
+        CategoriasERegrasScreen(onBack = { navController.popBackStack() })
     }
 }
 

@@ -4,9 +4,11 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.pingo.feature.home.api.HomeRoute
+import com.pingo.feature.onboarding.api.OnboardingBiometriaRoute
 import com.pingo.feature.onboarding.api.OnboardingContasRoute
 import com.pingo.feature.onboarding.api.OnboardingPermissoesRoute
 import com.pingo.feature.onboarding.api.OnboardingRoute
+import com.pingo.feature.onboarding.impl.OnboardingBiometriaScreen
 import com.pingo.feature.onboarding.impl.OnboardingContasScreen
 import com.pingo.feature.onboarding.impl.OnboardingPermissoesScreen
 import com.pingo.feature.onboarding.impl.OnboardingScreen
@@ -34,8 +36,17 @@ internal fun NavGraphBuilder.onboardingGraph(navController: NavHostController, o
     composable(OnboardingContasRoute.ROUTE) {
         OnboardingContasScreen(
             onConcluir = {
-                navController.navigate(HomeRoute.ROUTE) {
+                navController.navigate(OnboardingBiometriaRoute.ROUTE) {
                     popUpTo(OnboardingContasRoute.ROUTE) { inclusive = true }
+                }
+            },
+        )
+    }
+    composable(OnboardingBiometriaRoute.ROUTE) {
+        OnboardingBiometriaScreen(
+            onConcluir = {
+                navController.navigate(HomeRoute.ROUTE) {
+                    popUpTo(OnboardingBiometriaRoute.ROUTE) { inclusive = true }
                 }
             },
         )

@@ -138,6 +138,10 @@ class OnboardingContasEdicaoNavegacaoTest {
     private fun concluirOnboardingEAguardarInicio() {
         composeRule.onNodeWithText("Continuar").performClick()
         composeRule.waitUntil(ESPERA_MS) {
+            composeRule.onAllNodesWithTag("botao_agora_nao_biometria").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithTag("botao_agora_nao_biometria").performClick()
+        composeRule.waitUntil(ESPERA_MS) {
             composeRule.onAllNodesWithTag("aba-CONTAS").fetchSemanticsNodes().isNotEmpty()
         }
         assertTrue(runBlocking { preferences.contasConfiguradas() })

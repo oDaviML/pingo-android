@@ -5,6 +5,7 @@ import com.pingo.core.notifications.NotificacoesDeRevisao
 import com.pingo.feature.accounts.api.AccountsRoute
 import com.pingo.feature.capturestatus.api.CaptureStatusRoute
 import com.pingo.feature.home.api.HomeRoute
+import com.pingo.feature.onboarding.api.OnboardingBiometriaRoute
 import com.pingo.feature.onboarding.api.OnboardingContasRoute
 import com.pingo.feature.onboarding.api.OnboardingPermissoesRoute
 import com.pingo.feature.onboarding.api.OnboardingRoute
@@ -22,6 +23,7 @@ class NavHostRoutesTest {
             OnboardingRoute.ROUTE,
             OnboardingPermissoesRoute.ROUTE,
             OnboardingContasRoute.ROUTE,
+            OnboardingBiometriaRoute.ROUTE,
             HomeRoute.ROUTE,
             TransactionsRoute.ROUTE,
             TransactionsRoute.NOVO_ROUTE,
@@ -35,6 +37,7 @@ class NavHostRoutesTest {
             ReviewRoute.ROUTE,
             CaptureStatusRoute.ROUTE,
             SettingsRoute.ROUTE,
+            SettingsRoute.CATEGORIAS_E_REGRAS_ROUTE,
         )
         assertEquals(routes.size, routes.toSet().size)
     }
