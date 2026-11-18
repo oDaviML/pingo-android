@@ -11,6 +11,7 @@ android {
 dependencies {
     implementation(project(":core:auth"))
     implementation(project(":core:common"))
+    implementation(libs.androidx.core.ktx)
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
