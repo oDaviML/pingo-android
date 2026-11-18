@@ -1,5 +1,6 @@
 package com.pingo.feature.transactions.impl
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pingo.core.data.CategoriaRepository
@@ -13,6 +14,7 @@ import com.pingo.core.model.Lancamento
 import com.pingo.core.model.TipoCategoria
 import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.model.TipoLancamento
+import com.pingo.feature.transactions.api.TransactionsRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,19 +29,36 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TransactionsViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val lancamentoRepository: LancamentoRepository,
     contaRepository: ContaRepository,
     instrumentoRepository: InstrumentoRepository,
     categoriaRepository: CategoriaRepository,
     private val clock: Clock,
 ) : ViewModel() {
-    private val controle = MutableStateFlow(ControleDaTela())
+    constructor(
+        lancamentoRepository: LancamentoRepository,
+        contaRepository: ContaRepository,
+        instrumentoRepository: InstrumentoRepository,
+        categoriaRepository: CategoriaRepository,
+        clock: Clock,
+    ) : this(
+        savedStateHandle = SavedStateHandle(),
+        lancamentoRepository = lancamentoRepository,
+        contaRepository = contaRepository,
+        instrumentoRepository = instrumentoRepository,
+        categoriaRepository = categoriaRepository,
+        clock = clock,
+    )
+
+    private val filtrosIniciais = filtrosDeDrillDown(savedStateHandle)
+    private val controle = MutableStateFlow(ControleDaTela(filtros = filtrosIniciais ?: FiltrosDeLancamentos()))
     private val dados = MutableStateFlow(BaseDeDados())
     private val mutableUiState = MutableStateFlow(TransactionsUiState())
 
     val uiState: StateFlow<TransactionsUiState> = mutableUiState.asStateFlow()
 
-    private var mesEscolhidoPeloUsuario = false
+    private var mesEscolhidoPeloUsuario = filtrosIniciais != null
 
     init {
         viewModelScope.launch {
@@ -272,3 +291,16 @@ class TransactionsViewModel @Inject constructor(
 }
 
 private fun <T> T?.alternar(novo: T?): T? = if (novo != null && this == novo) null else novo
+
+private fun filtrosDeDrillDown(savedStateHandle: SavedStateHandle): FiltrosDeLancamentos? {
+    val categoriaId = savedStateHandle.get<String>(TransactionsRoute.ARG_CATEGORIA_ID)?.takeIf { it.isNotBlank() }
+    val mes = savedStateHandle.get<String>(TransactionsRoute.ARG_MES)
+        ?.let { texto -> runCatching { YearMonth.parse(texto) }.getOrNull() }
+    if (categoriaId == null || mes == null) return null
+    return FiltrosDeLancamentos(
+        mes = mes,
+        tipo = TipoLancamento.DESPESA,
+        categoriaPublicId = categoriaId,
+        status = StatusFiltro.CONFIRMADO,
+    )
+}

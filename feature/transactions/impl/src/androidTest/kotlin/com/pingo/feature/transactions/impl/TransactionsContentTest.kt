@@ -262,6 +262,28 @@ class TransactionsContentTest {
         assertEquals(1, aberturas)
     }
 
+    @Test
+    fun comOnVoltarExibeBotaoVoltarEAcionaCallback() {
+        var voltou = 0
+        composeRule.setContent {
+            PingoTheme {
+                TransactionsContent(
+                    state = estadoPadrao(),
+                    onEvent = {},
+                    onOpenDetalhe = {},
+                    onOpenNovo = {},
+                    onSelecionarAba = {},
+                    mostrarBarraInferior = false,
+                    onVoltar = { voltou++ },
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("Voltar").assertIsDisplayed().performClick()
+
+        assertEquals(1, voltou)
+    }
+
     private fun mostrar(
         state: TransactionsUiState,
         eventos: MutableList<TransactionsEvent> = mutableListOf(),

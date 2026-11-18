@@ -1,5 +1,6 @@
 package com.pingo.feature.transactions.impl
 
+import androidx.lifecycle.SavedStateHandle
 import com.pingo.core.model.Categoria
 import com.pingo.core.model.Conta
 import com.pingo.core.model.InstituicaoFinanceira
@@ -12,6 +13,7 @@ import com.pingo.core.model.TipoConta
 import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.model.TipoLancamento
 import com.pingo.core.testing.TestDispatcherRule
+import com.pingo.feature.transactions.api.TransactionsRoute
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -347,17 +349,97 @@ class TransactionsViewModelTest {
         assertEquals(YearMonth.of(2026, 11), estado.filtros.mes)
     }
 
+    @Test
+    fun `drill down via savedStateHandle inicializa filtros de categoria mes despesa confirmada e preserva mes`() = runTest {
+        val extras = listOf(
+            lancamentoOutubro("l-out", StatusLancamento.CONFIRMADO, alimentacao.publicId, "Restaurante Outubro", 3500),
+            lancamentoOutubro("l-out-pend", StatusLancamento.PENDENTE, alimentacao.publicId, "Pendente Outubro", 2500),
+            lancamentoOutubro("l-out-merc", StatusLancamento.CONFIRMADO, mercado.publicId, "Mercado Outubro", 8000),
+        )
+        val janeiroClock = Clock.fixed(Instant.parse("2027-01-15T12:00:00Z"), ZoneOffset.UTC)
+        val savedStateHandle = SavedStateHandle(
+            mapOf(
+                TransactionsRoute.ARG_CATEGORIA_ID to alimentacao.publicId,
+                TransactionsRoute.ARG_MES to "2026-10",
+            ),
+        )
+        val viewModel = criarViewModel(
+            lancamentos = listaCompleta() + extras,
+            clock = janeiroClock,
+            savedStateHandle = savedStateHandle,
+        )
+        advanceUntilIdle()
+
+        val estado = viewModel.uiState.value
+        assertEquals(YearMonth.of(2026, 10), estado.filtros.mes)
+        assertEquals(alimentacao.publicId, estado.filtros.categoriaPublicId)
+        assertEquals(StatusFiltro.CONFIRMADO, estado.filtros.status)
+        assertEquals(TipoLancamento.DESPESA, estado.filtros.tipo)
+        assertEquals(3, estado.filtrosAtivos)
+        assertEquals(1, estado.quantidadeDeLancamentos)
+        assertEquals("l-out", estado.dias.single().itens.single().lancamento.publicId)
+
+        viewModel.onEvent(TransactionsEvent.LimparFiltros)
+        advanceUntilIdle()
+
+        val limpo = viewModel.uiState.value
+        assertEquals(FiltrosDeLancamentos(), limpo.filtros)
+        assertEquals(0, limpo.filtrosAtivos)
+        assertEquals(8, limpo.quantidadeDeLancamentos)
+    }
+
+    private fun lancamentoOutubro(
+        publicId: String,
+        status: StatusLancamento,
+        categoriaId: String,
+        estabelecimento: String,
+        valorCentavos: Long,
+    ): Lancamento = lancamentoDeTeste(
+        publicId = publicId,
+        dataHora = Instant.parse("2026-10-12T12:00:00Z"),
+        valorCentavos = valorCentavos,
+        status = status,
+        estabelecimento = estabelecimento,
+        instrumentoPublicId = instrumentoNubank.publicId,
+        categoriaPublicId = categoriaId,
+    )
+
+    @Test
+    fun `navegacao normal sem argumentos nao pre aplica filtros`() = runTest {
+        val viewModel = criarViewModel(savedStateHandle = SavedStateHandle())
+        advanceUntilIdle()
+
+        val estado = viewModel.uiState.value
+        assertNull(estado.filtros.tipo)
+        assertNull(estado.filtros.categoriaPublicId)
+        assertNull(estado.filtros.status)
+        assertNull(estado.filtros.vinculo)
+        assertEquals(0, estado.filtrosAtivos)
+    }
+
     private fun criarViewModel(
         lancamentos: List<Lancamento> = listaCompleta(),
         repositorio: FakeLancamentoRepository = FakeLancamentoRepository(lancamentos),
         clock: Clock = this.clock,
-    ): TransactionsViewModel = TransactionsViewModel(
-        lancamentoRepository = repositorio,
-        contaRepository = FakeContaRepository(listOf(contaNubank, contaItau)),
-        instrumentoRepository = FakeInstrumentoRepository(listOf(instrumentoNubank, instrumentoItau)),
-        categoriaRepository = FakeCategoriaRepository(listOf(alimentacao, mercado, salario)),
-        clock = clock,
-    )
+        savedStateHandle: SavedStateHandle? = null,
+    ): TransactionsViewModel = if (savedStateHandle == null) {
+        TransactionsViewModel(
+            lancamentoRepository = repositorio,
+            contaRepository = FakeContaRepository(listOf(contaNubank, contaItau)),
+            instrumentoRepository = FakeInstrumentoRepository(listOf(instrumentoNubank, instrumentoItau)),
+            categoriaRepository = FakeCategoriaRepository(listOf(alimentacao, mercado, salario)),
+            clock = clock,
+        )
+    } else {
+        TransactionsViewModel(
+            savedStateHandle = savedStateHandle,
+            lancamentoRepository = repositorio,
+            contaRepository = FakeContaRepository(listOf(contaNubank, contaItau)),
+            instrumentoRepository = FakeInstrumentoRepository(listOf(instrumentoNubank, instrumentoItau)),
+            categoriaRepository = FakeCategoriaRepository(listOf(alimentacao, mercado, salario)),
+            clock = clock,
+        )
+    }
 
     private fun listaCompleta(): List<Lancamento> = listOf(padaria, semInstrumento, transferencia, receita, manual)
 

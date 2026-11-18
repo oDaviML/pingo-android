@@ -45,6 +45,7 @@ import com.pingo.core.designsystem.component.PingoIcon
 import com.pingo.core.designsystem.component.PingoLargeTopBar
 import com.pingo.core.designsystem.component.PingoSkeletonList
 import com.pingo.core.designsystem.component.PingoText
+import com.pingo.core.designsystem.component.PingoTopBar
 import com.pingo.core.designsystem.component.pingoElevation
 import com.pingo.core.designsystem.icon.PingoIcons
 import com.pingo.core.designsystem.theme.PingoLayout
@@ -66,6 +67,7 @@ fun TransactionsContent(
     onSelecionarAba: (AbaInferior) -> Unit,
     modifier: Modifier = Modifier,
     mostrarBarraInferior: Boolean = true,
+    onVoltar: (() -> Unit)? = null,
 ) {
     Box(
         modifier = modifier
@@ -77,6 +79,7 @@ fun TransactionsContent(
                 state = state,
                 onEvent = onEvent,
                 onOpenDetalhe = onOpenDetalhe,
+                onVoltar = onVoltar,
                 modifier = Modifier.weight(1f),
             )
             if (mostrarBarraInferior) {
@@ -109,10 +112,11 @@ private fun SecaoDaLista(
     state: TransactionsUiState,
     onEvent: (TransactionsEvent) -> Unit,
     onOpenDetalhe: (String) -> Unit,
+    onVoltar: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
-        CabecalhoDaTela(state = state, onEvent = onEvent)
+        CabecalhoDaTela(state = state, onEvent = onEvent, onVoltar = onVoltar)
         Box(modifier = Modifier.weight(1f)) {
             ConteudoDaLista(state = state, onEvent = onEvent, onOpenDetalhe = onOpenDetalhe)
             state.mensagemDeExclusao?.let { mensagem ->
@@ -130,9 +134,13 @@ private fun SecaoDaLista(
 }
 
 @Composable
-private fun CabecalhoDaTela(state: TransactionsUiState, onEvent: (TransactionsEvent) -> Unit) {
+private fun CabecalhoDaTela(state: TransactionsUiState, onEvent: (TransactionsEvent) -> Unit, onVoltar: (() -> Unit)?) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        PingoLargeTopBar(title = "Lançamentos")
+        if (onVoltar != null) {
+            PingoTopBar(title = "Lançamentos", onBack = onVoltar)
+        } else {
+            PingoLargeTopBar(title = "Lançamentos")
+        }
         Column(
             modifier = Modifier
                 .fillMaxWidth()
