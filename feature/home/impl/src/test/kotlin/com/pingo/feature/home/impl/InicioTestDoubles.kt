@@ -6,6 +6,8 @@ import com.pingo.core.data.ContaRepository
 import com.pingo.core.data.InstrumentoRepository
 import com.pingo.core.data.LancamentoRepository
 import com.pingo.core.data.ResultadoCategoria
+import com.pingo.core.data.projecao.InicioFinanceiroProjection
+import com.pingo.core.model.BeneficioVoucher
 import com.pingo.core.model.Categoria
 import com.pingo.core.model.Conta
 import com.pingo.core.model.ContaEditada
@@ -14,9 +16,16 @@ import com.pingo.core.model.Instrumento
 import com.pingo.core.model.Lancamento
 import com.pingo.core.model.NovaConta
 import com.pingo.core.model.OrigemLancamento
+import com.pingo.core.model.StatusFatura
 import com.pingo.core.model.StatusLancamento
 import com.pingo.core.model.TipoCategoria
+import com.pingo.core.model.TipoConta
+import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.organizacao.EstadoBlocoFinanceiro
+import com.pingo.core.model.organizacao.FaturaAbertaInicio
+import com.pingo.core.model.organizacao.SaldoVoucherInicio
+import com.pingo.core.model.voucher.UltimaRecargaVoucher
 import com.pingo.core.notifications.AcessoNotificacoes
 import com.pingo.core.notifications.DiagnosticoDaCaptura
 import com.pingo.core.notifications.SaudeDaCaptura
@@ -24,6 +33,7 @@ import com.pingo.core.notifications.SituacaoDaCaptura
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.time.Instant
+import java.time.LocalDate
 
 @Suppress("LongParameterList")
 internal fun lancamentoDeTeste(
@@ -200,6 +210,64 @@ internal class FakeSaudeDaCaptura(diagnostico: DiagnosticoDaCaptura = Diagnostic
 
     override suspend fun atual(): DiagnosticoDaCaptura = diagnostico.value
 }
+
+internal class FakeInicioFinanceiroProjection(
+    faturas: EstadoBlocoFinanceiro<List<FaturaAbertaInicio>> = EstadoBlocoFinanceiro.Sucesso(emptyList()),
+    vouchers: EstadoBlocoFinanceiro<List<SaldoVoucherInicio>> = EstadoBlocoFinanceiro.Sucesso(emptyList()),
+    private val fluxoFaturasCustom: Flow<EstadoBlocoFinanceiro<List<FaturaAbertaInicio>>>? = null,
+    private val fluxoVouchersCustom: Flow<EstadoBlocoFinanceiro<List<SaldoVoucherInicio>>>? = null,
+) : InicioFinanceiroProjection {
+    val faturas = MutableStateFlow(faturas)
+    val vouchers = MutableStateFlow(vouchers)
+
+    override fun observeFaturasAbertas(): Flow<EstadoBlocoFinanceiro<List<FaturaAbertaInicio>>> = fluxoFaturasCustom ?: faturas
+
+    override fun observeSaldosVoucher(): Flow<EstadoBlocoFinanceiro<List<SaldoVoucherInicio>>> = fluxoVouchersCustom ?: vouchers
+}
+
+@Suppress("LongParameterList")
+internal fun faturaAbertaDeTeste(
+    instrumentoPublicId: String = "cartao-nu",
+    contaPublicId: String = CONTA_PADRAO,
+    instituicao: InstituicaoFinanceira = InstituicaoFinanceira.NUBANK,
+    apelidoCartao: String = "Nubank · crédito",
+    ultimosDigitos: String? = "4321",
+    valorCentavos: Long = 128450,
+    diasParaVencimento: Long = 19,
+    status: StatusFatura = StatusFatura.ABERTA,
+): FaturaAbertaInicio = FaturaAbertaInicio(
+    instrumentoPublicId = instrumentoPublicId,
+    contaPublicId = contaPublicId,
+    instituicao = instituicao,
+    apelidoCartao = apelidoCartao,
+    ultimosDigitos = ultimosDigitos,
+    faturaPublicId = "fatura-$instrumentoPublicId",
+    competencia = LocalDate.of(2026, 11, 1),
+    dataFechamento = LocalDate.of(2026, 11, 3),
+    dataVencimento = LocalDate.of(2026, 11, 10),
+    valorCentavos = valorCentavos,
+    diasParaVencimento = diasParaVencimento,
+    status = status,
+)
+
+@Suppress("LongParameterList")
+internal fun saldoVoucherDeTeste(
+    instrumentoPublicId: String = "voucher-vr",
+    contaPublicId: String = "conta-caju",
+    instituicao: InstituicaoFinanceira = InstituicaoFinanceira.CAJU,
+    apelido: String = "Caju · benefício",
+    beneficio: BeneficioVoucher = BeneficioVoucher.VR,
+    saldoCentavos: Long = 48620,
+    ultimaRecarga: UltimaRecargaVoucher? = UltimaRecargaVoucher(LocalDate.of(2026, 10, 1), 80000, false),
+): SaldoVoucherInicio = SaldoVoucherInicio(
+    instrumentoPublicId = instrumentoPublicId,
+    contaPublicId = contaPublicId,
+    instituicao = instituicao,
+    apelido = apelido,
+    beneficio = beneficio,
+    saldoCentavos = saldoCentavos,
+    ultimaRecarga = ultimaRecarga,
+)
 
 internal const val INSTRUMENTO_PADRAO = "instrumento-1"
 internal const val CONTA_PADRAO = "conta-1"

@@ -9,15 +9,25 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.pingo.core.datastore.MotivoParada
+import com.pingo.core.designsystem.component.AbaInferior
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.model.BeneficioVoucher
+import com.pingo.core.model.InstituicaoFinanceira
+import com.pingo.core.model.StatusFatura
+import com.pingo.core.model.organizacao.EstadoBlocoFinanceiro
+import com.pingo.core.model.organizacao.FaturaAbertaInicio
+import com.pingo.core.model.organizacao.SaldoVoucherInicio
+import com.pingo.core.model.voucher.UltimaRecargaVoucher
 import com.pingo.core.notifications.SituacaoDaCaptura
 import com.pingo.core.ui.Valores
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.time.LocalDate
 import java.time.YearMonth
 
 @RunWith(AndroidJUnit4::class)
@@ -189,6 +199,91 @@ class HomeScreenTest {
         composeRule.onAllNodesWithTag("novo-lancamento").assertCountEquals(0)
     }
 
+    @Test
+    fun blocosDeFaturasEVouchersPopuladosExibemCardsENavegam() {
+        val abasSelecionadas = mutableListOf<AbaInferior>()
+        val faturasAbertas = mutableListOf<String>()
+        val fatura = faturaDeTeste()
+        val voucher = voucherDeTeste()
+
+        mostrar(
+            estadoPadrao().copy(
+                faturasAbertas = EstadoBlocoFinanceiro.Sucesso(listOf(fatura)),
+                saldosVoucher = EstadoBlocoFinanceiro.Sucesso(listOf(voucher)),
+            ),
+            onSelecionarAba = { abasSelecionadas.add(it) },
+            onAbrirFaturas = { faturasAbertas.add(it) },
+        )
+
+        composeRule.onNodeWithText("Faturas de crédito").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Nubank · crédito").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(Valores.formatar(128450)).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Vence em 19 dias").performScrollTo().assertIsDisplayed()
+
+        composeRule.onNodeWithText("Saldos de benefícios").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("VR · Refeição").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(Valores.formatar(48620)).performScrollTo().assertIsDisplayed()
+
+        composeRule.onNodeWithTag("fatura-inicio-${fatura.instrumentoPublicId}").performScrollTo().performClick()
+        assertEquals(listOf(fatura.instrumentoPublicId), faturasAbertas)
+
+        composeRule.onNodeWithTag("voucher-inicio-${voucher.instrumentoPublicId}").performScrollTo().performClick()
+        assertEquals(listOf(AbaInferior.CONTAS), abasSelecionadas)
+
+        composeRule.onAllNodesWithText("Ver contas")[0].performScrollTo().performClick()
+        assertEquals(listOf(AbaInferior.CONTAS, AbaInferior.CONTAS), abasSelecionadas)
+    }
+
+    @Test
+    fun blocosVaziosSaoOmitidosCompletamente() {
+        mostrar(
+            estadoPadrao().copy(
+                faturasAbertas = EstadoBlocoFinanceiro.Sucesso(emptyList()),
+                saldosVoucher = EstadoBlocoFinanceiro.Sucesso(emptyList()),
+            ),
+        )
+
+        composeRule.onAllNodesWithText("Faturas de crédito").assertCountEquals(0)
+        composeRule.onAllNodesWithText("Saldos de benefícios").assertCountEquals(0)
+        composeRule.onAllNodesWithText("Ver contas").assertCountEquals(0)
+    }
+
+    @Test
+    fun erroEmFaturasNaoAfetaVouchersENaoExibeZero() {
+        val voucher = voucherDeTeste()
+
+        mostrar(
+            estadoPadrao().copy(
+                faturasAbertas = EstadoBlocoFinanceiro.Erro,
+                saldosVoucher = EstadoBlocoFinanceiro.Sucesso(listOf(voucher)),
+            ),
+        )
+
+        composeRule.onNodeWithTag("erro-faturas-inicio").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Não foi possível carregar as faturas").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("voucher-inicio-${voucher.instrumentoPublicId}").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(Valores.formatar(48620)).performScrollTo().assertIsDisplayed()
+        composeRule.onAllNodesWithText("R$ 0,00").assertCountEquals(0)
+    }
+
+    @Test
+    fun erroEmVouchersNaoAfetaFaturasENaoExibeZero() {
+        val fatura = faturaDeTeste()
+
+        mostrar(
+            estadoPadrao().copy(
+                faturasAbertas = EstadoBlocoFinanceiro.Sucesso(listOf(fatura)),
+                saldosVoucher = EstadoBlocoFinanceiro.Erro,
+            ),
+        )
+
+        composeRule.onNodeWithTag("erro-vouchers-inicio").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Não foi possível carregar os saldos de benefícios").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("fatura-inicio-${fatura.instrumentoPublicId}").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(Valores.formatar(128450)).performScrollTo().assertIsDisplayed()
+        composeRule.onAllNodesWithText("R$ 0,00").assertCountEquals(0)
+    }
+
     private fun mostrar(
         state: HomeUiState,
         onOpenCaptura: () -> Unit = {},
@@ -196,6 +291,8 @@ class HomeScreenTest {
         onOpenNovo: () -> Unit = {},
         onMesAnterior: () -> Unit = {},
         onMesProximo: () -> Unit = {},
+        onSelecionarAba: (AbaInferior) -> Unit = {},
+        onAbrirFaturas: (String) -> Unit = { onSelecionarAba(AbaInferior.CONTAS) },
         mostrarBarraInferior: Boolean = true,
     ) {
         composeRule.setContent {
@@ -208,11 +305,38 @@ class HomeScreenTest {
                     onOpenNovo = onOpenNovo,
                     onMesAnterior = onMesAnterior,
                     onMesProximo = onMesProximo,
+                    onSelecionarAba = onSelecionarAba,
                     mostrarBarraInferior = mostrarBarraInferior,
+                    onAbrirFaturas = onAbrirFaturas,
                 )
             }
         }
     }
+
+    private fun faturaDeTeste(): FaturaAbertaInicio = FaturaAbertaInicio(
+        instrumentoPublicId = "cartao-nu",
+        contaPublicId = "conta-nu",
+        instituicao = InstituicaoFinanceira.NUBANK,
+        apelidoCartao = "Nubank · crédito",
+        ultimosDigitos = "4321",
+        faturaPublicId = "fatura-1",
+        competencia = LocalDate.of(2026, 11, 1),
+        dataFechamento = LocalDate.of(2026, 11, 3),
+        dataVencimento = LocalDate.of(2026, 11, 10),
+        valorCentavos = 128450,
+        diasParaVencimento = 19,
+        status = StatusFatura.ABERTA,
+    )
+
+    private fun voucherDeTeste(): SaldoVoucherInicio = SaldoVoucherInicio(
+        instrumentoPublicId = "voucher-vr",
+        contaPublicId = "conta-caju",
+        instituicao = InstituicaoFinanceira.CAJU,
+        apelido = "Caju · benefício",
+        beneficio = BeneficioVoucher.VR,
+        saldoCentavos = 48620,
+        ultimaRecarga = UltimaRecargaVoucher(LocalDate.of(2026, 10, 1), 80000, false),
+    )
 
     private fun estadoPadrao(): HomeUiState = HomeUiState(
         carregando = false,

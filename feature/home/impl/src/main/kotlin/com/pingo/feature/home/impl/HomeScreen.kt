@@ -40,6 +40,7 @@ fun HomeScreen(
     onSelecionarAba: (AbaInferior) -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
     mostrarBarraInferior: Boolean = true,
+    onAbrirFaturas: (String) -> Unit = { onSelecionarAba(AbaInferior.CONTAS) },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -57,6 +58,7 @@ fun HomeScreen(
         onMesProximo = viewModel::mesProximo,
         onSelecionarAba = onSelecionarAba,
         mostrarBarraInferior = mostrarBarraInferior,
+        onAbrirFaturas = onAbrirFaturas,
     )
 }
 
@@ -73,6 +75,7 @@ fun HomeContent(
     onSelecionarAba: (AbaInferior) -> Unit = {},
     zona: ZoneId = ZoneId.systemDefault(),
     mostrarBarraInferior: Boolean = true,
+    onAbrirFaturas: (String) -> Unit = { onSelecionarAba(AbaInferior.CONTAS) },
 ) {
     val animarTopoId = rememberNovoCapturadoNoTopo(state = state)
 
@@ -90,6 +93,7 @@ fun HomeContent(
             onMesAnterior = onMesAnterior,
             onMesProximo = onMesProximo,
             onSelecionarAba = onSelecionarAba,
+            onAbrirFaturas = onAbrirFaturas,
             zona = zona,
             animarTopoId = animarTopoId.value,
             onAnimacaoConcluida = { animarTopoId.value = null },
@@ -144,6 +148,7 @@ private fun CorpoDaInicio(
     onMesAnterior: () -> Unit,
     onMesProximo: () -> Unit,
     onSelecionarAba: (AbaInferior) -> Unit,
+    onAbrirFaturas: (String) -> Unit,
     zona: ZoneId,
     animarTopoId: String?,
     onAnimacaoConcluida: () -> Unit,
@@ -172,6 +177,7 @@ private fun CorpoDaInicio(
             onMesAnterior = onMesAnterior,
             onMesProximo = onMesProximo,
             onSelecionarAba = onSelecionarAba,
+            onAbrirFaturas = onAbrirFaturas,
             zona = zona,
             animarTopoId = animarTopoId,
             onAnimacaoConcluida = onAnimacaoConcluida,
@@ -189,6 +195,7 @@ private fun SecoesDaInicio(
     onMesAnterior: () -> Unit,
     onMesProximo: () -> Unit,
     onSelecionarAba: (AbaInferior) -> Unit,
+    onAbrirFaturas: (String) -> Unit,
     zona: ZoneId,
     animarTopoId: String?,
     onAnimacaoConcluida: () -> Unit,
@@ -212,21 +219,48 @@ private fun SecoesDaInicio(
         when {
             state.carregando -> PingoSkeletonList(count = 4)
             state.vazia -> InicioVazio(onOpenNovo = onOpenNovo)
-            else -> {
-                SaldoDoMes(state)
-                TopCategorias(
-                    state = state,
-                    onVerRelatorio = { onSelecionarAba(AbaInferior.RELATORIOS) },
-                )
-                UltimosLancamentos(
-                    state = state,
-                    onVerTudo = { onSelecionarAba(AbaInferior.LANCAMENTOS) },
-                    zona = zona,
-                    animarTopoId = animarTopoId,
-                    onAnimacaoConcluida = onAnimacaoConcluida,
-                )
-            }
+            else -> ConteudoAtivoDaInicio(
+                state = state,
+                onSelecionarAba = onSelecionarAba,
+                onAbrirFaturas = onAbrirFaturas,
+                zona = zona,
+                animarTopoId = animarTopoId,
+                onAnimacaoConcluida = onAnimacaoConcluida,
+            )
         }
         Spacer(modifier = Modifier.height(PingoSpacing.lg))
     }
+}
+
+@Suppress("LongParameterList")
+@Composable
+private fun ConteudoAtivoDaInicio(
+    state: HomeUiState,
+    onSelecionarAba: (AbaInferior) -> Unit,
+    onAbrirFaturas: (String) -> Unit,
+    zona: ZoneId,
+    animarTopoId: String?,
+    onAnimacaoConcluida: () -> Unit,
+) {
+    SaldoDoMes(state)
+    BlocoFaturasCredito(
+        estado = state.faturasAbertas,
+        onVerContas = { onSelecionarAba(AbaInferior.CONTAS) },
+        onAbrirFatura = onAbrirFaturas,
+    )
+    BlocoSaldosBeneficios(
+        estado = state.saldosVoucher,
+        onVerContas = { onSelecionarAba(AbaInferior.CONTAS) },
+    )
+    TopCategorias(
+        state = state,
+        onVerRelatorio = { onSelecionarAba(AbaInferior.RELATORIOS) },
+    )
+    UltimosLancamentos(
+        state = state,
+        onVerTudo = { onSelecionarAba(AbaInferior.LANCAMENTOS) },
+        zona = zona,
+        animarTopoId = animarTopoId,
+        onAnimacaoConcluida = onAnimacaoConcluida,
+    )
 }

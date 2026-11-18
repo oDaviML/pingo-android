@@ -6,20 +6,27 @@ import com.pingo.core.data.CategoriaRepository
 import com.pingo.core.data.ContaRepository
 import com.pingo.core.data.InstrumentoRepository
 import com.pingo.core.data.LancamentoRepository
+import com.pingo.core.data.projecao.InicioFinanceiroProjection
 import com.pingo.core.datastore.MotivoParada
 import com.pingo.core.model.Categoria
 import com.pingo.core.model.Conta
 import com.pingo.core.model.Instrumento
 import com.pingo.core.model.Lancamento
+import com.pingo.core.model.organizacao.EstadoBlocoFinanceiro
+import com.pingo.core.model.organizacao.FaturaAbertaInicio
+import com.pingo.core.model.organizacao.SaldoVoucherInicio
 import com.pingo.core.notifications.AcessoNotificacoes
 import com.pingo.core.notifications.DiagnosticoDaCaptura
 import com.pingo.core.notifications.SaudeDaCaptura
 import com.pingo.core.notifications.SituacaoDaCaptura
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import java.time.Clock
 import java.time.YearMonth
@@ -34,10 +41,33 @@ class HomeViewModel @Inject constructor(
     contaRepository: ContaRepository,
     instrumentoRepository: InstrumentoRepository,
     categoriaRepository: CategoriaRepository,
+    private val inicioFinanceiroProjection: InicioFinanceiroProjection,
     private val clock: Clock,
 ) : ViewModel() {
+    @Suppress("LongParameterList")
+    constructor(
+        acessoNotificacoes: AcessoNotificacoes,
+        saudeDaCaptura: SaudeDaCaptura,
+        lancamentoRepository: LancamentoRepository,
+        contaRepository: ContaRepository,
+        instrumentoRepository: InstrumentoRepository,
+        categoriaRepository: CategoriaRepository,
+        clock: Clock,
+    ) : this(
+        acessoNotificacoes = acessoNotificacoes,
+        saudeDaCaptura = saudeDaCaptura,
+        lancamentoRepository = lancamentoRepository,
+        contaRepository = contaRepository,
+        instrumentoRepository = instrumentoRepository,
+        categoriaRepository = categoriaRepository,
+        inicioFinanceiroProjection = InicioFinanceiroProjectionVazia,
+        clock = clock,
+    )
+
     private val dados = MutableStateFlow(BaseDoInicio())
     private val mes = MutableStateFlow(mesAtual())
+    private val faturasAbertas = MutableStateFlow<EstadoBlocoFinanceiro<List<FaturaAbertaInicio>>>(EstadoBlocoFinanceiro.Carregando)
+    private val saldosVoucher = MutableStateFlow<EstadoBlocoFinanceiro<List<SaldoVoucherInicio>>>(EstadoBlocoFinanceiro.Carregando)
     private var capturaAutomatica = acessoNotificacoes.concedido()
     private var situacao = if (capturaAutomatica) SituacaoDaCaptura.ATIVA else SituacaoDaCaptura.PARADA
     private var motivo = if (capturaAutomatica) null else MotivoParada.PERMISSAO_REVOGADA
@@ -75,6 +105,22 @@ class HomeViewModel @Inject constructor(
         }
         viewModelScope.launch {
             saudeDaCaptura.observar().collect(::aplicarDiagnostico)
+        }
+        viewModelScope.launch {
+            inicioFinanceiroProjection.observeFaturasAbertas()
+                .catch { emit(EstadoBlocoFinanceiro.Erro) }
+                .collect { estado ->
+                    faturasAbertas.value = estado
+                    recompor()
+                }
+        }
+        viewModelScope.launch {
+            inicioFinanceiroProjection.observeSaldosVoucher()
+                .catch { emit(EstadoBlocoFinanceiro.Erro) }
+                .collect { estado ->
+                    saldosVoucher.value = estado
+                    recompor()
+                }
         }
     }
 
@@ -124,6 +170,9 @@ class HomeViewModel @Inject constructor(
         val contasPorId = base.contas.associateBy { it.publicId }
         val resumo = resumoDoMes(ativos, mesEscolhido, clock.zone)
         val limites = limites(base.lancamentos)
+        val estadoFaturas = faturasAbertas.value
+        val estadoVouchers = saldosVoucher.value
+        val temBlocoFinanceiroAtivo = estadoFaturas.temConteudoOuErro() || estadoVouchers.temConteudoOuErro()
 
         mutableUiState.value = HomeUiState(
             carregando = !base.carregado,
@@ -141,7 +190,9 @@ class HomeViewModel @Inject constructor(
             pendentes = contarPendentes(ativos),
             topCategorias = categoriasDoTopo(ativos, mesEscolhido, clock.zone, categoriasPorId),
             ultimos = ultimosLancamentos(ativos, categoriasPorId, instrumentosPorId, contasPorId),
-            vazia = base.carregado && ativos.isEmpty(),
+            faturasAbertas = estadoFaturas,
+            saldosVoucher = estadoVouchers,
+            vazia = base.carregado && ativos.isEmpty() && !temBlocoFinanceiroAtivo,
         )
     }
 
@@ -160,6 +211,20 @@ class HomeViewModel @Inject constructor(
         in HORA_INICIO_DIA..HORA_FIM_DIA -> "Bom dia,"
         in HORA_INICIO_TARDE..HORA_FIM_TARDE -> "Boa tarde,"
         else -> "Boa noite,"
+    }
+
+    private fun <T> EstadoBlocoFinanceiro<List<T>>.temConteudoOuErro(): Boolean = when (this) {
+        is EstadoBlocoFinanceiro.Sucesso -> dados.isNotEmpty()
+        EstadoBlocoFinanceiro.Erro -> true
+        EstadoBlocoFinanceiro.Carregando -> false
+    }
+
+    private object InicioFinanceiroProjectionVazia : InicioFinanceiroProjection {
+        override fun observeFaturasAbertas(): Flow<EstadoBlocoFinanceiro<List<FaturaAbertaInicio>>> =
+            flowOf(EstadoBlocoFinanceiro.Sucesso(emptyList()))
+
+        override fun observeSaldosVoucher(): Flow<EstadoBlocoFinanceiro<List<SaldoVoucherInicio>>> =
+            flowOf(EstadoBlocoFinanceiro.Sucesso(emptyList()))
     }
 
     private companion object {

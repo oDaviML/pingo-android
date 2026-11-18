@@ -6,9 +6,13 @@ import com.pingo.core.model.Instrumento
 import com.pingo.core.model.Lancamento
 import com.pingo.core.model.StatusLancamento
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.organizacao.EstadoBlocoFinanceiro
+import com.pingo.core.model.organizacao.FaturaAbertaInicio
+import com.pingo.core.model.organizacao.SaldoVoucherInicio
 import com.pingo.core.notifications.DiagnosticoDaCaptura
 import com.pingo.core.notifications.SituacaoDaCaptura
 import com.pingo.core.testing.TestDispatcherRule
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -293,12 +297,106 @@ class HomeViewModelTest {
         assertEquals("Boa noite,", madrugada.uiState.value.saudacao)
     }
 
+    @Test
+    fun `faturas abertas e saldos de voucher populam o estado sem exigir lancamentos`() {
+        val fatura = faturaAbertaDeTeste()
+        val voucher = saldoVoucherDeTeste()
+        val projecao = FakeInicioFinanceiroProjection(
+            faturas = EstadoBlocoFinanceiro.Sucesso(listOf(fatura)),
+            vouchers = EstadoBlocoFinanceiro.Sucesso(listOf(voucher)),
+        )
+
+        val viewModel = criarViewModel(projecao = projecao)
+        val state = viewModel.uiState.value
+
+        assertEquals(EstadoBlocoFinanceiro.Sucesso(listOf(fatura)), state.faturasAbertas)
+        assertEquals(EstadoBlocoFinanceiro.Sucesso(listOf(voucher)), state.saldosVoucher)
+        assertFalse(state.vazia)
+    }
+
+    @Test
+    fun `erro em faturas nao afeta saldos de voucher nem lancamentos`() {
+        val voucher = saldoVoucherDeTeste()
+        val projecao = FakeInicioFinanceiroProjection(
+            faturas = EstadoBlocoFinanceiro.Erro,
+            vouchers = EstadoBlocoFinanceiro.Sucesso(listOf(voucher)),
+        )
+
+        val viewModel = criarViewModel(
+            lancamentos = listOf(lancamentoDeTeste("receita", 50000, NOVEMBRO, tipo = TipoLancamento.RECEITA)),
+            projecao = projecao,
+        )
+        val state = viewModel.uiState.value
+
+        assertEquals(EstadoBlocoFinanceiro.Erro, state.faturasAbertas)
+        assertEquals(EstadoBlocoFinanceiro.Sucesso(listOf(voucher)), state.saldosVoucher)
+        assertEquals(50000, state.saldoCentavos)
+        assertFalse(state.vazia)
+    }
+
+    @Test
+    fun `erro em vouchers nao afeta faturas abertas nem lancamentos`() {
+        val fatura = faturaAbertaDeTeste()
+        val projecao = FakeInicioFinanceiroProjection(
+            faturas = EstadoBlocoFinanceiro.Sucesso(listOf(fatura)),
+            vouchers = EstadoBlocoFinanceiro.Erro,
+        )
+
+        val viewModel = criarViewModel(
+            lancamentos = listOf(lancamentoDeTeste("despesa", 12000, NOVEMBRO)),
+            projecao = projecao,
+        )
+        val state = viewModel.uiState.value
+
+        assertEquals(EstadoBlocoFinanceiro.Sucesso(listOf(fatura)), state.faturasAbertas)
+        assertEquals(EstadoBlocoFinanceiro.Erro, state.saldosVoucher)
+        assertEquals(-12000, state.saldoCentavos)
+        assertFalse(state.vazia)
+    }
+
+    @Test
+    fun `excecao no flow de faturas isola erro sem interromper saldos de voucher`() {
+        val voucher = saldoVoucherDeTeste()
+        val projecao = FakeInicioFinanceiroProjection(
+            vouchers = EstadoBlocoFinanceiro.Sucesso(listOf(voucher)),
+            fluxoFaturasCustom = flow { throw IllegalStateException("falha simulada") },
+        )
+
+        val viewModel = criarViewModel(projecao = projecao)
+        val state = viewModel.uiState.value
+
+        assertEquals(EstadoBlocoFinanceiro.Erro, state.faturasAbertas)
+        assertEquals(EstadoBlocoFinanceiro.Sucesso(listOf(voucher)), state.saldosVoucher)
+        assertFalse(state.vazia)
+    }
+
+    @Test
+    fun `construtor secundario sem projecao mantem blocos vazios`() {
+        val viewModel = HomeViewModel(
+            acessoNotificacoes = FakeAcessoNotificacoes(concedido = true),
+            saudeDaCaptura = FakeSaudeDaCaptura(),
+            lancamentoRepository = FakeLancamentoRepository(emptyList()),
+            contaRepository = FakeContaRepository(listOf(contaDeTeste())),
+            instrumentoRepository = FakeInstrumentoRepository(listOf(instrumentoDeTeste())),
+            categoriaRepository = FakeCategoriaRepository(emptyList()),
+            clock = relogio,
+        )
+
+        val state = viewModel.uiState.value
+
+        assertEquals(EstadoBlocoFinanceiro.Sucesso(emptyList<FaturaAbertaInicio>()), state.faturasAbertas)
+        assertEquals(EstadoBlocoFinanceiro.Sucesso(emptyList<SaldoVoucherInicio>()), state.saldosVoucher)
+        assertTrue(state.vazia)
+    }
+
+    @Suppress("LongParameterList")
     private fun criarViewModel(
         lancamentos: List<Lancamento> = emptyList(),
         categorias: List<Categoria> = emptyList(),
         instrumentos: List<Instrumento> = listOf(instrumentoDeTeste()),
         acesso: FakeAcessoNotificacoes = FakeAcessoNotificacoes(concedido = true),
         saude: FakeSaudeDaCaptura = FakeSaudeDaCaptura(),
+        projecao: FakeInicioFinanceiroProjection = FakeInicioFinanceiroProjection(),
         clock: Clock = relogio,
     ): HomeViewModel = HomeViewModel(
         acessoNotificacoes = acesso,
@@ -307,6 +405,7 @@ class HomeViewModelTest {
         contaRepository = FakeContaRepository(listOf(contaDeTeste())),
         instrumentoRepository = FakeInstrumentoRepository(instrumentos),
         categoriaRepository = FakeCategoriaRepository(categorias),
+        inicioFinanceiroProjection = projecao,
         clock = clock,
     )
 
