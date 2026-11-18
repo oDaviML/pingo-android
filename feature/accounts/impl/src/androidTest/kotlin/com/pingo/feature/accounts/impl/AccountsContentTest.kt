@@ -73,16 +73,16 @@ class AccountsContentTest {
         var aberta: String? = null
         mostrar(estadoComContas(), onAbrirConta = { aberta = it })
 
-        composeRule.onNodeWithText("Nubank").assertIsDisplayed()
-        composeRule.onNodeWithText("Itaú").assertIsDisplayed()
-        composeRule.onNodeWithText("Nubank pessoal").assertIsDisplayed()
-        composeRule.onNodeWithText("Itaú principal").assertIsDisplayed()
-        composeRule.onNodeWithText("Crédito · Cartão ultravioleta · final 4321").assertIsDisplayed()
-        composeRule.onNodeWithText("Crédito · Cartão adicional · final 9876").assertIsDisplayed()
-        composeRule.onNodeWithText("Débito · Conta corrente").assertIsDisplayed()
+        composeRule.onNodeWithText("Nubank").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Nubank pessoal").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Crédito · Cartão ultravioleta · final 4321").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Crédito · Cartão adicional · final 9876").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Itaú").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Itaú principal").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Débito · Conta corrente").performScrollTo().assertIsDisplayed()
         salvarCaptura("contas-preenchida")
 
-        composeRule.onNodeWithTag("conta-conta-nu").performClick()
+        composeRule.onNodeWithTag("conta-conta-nu").performScrollTo().performClick()
 
         assertEquals("conta-nu", aberta)
     }
@@ -122,8 +122,8 @@ class AccountsContentTest {
         mostrar(estadoComContas(), escuro = true)
 
         composeRule.onAllNodesWithText("Contas").assertCountEquals(2)
-        composeRule.onNodeWithText("Nubank pessoal").assertIsDisplayed()
-        composeRule.onNodeWithTag("conta-conta-itau").assertIsDisplayed()
+        composeRule.onNodeWithText("Nubank pessoal").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("conta-conta-itau").performScrollTo().assertIsDisplayed()
         salvarCaptura("contas-escuro")
     }
 

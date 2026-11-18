@@ -123,12 +123,60 @@ class AccountsFinanceiroContentTest {
     }
 
     private fun criarEstadoFinanceiro(): AccountsUiState {
-        val contaNu = Conta("conta-nu", InstituicaoFinanceira.NUBANK, "Nubank pessoal", TipoConta.CORRENTE, criadoEm = INSTANTE, atualizadoEm = INSTANTE)
-        val contaCaju = Conta("conta-caju", InstituicaoFinanceira.CAJU, "Caju", TipoConta.BENEFICIO, criadoEm = INSTANTE, atualizadoEm = INSTANTE)
-        val credOk = Instrumento("cred-ok", "conta-nu", TipoInstrumento.CREDITO, "Ultravioleta", "4321", fechamentoDia = 3, vencimentoDia = 10, criadoEm = INSTANTE, atualizadoEm = INSTANTE)
-        val credInc = Instrumento("cred-inc", "conta-nu", TipoInstrumento.CREDITO, "Cartão sem datas", "9876", criadoEm = INSTANTE, atualizadoEm = INSTANTE)
-        val debito = Instrumento("deb-1", "conta-nu", TipoInstrumento.DEBITO, "Conta", criadoEm = INSTANTE, atualizadoEm = INSTANTE)
-        val voucher = Instrumento("vou-1", "conta-caju", TipoInstrumento.VOUCHER, "Refeição", beneficio = BeneficioVoucher.VR, saldoCentavos = 48_620L, criadoEm = INSTANTE, atualizadoEm = INSTANTE)
+        val contaNu = Conta(
+            publicId = "conta-nu",
+            instituicao = InstituicaoFinanceira.NUBANK,
+            apelido = "Nubank pessoal",
+            tipo = TipoConta.CORRENTE,
+            criadoEm = INSTANTE,
+            atualizadoEm = INSTANTE,
+        )
+        val contaCaju = Conta(
+            publicId = "conta-caju",
+            instituicao = InstituicaoFinanceira.CAJU,
+            apelido = "Caju",
+            tipo = TipoConta.BENEFICIO,
+            criadoEm = INSTANTE,
+            atualizadoEm = INSTANTE,
+        )
+        val credOk = Instrumento(
+            publicId = "cred-ok",
+            contaPublicId = "conta-nu",
+            tipo = TipoInstrumento.CREDITO,
+            apelido = "Ultravioleta",
+            ultimosDigitos = "4321",
+            fechamentoDia = 3,
+            vencimentoDia = 10,
+            criadoEm = INSTANTE,
+            atualizadoEm = INSTANTE,
+        )
+        val credInc = Instrumento(
+            publicId = "cred-inc",
+            contaPublicId = "conta-nu",
+            tipo = TipoInstrumento.CREDITO,
+            apelido = "Cartão sem datas",
+            ultimosDigitos = "9876",
+            criadoEm = INSTANTE,
+            atualizadoEm = INSTANTE,
+        )
+        val debito = Instrumento(
+            publicId = "deb-1",
+            contaPublicId = "conta-nu",
+            tipo = TipoInstrumento.DEBITO,
+            apelido = "Conta",
+            criadoEm = INSTANTE,
+            atualizadoEm = INSTANTE,
+        )
+        val voucher = Instrumento(
+            publicId = "vou-1",
+            contaPublicId = "conta-caju",
+            tipo = TipoInstrumento.VOUCHER,
+            apelido = "Refeição",
+            beneficio = BeneficioVoucher.VR,
+            saldoCentavos = 48_620L,
+            criadoEm = INSTANTE,
+            atualizadoEm = INSTANTE,
+        )
 
         val grupos = agruparContasFinanceiro(
             listOf(

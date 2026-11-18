@@ -144,14 +144,68 @@ class AccountsFinanceiroRoomTest {
             ContaEntity("conta-caju", InstituicaoFinanceira.CAJU, "Caju", TipoConta.BENEFICIO, false, agora, agora, null),
         )
         database.instrumentoDao().upsert(
-            InstrumentoEntity("inst-cred-inc", "conta-nu", TipoInstrumento.CREDITO, "Cartão", "4321", false, false, null, null, null, null, null, null, null, agora, agora, null),
+            InstrumentoEntity(
+                publicId = "inst-cred-inc",
+                contaPublicId = "conta-nu",
+                tipo = TipoInstrumento.CREDITO,
+                apelido = "Cartão",
+                ultimosDigitos = "4321",
+                arquivado = false,
+                arquivadoPorCascata = false,
+                fechamentoDia = null,
+                vencimentoDia = null,
+                beneficio = null,
+                saldoCentavos = null,
+                diaRecarga = null,
+                valorRecargaCentavos = null,
+                limiteCreditoCentavos = null,
+                criadoEm = agora,
+                atualizadoEm = agora,
+                excluidoEm = null,
+            ),
         )
         database.instrumentoDao().upsert(
-            InstrumentoEntity("inst-deb", "conta-nu", TipoInstrumento.DEBITO, "Débito", null, false, false, null, null, null, null, null, null, null, agora, agora, null),
+            InstrumentoEntity(
+                publicId = "inst-deb",
+                contaPublicId = "conta-nu",
+                tipo = TipoInstrumento.DEBITO,
+                apelido = "Débito",
+                ultimosDigitos = null,
+                arquivado = false,
+                arquivadoPorCascata = false,
+                fechamentoDia = null,
+                vencimentoDia = null,
+                beneficio = null,
+                saldoCentavos = null,
+                diaRecarga = null,
+                valorRecargaCentavos = null,
+                limiteCreditoCentavos = null,
+                criadoEm = agora,
+                atualizadoEm = agora,
+                excluidoEm = null,
+            ),
         )
         val criadoVoucher = Instant.parse("2026-11-01T12:00:00Z")
         database.instrumentoDao().upsert(
-            InstrumentoEntity("inst-vr", "conta-caju", TipoInstrumento.VOUCHER, "Refeição", null, false, false, null, null, BeneficioVoucher.VR, 15_000L, 5, 80_000L, null, criadoVoucher, criadoVoucher, null),
+            InstrumentoEntity(
+                publicId = "inst-vr",
+                contaPublicId = "conta-caju",
+                tipo = TipoInstrumento.VOUCHER,
+                apelido = "Refeição",
+                ultimosDigitos = null,
+                arquivado = false,
+                arquivadoPorCascata = false,
+                fechamentoDia = null,
+                vencimentoDia = null,
+                beneficio = BeneficioVoucher.VR,
+                saldoCentavos = 15_000L,
+                diaRecarga = 5,
+                valorRecargaCentavos = 80_000L,
+                limiteCreditoCentavos = null,
+                criadoEm = criadoVoucher,
+                atualizadoEm = criadoVoucher,
+                excluidoEm = null,
+            ),
         )
         database.lancamentoDao().upsert(
             LancamentoEntity(
