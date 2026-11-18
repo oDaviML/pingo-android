@@ -4,16 +4,17 @@ Aplicativo Android do Pingo: captura automática de transações financeiras a p
 
 ## Estado atual (F2)
 
-O F1 entregou o fluxo completo de captura automática e as telas principais. O F2 organiza contas e a leitura do app:
+O F1 entregou o fluxo completo de captura automática e as telas principais. O F2 concluiu a organização de contas, faturas, vouchers, relatórios, assinaturas, lembretes e o alinhamento ao Design System:
 
 - Onboarding passos 1–7: login Google via Credential Manager, termo LGPD, acesso às notificações, permissão para o Pingo notificar, bateria/autostart e escolha de bancos/instrumentos. Biometria fica para F3.
-- Contas: lista agrupada por instituição com seus instrumentos, estados vazio, carregando e erro de leitura, além de cadastro e edição pela própria aba. Contas arquivadas aparecem numa seção própria e podem ser reabertas; a edição de uma conta ativa permite arquivar instrumentos individualmente e reativá-los depois, com confirmação que explica que o histórico continua disponível.
-- Cadastro compartilhado entre onboarding e Contas: instituição, apelido, tipo de conta, crédito (fechamento/vencimento e últimos quatro dígitos opcionais), débito e voucher (benefício, saldo inicial e recarga opcional). Vários instrumentos do mesmo tipo convivem com IDs e dados independentes.
-- Outra instituição fica restrita a lançamentos manuais e não recebe associação automática de notificações.
-- Início: saldo do mês (receitas − despesas, transferências excluídas), seletor de mês, avisos de "N para revisar" e "captura parada", top 3 categorias de despesa, últimos 5 lançamentos e atalho para lançamento manual.
+- Contas e Faturas (`STR-197`, `STR-198`): lista agrupada por instituição com subcards por instrumento (fatura aberta/fechamento/vencimento no crédito, gastos do mês no débito e saldo/última recarga no voucher — sem exibir saldo de conta corrente), modal `Completar datas` para cartões legados, `FaturasScreen` com abas `Aberta`, `Próximas` e `Fechadas` (`X/N` e estornos abatendo o total com clamp `>= 0`), além de arquivamento/reativação em cascata preservando histórico.
+- Cadastro compartilhado entre onboarding e Contas (`STR-181`): instituição, apelido, tipo de conta, crédito (fechamento/vencimento e últimos quatro dígitos opcionais), débito e voucher (benefício, saldo inicial e recarga opcional). Outra instituição fica restrita a lançamentos manuais.
+- Vouchers e Revisão (`STR-199`): saldo por referência válida mais recente (`Abertura`/`Observado`/`Ajuste`), materialização idempotente de recargas programadas, modal `Ajustar saldo` e revisão explícita para `BENEFICIO_AMBIGUO` e `DIVERGENCIA_RECARGA`.
+- Início (`STR-200`): saldo do mês (receitas − despesas, transferências excluídas), seletor de mês, avisos de "N para revisar" e "captura parada", blocos independentes de faturas abertas e saldos de benefícios (com isolamento de falha e sem `R$ 0,00` fora do saldo do mês), top 3 categorias de despesa, últimos 5 lançamentos e atalho para lançamento manual.
 - Lançamentos: lista por dia, busca, filtros, detalhe/edição e novo lançamento.
 - Revisão de pendências, notificações por pendente (Confirmar sem abrir o app e Corrigir abrindo o detalhe) e Status da captura com permissões, contadores e reconexão.
-- Relatórios segue placeholder nesta fase; indicadores financeiros por instrumento ficam para o próximo marco.
+- Relatórios e Assinaturas (`STR-201`, `STR-202`): visão mensal em `America/Sao_Paulo`, gráfico de rosca acessível com comparação MoM (`"sem base"` quando o mês anterior é zero), barras de receitas × despesas de 6 meses, drill-down para `Lançamentos` filtrado por categoria e mês, detecção/decisão de assinaturas por instrumento + estabelecimento normalizado e seção `Assinaturas` com total mensal e estado vazio.
+- Lembretes de assinatura (`STR-203`): preferência DataStore `avisoAssinaturasAtivo` (padrão `false`), `AvisoDeAssinaturaWorker` via WorkManager (`09:00 America/Sao_Paulo`, 2 dias antes, janela do mesmo dia `<= 23:59`, sem `textoBruto` conforme RNF-11), toggle e tratamento de `POST_NOTIFICATIONS` em Configurações.
 
 ## Como buildar
 
@@ -86,9 +87,11 @@ Arquivar não apaga histórico: a conta e seus instrumentos saem das consultas s
 
 O fluxo de arquivamento é coberto em três camadas: ViewModel (instrumento isolado, cascata com cancelamento, reativação e falha), Room (`ContaDao`/`InstrumentoDao` separando consultas ativas e históricas) e app (`ArquivamentoFluxoTest` alterna conta e instrumento, reabre a conta, reativa e confirma que o lançamento histórico continua em Lançamentos). O teste de sync (`SyncHttpIntegrationTest`) empurra um grafo com conta arquivada por cascata e instrumento arquivado manualmente, restaura num banco vazio, reativa depois da restauração e repete o pull sem duplicar, cobrindo todos os campos de conta/instrumento, isolamento entre dois usuários e a procedência preservada em HTTP real.
 
+O schema 6 (`MIGRACAO_5_6`, `6.json`) adiciona `configuracoes_cartao`, `referencias_saldo_voucher`, `recargas_programadas_voucher`, `assinaturas.instrumentoPublicId` nullable e os campos F2 em `lancamentos` (`beneficio`, `saldoObservadoCentavos`, `estabelecimentoNormalizado`). O sync F2 espelha a API com `CampoPresenca` para preservar omissão vs `null` explícito e não envia `textoBruto` (RNF-11).
+
 ## Design system
 
-O `core:designsystem` traduz o design system do FigCraft (`design/design-system.md` e `design/pingo.figcraft`) para Compose, sem Material 3: tema próprio (`PingoTheme`) com tokens de cor, tipografia Nunito, raios, espaçamento, elevação e movimento, além dos componentes `Pingo*` e do stepper do onboarding.
+O `core:designsystem` traduz o design system do FigCraft (`design/design-system.md` e `design/pingo.figcraft`) para Compose, sem Material 3: tema próprio (`PingoTheme`) com tokens de cor, tipografia Nunito, raios, espaçamento, elevação e movimento (`PingoMotion` e animações `"Pingar"`), 79 ícones Lucide, `PingoBottomBar` persistente com botão gota `AddDrop`, `PingoTopBar`, `InstitutionAvatar`, `CategoryAvatar`, além dos componentes financeiros e de gráficos (`PingoInvoiceCard`, `PingoDebitCard`, `PingoVoucherCard`, `PingoTabs`, `PingoDonutChart`, `PingoComparisonRow`, `PingoIncomeExpenseBars`, `PingoSubscriptionRow`, `PingoSubscriptionSuggestionCard`) e do stepper do onboarding.
 
 ## Autenticação (Auth0 + Google nativo)
 
@@ -173,6 +176,8 @@ dotnet run --project tests/Pingo.Api.TestHost/Pingo.Api.TestHost.csproj --no-lau
 ```
 
 O TestHost não vai para produção e não contém segredos: a autenticação de teste é uma fixture do assembly de testes. Credenciais reais do Auth0 continuam fora do repositório, em `local.properties` ou variáveis de ambiente do CI.
+
+Gate F2 verificado: `./gradlew --max-workers=2 test spotlessCheck detekt assembleDebug` (1585/1585 unitários verdes, `spotlessCheck` e `detekt` sem erros) e `./gradlew --max-workers=2 connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.pingo.syncHost=http://10.0.2.2:8080/` nos 12 módulos em Android 15 (`API 35`) e Android 16 (`API 36.1`) contra `Pingo.Api.TestHost` + PostgreSQL 18 (0 falhas, 0 erros, apenas os 2 skips esperados em `FixtureDeAberturaFriaTest`), incluindo `SyncHttpIntegrationTest` (6/6), `AvisoDeAssinaturaWorkManagerTest` (8/8), `FaturasEIndicadoresFluxoTest`, `VoucherCajuEFluxoFinanceiroTest`, `RelatoriosAssinaturasEToggleTest` e o benchmark `VAL-REP-006` (`<= 1.500 ms`).
 
 ## Documentação
 
