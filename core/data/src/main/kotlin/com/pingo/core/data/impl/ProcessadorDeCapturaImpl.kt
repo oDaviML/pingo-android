@@ -66,11 +66,10 @@ class ProcessadorDeCapturaImpl @Inject constructor(
             return ResultadoProcessamento.Duplicada
         }
 
-        val categoria = resolverCategoria(captura.transacao)
         val dataHora = DataHoraDoLancamento.resolver(captura.transacao.dataHoraTexto, captura.postTime, clock.zone)
 
         return transacaoLocal.executar {
-            gravar(captura, hash, categoria, dataHora)
+            gravar(captura, hash, dataHora)
         }
     }
 
@@ -81,17 +80,13 @@ class ProcessadorDeCapturaImpl @Inject constructor(
             instrumentoRepository.ativosDaInstituicao(instituicao)
         }
 
-    private suspend fun gravar(
-        captura: CapturaParaProcessar,
-        hash: String,
-        categoria: Categoria?,
-        dataHora: Instant,
-    ): ResultadoProcessamento {
+    private suspend fun gravar(captura: CapturaParaProcessar, hash: String, dataHora: Instant): ResultadoProcessamento {
         if (lancamentoRepository.buscarPorHash(hash) != null) {
             return ResultadoProcessamento.Duplicada
         }
 
         val instrumentos = instrumentosElegiveis(captura.instituicao)
+        val categoria = resolverCategoria(captura.transacao)
         val transacao = captura.transacao
         val resolucao = ResolucaoDeInstrumento.de(transacao.digitos, instrumentos)
         val candidatos = resolucao.instrumento?.let { instrumento ->

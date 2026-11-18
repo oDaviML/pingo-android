@@ -112,7 +112,7 @@ class AccountsFluxoRoomTest {
     }
 
     @Test
-    fun criarOutraSemInstrumentosPersisteNoBancoOffline() = runBlocking {
+    fun criarOutraComDebitoPadraoPersisteNoBancoOffline() = runBlocking {
         val fluxo = ControladorDeTela()
         exibirFluxo(fluxo)
 
@@ -126,9 +126,11 @@ class AccountsFluxoRoomTest {
         abrirRepositorios()
 
         val reaberta = contas.observeContas().first().single()
+        val instrumentosSalvos = instrumentos.observePorConta(reaberta.publicId).first()
         assertEquals(contaCriada.publicId, reaberta.publicId)
         assertEquals(InstituicaoFinanceira.OUTRA, reaberta.instituicao)
-        assertEquals(0, instrumentos.observePorConta(reaberta.publicId).first().size)
+        assertEquals(1, instrumentosSalvos.size)
+        assertEquals(TipoInstrumento.DEBITO, instrumentosSalvos.single().tipo)
     }
 
     private fun validarLimitesDeDiaEValor() {

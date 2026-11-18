@@ -235,20 +235,22 @@ internal class BancoRoomDeTeste(private val context: Context, nomeArquivo: Strin
         primeiro: suspend (TransacaoLocal) -> A,
         segundo: suspend (TransacaoLocal) -> B,
     ): Pair<A, B> = coroutineScope {
-        val primeiroEntrou = CompletableDeferred<Unit>()
         val segundoNaPorta = CompletableDeferred<Unit>()
+        val primeiroFinalizou = CompletableDeferred<Unit>()
         val txPrimeiro = TransacaoComBarreira(
             base = roomTx,
-            dentroAntesDoCorpo = {
-                primeiroEntrou.complete(Unit)
+            antesDeEntrar = {
                 withTimeout(TIMEOUT_MS) { segundoNaPorta.await() }
+            },
+            depoisDeExecutar = {
+                primeiroFinalizou.complete(Unit)
             },
         )
         val txSegundo = TransacaoComBarreira(
             base = roomTx,
             antesDeEntrar = {
-                withTimeout(TIMEOUT_MS) { primeiroEntrou.await() }
                 segundoNaPorta.complete(Unit)
+                withTimeout(TIMEOUT_MS) { primeiroFinalizou.await() }
             },
         )
         val tarefaA = async(corridaDispatcher) { primeiro(txPrimeiro) }
@@ -266,13 +268,16 @@ internal class BancoRoomDeTeste(private val context: Context, nomeArquivo: Strin
 internal class TransacaoComBarreira(
     private val base: TransacaoLocal,
     private val antesDeEntrar: suspend () -> Unit = {},
-    private val dentroAntesDoCorpo: suspend () -> Unit = {},
+    private val depoisDeExecutar: () -> Unit = {},
 ) : TransacaoLocal {
     override suspend fun <T> executar(bloco: suspend () -> T): T {
         antesDeEntrar()
-        return base.executar {
-            dentroAntesDoCorpo()
-            bloco()
+        return try {
+            base.executar {
+                bloco()
+            }
+        } finally {
+            depoisDeExecutar()
         }
     }
 }
