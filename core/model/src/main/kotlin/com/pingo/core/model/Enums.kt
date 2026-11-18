@@ -60,3 +60,9 @@ enum class BeneficioVoucher {
     VA,
     VT,
 }
+
+enum class TemaDoApp {
+    SISTEMA,
+    CLARO,
+    ESCURO,
+}

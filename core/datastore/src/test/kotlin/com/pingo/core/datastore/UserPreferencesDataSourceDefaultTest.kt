@@ -1,5 +1,6 @@
 package com.pingo.core.datastore
 
+import com.pingo.core.model.TemaDoApp
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -23,6 +24,7 @@ class UserPreferencesDataSourceDefaultTest {
         assertTrue(fake.revisarPelaNotificacaoAtivo.first())
         assertTrue(fake.alertaCapturaParadaAtivo.first())
         assertFalse(fake.telemetriaOptIn.first())
+        assertEquals(TemaDoApp.SISTEMA, fake.temaDoApp.first())
         assertNull(fake.emailUsuario.first())
         assertNull(fake.nomeUsuario.first())
 

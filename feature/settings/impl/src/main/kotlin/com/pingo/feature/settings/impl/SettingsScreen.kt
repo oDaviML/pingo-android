@@ -55,6 +55,7 @@ import com.pingo.core.designsystem.icon.PingoIcons
 import com.pingo.core.designsystem.theme.PingoLayout
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.model.TemaDoApp
 import com.pingo.core.notifications.IntentsDeSistema
 import com.pingo.core.ui.PrivacyTermDialog
 
@@ -142,34 +143,78 @@ fun SettingsScreen(
 
     NavegarAoSairOuExcluir(state = state, onAccountDeleted = onAccountDeleted, onLoggedOut = onLoggedOut)
 
+    SettingsBody(
+        state = state,
+        permissaoConcedida = permissaoConcedida,
+        permissaoDeNotificacao = permissaoDeNotificacao,
+        viewModel = viewModel,
+        onAtualizarPermissao = { permissaoConcedida = it },
+        onBack = onBack,
+        onShowTerm = { showTerm = true },
+        onAbrirCategoriasERegras = onAbrirCategoriasERegras,
+    )
+
+    SettingsDialogs(showTerm = showTerm, onDismissTerm = { showTerm = false }, state = state, viewModel = viewModel)
+}
+
+@Suppress("LongParameterList")
+@Composable
+private fun SettingsBody(
+    state: SettingsUiState,
+    permissaoConcedida: Boolean,
+    permissaoDeNotificacao: PermissaoDeNotificacaoSettings,
+    viewModel: SettingsViewModel,
+    onAtualizarPermissao: (Boolean) -> Unit,
+    onBack: () -> Unit,
+    onShowTerm: () -> Unit,
+    onAbrirCategoriasERegras: () -> Unit,
+) {
+    val context = LocalContext.current
+
     Box(modifier = Modifier.fillMaxSize()) {
         SettingsContent(
             onBack = onBack,
-            onShowTerm = { showTerm = true },
+            onShowTerm = onShowTerm,
             onDeleteAccount = viewModel::showDeleteDialog,
-            notificacoes = criarNotificacoesUi(state, permissaoConcedida, permissaoDeNotificacao, viewModel, context) {
-                permissaoConcedida = it
-            },
+            notificacoes = criarNotificacoesUi(
+                state,
+                permissaoConcedida,
+                permissaoDeNotificacao,
+                viewModel,
+                context,
+                onAtualizarPermissao,
+            ),
+            aparencia = SettingsAparenciaUi(tema = state.tema, onAbrirTema = viewModel::abrirSheetTema),
             conta = SettingsContaUi(state.nomeUsuario, state.emailUsuario, viewModel::solicitarLogout),
             seguranca = criarSegurancaUi(state, viewModel, context, onAbrirCategoriasERegras),
             privacidade = SettingsPrivacidadeUi(
                 telemetriaOptIn = state.telemetriaOptIn,
                 onToggleTelemetria = viewModel::alternarTelemetria,
-                onShowTerm = { showTerm = true },
+                onShowTerm = onShowTerm,
                 onDeleteAccount = viewModel::showDeleteDialog,
             ),
             sobre = criarSobreUi(state, viewModel, context),
         )
-        if (state.mostrarSheetTempoBloqueio) {
-            BloquearAposBottomSheet(
-                selecionado = OpcaoBloqueio.deSegundos(state.tempoBloqueioSegundos),
-                onSelecionar = viewModel::selecionarTempoBloqueio,
-                onDismissRequest = viewModel::fecharSheetTempoBloqueio,
-            )
-        }
+        SettingsSheets(state = state, viewModel = viewModel)
     }
+}
 
-    SettingsDialogs(showTerm = showTerm, onDismissTerm = { showTerm = false }, state = state, viewModel = viewModel)
+@Composable
+private fun SettingsSheets(state: SettingsUiState, viewModel: SettingsViewModel) {
+    if (state.mostrarSheetTempoBloqueio) {
+        BloquearAposBottomSheet(
+            selecionado = OpcaoBloqueio.deSegundos(state.tempoBloqueioSegundos),
+            onSelecionar = viewModel::selecionarTempoBloqueio,
+            onDismissRequest = viewModel::fecharSheetTempoBloqueio,
+        )
+    }
+    if (state.mostrarSheetTema) {
+        TemaBottomSheet(
+            selecionado = state.tema,
+            onSelecionar = viewModel::selecionarTema,
+            onDismissRequest = viewModel::fecharSheetTema,
+        )
+    }
 }
 
 @Composable
@@ -312,25 +357,51 @@ private fun BloquearAposBottomSheet(selecionado: OpcaoBloqueio, onSelecionar: (O
         subtitle = "Escolha quanto tempo o Pingo aguarda em segundo plano.",
     ) {
         OpcaoBloqueio.entries.forEach { opcao ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = PingoLayout.minTouchTarget)
-                    .selectable(selected = opcao == selecionado, role = Role.RadioButton, onClick = { onSelecionar(opcao) })
-                    .padding(horizontal = PingoSpacing.sm, vertical = PingoSpacing.xs),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                PingoText(text = opcao.rotulo, style = PingoTheme.typography.body)
-                if (opcao == selecionado) {
-                    PingoIcon(
-                        imageVector = PingoIcons.Check,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = PingoTheme.colors.primary,
-                    )
-                }
-            }
+            OpcaoRadioSheetRow(
+                rotulo = opcao.rotulo,
+                selecionado = opcao == selecionado,
+                onClick = { onSelecionar(opcao) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun TemaBottomSheet(selecionado: TemaDoApp, onSelecionar: (TemaDoApp) -> Unit, onDismissRequest: () -> Unit) {
+    PingoBottomSheet(
+        onDismissRequest = onDismissRequest,
+        title = "Tema do aplicativo",
+        subtitle = "Escolha a aparência que prefere no Pingo.",
+    ) {
+        TemaDoApp.entries.forEach { tema ->
+            OpcaoRadioSheetRow(
+                rotulo = tema.rotulo(),
+                selecionado = tema == selecionado,
+                onClick = { onSelecionar(tema) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun OpcaoRadioSheetRow(rotulo: String, selecionado: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = PingoLayout.minTouchTarget)
+            .selectable(selected = selecionado, role = Role.RadioButton, onClick = onClick)
+            .padding(horizontal = PingoSpacing.sm, vertical = PingoSpacing.xs),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        PingoText(text = rotulo, style = PingoTheme.typography.body)
+        if (selecionado) {
+            PingoIcon(
+                imageVector = PingoIcons.Check,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = PingoTheme.colors.primary,
+            )
         }
     }
 }
@@ -343,6 +414,7 @@ fun SettingsContent(
     onDeleteAccount: () -> Unit,
     modifier: Modifier = Modifier,
     notificacoes: SettingsNotificacoesUi = SettingsNotificacoesUi(),
+    aparencia: SettingsAparenciaUi = SettingsAparenciaUi(),
     conta: SettingsContaUi = SettingsContaUi(),
     seguranca: SettingsSegurancaUi = SettingsSegurancaUi(),
     privacidade: SettingsPrivacidadeUi = SettingsPrivacidadeUi(onShowTerm = onShowTerm, onDeleteAccount = onDeleteAccount),
@@ -364,6 +436,8 @@ fun SettingsContent(
         ) {
             SectionHeader("Conta")
             ContaCartao(conta = conta)
+            SectionHeader("Aparência")
+            AparenciaCartao(aparencia = aparencia)
             SectionHeader("Segurança e categorias")
             SegurancaCartao(seguranca = seguranca)
             SectionHeader("Notificações do Pingo")

@@ -224,7 +224,7 @@ private fun mapearSugestao(
             merchant = sugestao.estabelecimentoExibicao,
             instrumentName = "$rotuloInstrumento · Próx. ≈ $proxima",
             amountFormatted = Valores.formatar(sugestao.valorReferenciaCentavos),
-            tagLabel = "Parece assinatura · Mensal",
+            tagLabel = if (sugestao.porCategoria) "Categoria Assinaturas · Mensal" else "Parece assinatura · Mensal",
         ),
     )
 }

@@ -1,5 +1,6 @@
 package com.pingo.core.datastore
 
+import com.pingo.core.model.TemaDoApp
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import java.time.Instant
@@ -81,6 +82,11 @@ interface UserPreferencesDataSource {
         get() = flowOf(false)
 
     suspend fun setTelemetriaOptIn(ativo: Boolean) = Unit
+
+    val temaDoApp: Flow<TemaDoApp>
+        get() = flowOf(TemaDoApp.SISTEMA)
+
+    suspend fun setTemaDoApp(tema: TemaDoApp) = Unit
 
     val emailUsuario: Flow<String?>
         get() = flowOf(null)

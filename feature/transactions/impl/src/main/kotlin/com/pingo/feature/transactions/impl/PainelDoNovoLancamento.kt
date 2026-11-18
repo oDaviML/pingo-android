@@ -4,16 +4,22 @@ import androidx.compose.runtime.Composable
 
 @Composable
 internal fun PainelDoNovoLancamento(state: NovoLancamentoUiState, painel: PainelDoNovoLancamento, onEvent: (NovoLancamentoEvent) -> Unit) {
+    if (painel == PainelDoNovoLancamento.PARCELAS) {
+        PainelDeParcelas(state = state, onEvent = onEvent)
+        return
+    }
     val opcoes = when (painel) {
         PainelDoNovoLancamento.CATEGORIA -> state.categorias.map { OpcaoDePainel(it.publicId, it.nome) }
         PainelDoNovoLancamento.INSTRUMENTO, PainelDoNovoLancamento.DESTINO -> state.instrumentos.map {
             OpcaoDePainel(it.publicId, it.rotulo)
         }
+        PainelDoNovoLancamento.PARCELAS -> emptyList()
     }
     val selecionado = when (painel) {
         PainelDoNovoLancamento.CATEGORIA -> state.categoria?.publicId
         PainelDoNovoLancamento.DESTINO -> state.destino?.publicId
         PainelDoNovoLancamento.INSTRUMENTO -> state.instrumento?.publicId
+        PainelDoNovoLancamento.PARCELAS -> null
     }
 
     PainelDeSelecao(
@@ -30,6 +36,7 @@ internal fun PainelDoNovoLancamento(state: NovoLancamentoUiState, painel: Painel
 private fun tituloDoPainel(state: NovoLancamentoUiState, painel: PainelDoNovoLancamento): String = when (painel) {
     PainelDoNovoLancamento.CATEGORIA -> "Categoria"
     PainelDoNovoLancamento.DESTINO -> "Conta de destino"
+    PainelDoNovoLancamento.PARCELAS -> "Parcelamento"
     PainelDoNovoLancamento.INSTRUMENTO ->
         if (state.tipo == TipoDoLancamentoManual.TRANSFERENCIA) "Conta de origem" else "Instrumento"
 }

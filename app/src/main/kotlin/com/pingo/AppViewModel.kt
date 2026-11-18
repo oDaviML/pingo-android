@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.pingo.core.auth.AuthRepository
 import com.pingo.core.auth.SessionState
 import com.pingo.core.datastore.UserPreferencesDataSource
+import com.pingo.core.model.TemaDoApp
 import com.pingo.navigation.DestinoInicial
 import com.pingo.navigation.destinoInicialPara
 import com.pingo.sync.SyncScheduler
@@ -25,6 +26,9 @@ class AppViewModel @Inject constructor(
     private val syncScheduler: Lazy<SyncScheduler>,
 ) : ViewModel() {
     val session: StateFlow<SessionState> = authRepository.session
+
+    val tema: StateFlow<TemaDoApp> = preferences.temaDoApp
+        .stateIn(viewModelScope, SharingStarted.Eagerly, TemaDoApp.SISTEMA)
 
     val destinoInicial: StateFlow<DestinoInicial?> = authRepository.session
         .filter { it != SessionState.Loading }

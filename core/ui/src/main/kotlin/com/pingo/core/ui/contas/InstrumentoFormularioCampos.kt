@@ -11,12 +11,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.pingo.core.designsystem.component.PingoButton
 import com.pingo.core.designsystem.component.PingoButtonSize
 import com.pingo.core.designsystem.component.PingoButtonType
 import com.pingo.core.designsystem.component.PingoChoiceChip
+import com.pingo.core.designsystem.component.PingoCurrencyField
 import com.pingo.core.designsystem.component.PingoText
 import com.pingo.core.designsystem.component.PingoTextField
 import com.pingo.core.designsystem.theme.PingoSpacing
@@ -169,14 +171,13 @@ private fun VoucherCampos(instrumento: InstrumentoFormulario, habilitado: Boolea
     BeneficioEscolha(instrumento = instrumento, habilitado = habilitado, onEvento = onEvento)
 
     val saldoValido = instrumento.saldoValido()
-    PingoTextField(
+    PingoCurrencyField(
         value = instrumento.saldoInicial,
         onValueChange = { onEvento(EventoDoFormularioDeConta.AlterarSaldoInicial(instrumento.chave, it)) },
         label = "Saldo inicial (R$)",
         supportingText = if (saldoValido || instrumento.saldoInicial.isBlank()) null else MENSAGEM_VALOR,
         isError = !saldoValido && instrumento.saldoInicial.isNotBlank(),
         enabled = habilitado,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
     )
 
     RecargaCampos(instrumento = instrumento, habilitado = habilitado, onEvento = onEvento)
@@ -203,30 +204,24 @@ private fun BeneficioEscolha(instrumento: InstrumentoFormulario, habilitado: Boo
 
 @Composable
 private fun RecargaCampos(instrumento: InstrumentoFormulario, habilitado: Boolean, onEvento: (EventoDoFormularioDeConta) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
-    ) {
-        PingoTextField(
-            value = instrumento.diaRecarga,
-            onValueChange = { onEvento(EventoDoFormularioDeConta.AlterarDiaRecarga(instrumento.chave, it)) },
-            label = "Dia da recarga (opcional)",
-            modifier = Modifier.weight(1f),
-            supportingText = erroDeDia(instrumento.diaRecarga, instrumento.diaRecargaValido()),
-            isError = instrumento.diaRecarga.isNotBlank() && !instrumento.diaRecargaValido(),
-            enabled = habilitado,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+    val erroDia = erroDeDia(instrumento.diaRecarga, instrumento.diaRecargaValido())
+    val erroValor = if (instrumento.valorRecargaValido() || instrumento.valorRecarga.isBlank()) null else MENSAGEM_VALOR
+
+    Column(verticalArrangement = Arrangement.spacedBy(PingoSpacing.xs)) {
+        RotulosEmDuasColunas(
+            rotuloEsquerda = "Dia da recarga (opcional)",
+            rotuloDireita = "Valor da recarga (R$)",
         )
-        PingoTextField(
-            value = instrumento.valorRecarga,
-            onValueChange = { onEvento(EventoDoFormularioDeConta.AlterarValorRecarga(instrumento.chave, it)) },
-            label = "Valor da recarga (R$)",
-            modifier = Modifier.weight(1f),
-            supportingText = if (instrumento.valorRecargaValido() || instrumento.valorRecarga.isBlank()) null else MENSAGEM_VALOR,
-            isError = !instrumento.valorRecargaValido() && instrumento.valorRecarga.isNotBlank(),
-            enabled = habilitado,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        CamposDeRecargaEmLinha(
+            instrumento = instrumento,
+            habilitado = habilitado,
+            erroDia = erroDia != null,
+            erroValor = erroValor != null,
+            onEvento = onEvento,
         )
+        if (erroDia != null || erroValor != null) {
+            ErrosEmDuasColunas(erroEsquerda = erroDia, erroDireita = erroValor)
+        }
     }
 
     if (!instrumento.recargaValida()) {
@@ -235,6 +230,86 @@ private fun RecargaCampos(instrumento: InstrumentoFormulario, habilitado: Boolea
             style = PingoTheme.typography.caption,
             color = PingoTheme.colors.expense,
         )
+    }
+}
+
+@Composable
+private fun RotulosEmDuasColunas(rotuloEsquerda: String, rotuloDireita: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        PingoText(
+            text = rotuloEsquerda,
+            style = PingoTheme.typography.bodySmall,
+            color = PingoTheme.colors.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        PingoText(
+            text = rotuloDireita,
+            style = PingoTheme.typography.bodySmall,
+            color = PingoTheme.colors.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun CamposDeRecargaEmLinha(
+    instrumento: InstrumentoFormulario,
+    habilitado: Boolean,
+    erroDia: Boolean,
+    erroValor: Boolean,
+    onEvento: (EventoDoFormularioDeConta) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
+        verticalAlignment = Alignment.Top,
+    ) {
+        PingoTextField(
+            value = instrumento.diaRecarga,
+            onValueChange = { onEvento(EventoDoFormularioDeConta.AlterarDiaRecarga(instrumento.chave, it)) },
+            label = "Dia da recarga (opcional)",
+            modifier = Modifier
+                .weight(1f)
+                .testTag("campo-dia-recarga"),
+            isError = erroDia,
+            enabled = habilitado,
+            showLabel = false,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        )
+        PingoCurrencyField(
+            value = instrumento.valorRecarga,
+            onValueChange = { onEvento(EventoDoFormularioDeConta.AlterarValorRecarga(instrumento.chave, it)) },
+            label = "Valor da recarga (R$)",
+            modifier = Modifier
+                .weight(1f)
+                .testTag("campo-valor-recarga"),
+            isError = erroValor,
+            enabled = habilitado,
+            showLabel = false,
+        )
+    }
+}
+
+@Composable
+private fun ErrosEmDuasColunas(erroEsquerda: String?, erroDireita: String?) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
+    ) {
+        Box(modifier = Modifier.weight(1f)) {
+            if (erroEsquerda != null) {
+                PingoText(text = erroEsquerda, style = PingoTheme.typography.caption, color = PingoTheme.colors.expense)
+            }
+        }
+        Box(modifier = Modifier.weight(1f)) {
+            if (erroDireita != null) {
+                PingoText(text = erroDireita, style = PingoTheme.typography.caption, color = PingoTheme.colors.expense)
+            }
+        }
     }
 }
 

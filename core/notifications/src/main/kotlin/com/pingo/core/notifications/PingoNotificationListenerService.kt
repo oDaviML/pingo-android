@@ -21,6 +21,8 @@ class PingoNotificationListenerService : NotificationListenerService() {
 
     @Inject lateinit var atualizadorDeRegras: Lazy<AtualizadorDeRegras>
 
+    @Inject lateinit var estadoDoServico: EstadoDoServicoDeCaptura
+
     @Inject lateinit var dispatchers: AppDispatchers
 
     private var escopo: CoroutineScope? = null
@@ -34,6 +36,9 @@ class PingoNotificationListenerService : NotificationListenerService() {
     override fun onListenerConnected() {
         super.onListenerConnected()
         desconexaoProcessada = false
+        if (::estadoDoServico.isInitialized) {
+            estadoDoServico.atualizar(emExecucao = true)
+        }
         capturaController.registrarConectado()
         executar { atualizadorDeRegras.get().atualizar() }
     }
@@ -46,6 +51,9 @@ class PingoNotificationListenerService : NotificationListenerService() {
         }
 
         desconexaoProcessada = true
+        if (::estadoDoServico.isInitialized) {
+            estadoDoServico.atualizar(emExecucao = false)
+        }
         capturaController.registrarDesconectado()
     }
 
@@ -56,6 +64,13 @@ class PingoNotificationListenerService : NotificationListenerService() {
     }
 
     override fun onDestroy() {
+        if (!desconexaoProcessada && ::capturaController.isInitialized) {
+            desconexaoProcessada = true
+            capturaController.registrarDesconectado()
+        }
+        if (::estadoDoServico.isInitialized) {
+            estadoDoServico.atualizar(emExecucao = false)
+        }
         escopo?.cancel()
         escopo = null
         super.onDestroy()

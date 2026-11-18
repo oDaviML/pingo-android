@@ -353,11 +353,15 @@ class F2UnitTest {
 
         override suspend fun atualizadosDesde(desde: Instant): List<LancamentoEntity> = emptyList()
 
+        override suspend fun listarParcelasDaCompra(raizPublicId: String): List<LancamentoEntity> = emptyList()
+
         override suspend fun upsert(lancamento: LancamentoEntity) = Unit
 
         override suspend fun upsertAll(lancamentos: List<LancamentoEntity>) = Unit
 
         override suspend fun marcarExcluido(publicId: String, quando: Instant) = Unit
+
+        override suspend fun marcarExcluidos(publicIds: List<String>, quando: Instant) = Unit
 
         override suspend fun definirTextoBruto(publicId: String, textoBruto: String) = Unit
 

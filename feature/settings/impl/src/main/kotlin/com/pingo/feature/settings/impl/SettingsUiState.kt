@@ -2,8 +2,15 @@ package com.pingo.feature.settings.impl
 
 import androidx.compose.runtime.Immutable
 import com.pingo.core.auth.DisponibilidadeAutenticacao
+import com.pingo.core.model.TemaDoApp
 import com.pingo.core.network.update.AtualizacaoDisponivel
 import java.io.File
+
+internal fun TemaDoApp.rotulo(): String = when (this) {
+    TemaDoApp.SISTEMA -> "Seguir sistema"
+    TemaDoApp.CLARO -> "Claro"
+    TemaDoApp.ESCURO -> "Escuro"
+}
 
 enum class OpcaoBloqueio(val segundos: Long, val rotulo: String) {
     IMEDIATO(0L, "Imediato"),
@@ -60,7 +67,12 @@ data class SettingsUiState(
     val mensagemSeguranca: String? = null,
     val mostrarAtalhoCadastroBiometria: Boolean = false,
     val mostrarSheetTempoBloqueio: Boolean = false,
+    val tema: TemaDoApp = TemaDoApp.SISTEMA,
+    val mostrarSheetTema: Boolean = false,
 )
+
+@Immutable
+data class SettingsAparenciaUi(val tema: TemaDoApp = TemaDoApp.SISTEMA, val onAbrirTema: () -> Unit = {})
 
 @Immutable
 data class SettingsContaUi(val nomeUsuario: String? = null, val emailUsuario: String? = null, val onSolicitarLogout: () -> Unit = {})

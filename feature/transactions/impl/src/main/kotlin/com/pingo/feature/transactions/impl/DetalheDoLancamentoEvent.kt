@@ -43,5 +43,11 @@ sealed interface DetalheDoLancamentoEvent {
 
     data object ConfirmarExclusao : DetalheDoLancamentoEvent
 
+    data object SolicitarExclusaoParcelas : DetalheDoLancamentoEvent
+
+    data object CancelarExclusaoParcelas : DetalheDoLancamentoEvent
+
+    data object ConfirmarExclusaoParcelas : DetalheDoLancamentoEvent
+
     data object DispensarMensagem : DetalheDoLancamentoEvent
 }

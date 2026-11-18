@@ -9,6 +9,7 @@ import com.pingo.core.data.AccountRepository
 import com.pingo.core.data.assinatura.AgendadorDeAvisosOpcional
 import com.pingo.core.datastore.SyncStatus
 import com.pingo.core.datastore.UserPreferencesDataSource
+import com.pingo.core.model.TemaDoApp
 import com.pingo.core.network.update.AtualizacaoDisponivel
 import com.pingo.core.network.update.EstadoDownloadApk
 import com.pingo.core.network.update.MotivoFalhaDownloadApk
@@ -25,6 +26,7 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import javax.inject.Inject
 
+@Suppress("TooManyFunctions")
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val accountRepository: AccountRepository,
@@ -177,6 +179,21 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun abrirSheetTema() {
+        mutableUiState.update { it.copy(mostrarSheetTema = true) }
+    }
+
+    fun fecharSheetTema() {
+        mutableUiState.update { it.copy(mostrarSheetTema = false) }
+    }
+
+    fun selecionarTema(tema: TemaDoApp) {
+        viewModelScope.launch {
+            preferences.setTemaDoApp(tema)
+            mutableUiState.update { it.copy(tema = tema, mostrarSheetTema = false) }
+        }
+    }
+
     fun verificarAtualizacao() {
         val atual = mutableUiState.value.estadoAtualizacao
         if (atual is EstadoAtualizacaoAppUi.Verificando || atual is EstadoAtualizacaoAppUi.Baixando) {
@@ -290,7 +307,8 @@ class SettingsViewModel @Inject constructor(
                 combine(
                     preferences.nomeUsuario,
                     preferences.emailUsuario,
-                ) { nome, email -> nome to email },
+                    preferences.temaDoApp,
+                ) { nome, email, tema -> Triple(nome, email, tema) },
             ) { segurancaPref, notifPref, perfil ->
                 PreferenciasSnapshot(segurancaPref, notifPref, perfil)
             }.collect { snap ->
@@ -304,6 +322,7 @@ class SettingsViewModel @Inject constructor(
                         telemetriaOptIn = snap.notif.third,
                         nomeUsuario = snap.perfil.first,
                         emailUsuario = snap.perfil.second,
+                        tema = snap.perfil.third,
                     )
                 }
             }
@@ -313,7 +332,7 @@ class SettingsViewModel @Inject constructor(
     private data class PreferenciasSnapshot(
         val seguranca: Triple<Boolean, Boolean, Long>,
         val notif: Triple<Boolean, Boolean, Boolean>,
-        val perfil: Pair<String?, String?>,
+        val perfil: Triple<String?, String?, TemaDoApp>,
     )
 
     private object SemPreferencias : UserPreferencesDataSource {

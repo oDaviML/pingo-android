@@ -10,6 +10,7 @@ import com.pingo.core.model.TipoLancamento
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
 
+@Suppress("TooManyFunctions")
 @Dao
 abstract class LancamentoDao {
     @Query("SELECT * FROM lancamentos WHERE excluidoEm IS NULL ORDER BY dataHora DESC")
@@ -52,6 +53,8 @@ abstract class LancamentoDao {
         AND tipo = 'DESPESA'
         AND instrumentoPublicId IS NOT NULL
         AND valorCentavos > 0
+        AND compraPaiPublicId IS NULL
+        AND totalParcelas <= 1
         ORDER BY dataHora ASC, publicId ASC
         """,
     )
@@ -65,10 +68,22 @@ abstract class LancamentoDao {
         AND tipo = 'DESPESA'
         AND instrumentoPublicId IS NOT NULL
         AND valorCentavos > 0
+        AND compraPaiPublicId IS NULL
+        AND totalParcelas <= 1
         ORDER BY dataHora ASC, publicId ASC
         """,
     )
     abstract suspend fun listarElegiveisParaDeteccao(): List<LancamentoEntity>
+
+    @Query(
+        """
+        SELECT * FROM lancamentos
+        WHERE (publicId = :raizPublicId OR compraPaiPublicId = :raizPublicId)
+        AND excluidoEm IS NULL
+        ORDER BY parcelaNumero ASC
+        """,
+    )
+    abstract suspend fun listarParcelasDaCompra(raizPublicId: String): List<LancamentoEntity>
 
     @Query("SELECT * FROM lancamentos WHERE faturaPublicId = :faturaPublicId AND excluidoEm IS NULL ORDER BY dataHora DESC")
     abstract suspend fun listarPorFatura(faturaPublicId: String): List<LancamentoEntity>
@@ -156,6 +171,9 @@ abstract class LancamentoDao {
 
     @Query("UPDATE lancamentos SET excluidoEm = :quando, atualizadoEm = :quando WHERE publicId = :publicId")
     abstract suspend fun marcarExcluido(publicId: String, quando: Instant)
+
+    @Query("UPDATE lancamentos SET excluidoEm = :quando, atualizadoEm = :quando WHERE publicId IN (:publicIds)")
+    abstract suspend fun marcarExcluidos(publicIds: List<String>, quando: Instant)
 
     @Query("UPDATE lancamentos SET textoBruto = :textoBruto WHERE publicId = :publicId")
     abstract suspend fun definirTextoBruto(publicId: String, textoBruto: String)

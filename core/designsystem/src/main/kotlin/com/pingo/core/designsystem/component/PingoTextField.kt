@@ -35,6 +35,7 @@ fun PingoTextField(
     supportingText: String? = null,
     isError: Boolean = false,
     enabled: Boolean = true,
+    showLabel: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
 ) {
     val colors = PingoTheme.colors
@@ -43,11 +44,13 @@ fun PingoTextField(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(PingoSpacing.xs),
     ) {
-        PingoText(
-            text = label,
-            style = PingoTheme.typography.bodySmall,
-            color = colors.onSurfaceVariant,
-        )
+        if (showLabel) {
+            PingoText(
+                text = label,
+                style = PingoTheme.typography.bodySmall,
+                color = colors.onSurfaceVariant,
+            )
+        }
 
         PingoTextFieldBox(
             value = value,

@@ -4,6 +4,7 @@ import com.pingo.core.data.CategoriaRepository
 import com.pingo.core.data.InstrumentoRepository
 import com.pingo.core.data.LancamentoRepository
 import com.pingo.core.data.TransacaoLocal
+import com.pingo.core.data.assinatura.ConfirmadorDeAssinatura
 import com.pingo.core.data.captura.ConfiancaDaLeitura
 import com.pingo.core.data.categoria.CategoriaAprendida
 import com.pingo.core.model.Categoria
@@ -29,9 +30,26 @@ class EditarLancamento @Inject constructor(
     private val instrumentoRepository: InstrumentoRepository,
     private val categoriaRepository: CategoriaRepository,
     private val categoriaAprendida: CategoriaAprendida,
+    private val confirmadorDeAssinatura: ConfirmadorDeAssinatura,
     private val transacaoLocal: TransacaoLocal,
     private val clock: Clock,
 ) {
+    constructor(
+        lancamentoRepository: LancamentoRepository,
+        instrumentoRepository: InstrumentoRepository,
+        categoriaRepository: CategoriaRepository,
+        categoriaAprendida: CategoriaAprendida,
+        transacaoLocal: TransacaoLocal,
+        clock: Clock,
+    ) : this(
+        lancamentoRepository = lancamentoRepository,
+        instrumentoRepository = instrumentoRepository,
+        categoriaRepository = categoriaRepository,
+        categoriaAprendida = categoriaAprendida,
+        confirmadorDeAssinatura = ConfirmadorDeAssinatura.NoOp,
+        transacaoLocal = transacaoLocal,
+        clock = clock,
+    )
     suspend fun editar(edicao: EdicaoDoLancamento): ResultadoDaEdicao = transacaoLocal.executar {
         editarNaTransacao(edicao)
     }
@@ -172,7 +190,7 @@ class EditarLancamento @Inject constructor(
         } else {
             original.beneficio
         }
-        val lancamento = original.copy(
+        val baseAtualizada = original.copy(
             tipo = edicao.tipo,
             valorCentavos = edicao.valorCentavos,
             instrumentoPublicId = instrumento?.publicId,
@@ -188,6 +206,7 @@ class EditarLancamento @Inject constructor(
             estabelecimentoNormalizado = NormalizadorDeAssinatura.normalizar(estabelecimento)?.take(LIMITE_NORMALIZADO),
             beneficio = beneficioAtualizado,
         )
+        val lancamento = confirmadorDeAssinatura.aoEditarLancamento(original, baseAtualizada, categoria)
 
         lancamentoRepository.salvar(lancamento)
         aprender(edicao, estabelecimento, categoria, agora)

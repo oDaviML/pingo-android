@@ -1,6 +1,5 @@
 package com.pingo.captura
 
-import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
 import android.os.ParcelFileDescriptor
@@ -92,12 +91,11 @@ class CapturaListenerTest {
     }
 
     @Test
-    fun listenerRodaEmForegroundServiceComNotificacaoPersistente() {
-        val persistente = aguardarNotificacaoPersistente()
+    fun listenerMantemAcessoSemNotificacaoPersistente() {
+        val persistente = gerenciadorNotificacoes.activeNotifications
+            .firstOrNull { notificacao -> notificacao.id == NotificacoesDeCaptura.ID_SERVICO }
 
-        assertTrue(persistente.notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
-        assertTrue(persistente.notification.flags and Notification.FLAG_FOREGROUND_SERVICE != 0)
-        assertEquals(Notification.CATEGORY_SERVICE, persistente.notification.category)
+        assertNull(persistente)
         assertTrue(acesso.concedido())
     }
 
@@ -501,17 +499,6 @@ class CapturaListenerTest {
             Thread.sleep(INTERVALO_CONSULTA)
         }
         throw AssertionError("acesso às notificações continuou concedido após a revogação")
-    }
-
-    private fun aguardarNotificacaoPersistente(): android.service.notification.StatusBarNotification {
-        val limite = System.currentTimeMillis() + TEMPO_ESPERA
-        while (System.currentTimeMillis() < limite) {
-            gerenciadorNotificacoes.activeNotifications
-                .firstOrNull { notificacao -> notificacao.id == NotificacoesDeCaptura.ID_SERVICO }
-                ?.let { return it }
-            Thread.sleep(INTERVALO_CONSULTA)
-        }
-        throw AssertionError("notificação persistente do foreground service não apareceu")
     }
 
     private fun mesAtual(): YearMonth = YearMonth.from(Instant.now().atZone(ZoneId.systemDefault()))

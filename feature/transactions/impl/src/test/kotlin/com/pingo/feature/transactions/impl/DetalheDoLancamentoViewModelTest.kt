@@ -462,6 +462,45 @@ class DetalheDoLancamentoViewModelTest {
         assertFalse(estado.podeSalvar)
     }
 
+    @Test
+    fun `excluir todas as parcelas remove todas as parcelas da mesma compra`() = runTest {
+        val parcelas = listOf(
+            parcelaDe("p1", numero = 1, diasAtras = 60, paiId = null, totalCompra = 30000),
+            parcelaDe("p2", numero = 2, diasAtras = 30, paiId = "p1"),
+            parcelaDe("p3", numero = 3, diasAtras = 0, paiId = "p1"),
+        )
+        val outro = lancamentoDeTeste("outro", agora, 2500, instrumentoPublicId = instrumentoNubank.publicId)
+        val cenario = criarViewModel(publicId = "p2", lancamentos = parcelas + outro)
+        advanceUntilIdle()
+
+        val parcelamento = cenario.viewModel.uiState.value.parcelamento
+        assertEquals(2, parcelamento?.parcelaNumero)
+        assertEquals(3, parcelamento?.totalParcelas)
+
+        cenario.viewModel.onEvent(DetalheDoLancamentoEvent.SolicitarExclusaoParcelas)
+        advanceUntilIdle()
+        assertTrue(cenario.viewModel.uiState.value.dialogoDeExclusaoParcelas)
+
+        cenario.viewModel.onEvent(DetalheDoLancamentoEvent.ConfirmarExclusaoParcelas)
+        advanceUntilIdle()
+
+        assertTrue(cenario.viewModel.uiState.value.excluido)
+        assertEquals(listOf("outro"), cenario.lancamentos.observeLancamentos().first().map { it.publicId })
+    }
+
+    private fun parcelaDe(publicId: String, numero: Int, diasAtras: Long, paiId: String?, totalCompra: Long? = null): Lancamento =
+        lancamentoDeTeste(
+            publicId = publicId,
+            dataHora = agora.minus(Duration.ofDays(diasAtras)),
+            valorCentavos = 10000,
+            instrumentoPublicId = instrumentoNubank.publicId,
+            estabelecimento = "TV",
+            compraPaiPublicId = paiId,
+            parcelaNumero = numero,
+            totalParcelas = 3,
+            valorTotalCompraCentavos = totalCompra,
+        )
+
     private fun criarViewModel(
         publicId: String = capturado.publicId,
         contas: List<Conta> = listOf(contaNubank, contaInter),

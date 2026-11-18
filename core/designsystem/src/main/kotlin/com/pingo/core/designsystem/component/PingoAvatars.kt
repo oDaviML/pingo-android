@@ -1,5 +1,6 @@
 package com.pingo.core.designsystem.component
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -11,12 +12,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.pingo.core.designsystem.icon.PingoIcons
 import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoTheme
@@ -78,7 +78,8 @@ fun InstitutionAvatar(
             ),
         contentAlignment = Alignment.Center,
     ) {
-        if (institution.containerColor == null) {
+        val logo = PingoInstitutionLogos.para(institution)
+        if (logo == null) {
             PingoIcon(
                 imageVector = PingoIcons.Landmark,
                 contentDescription = null,
@@ -86,16 +87,10 @@ fun InstitutionAvatar(
                 tint = colors.onPrimaryContainer,
             )
         } else {
-            val fontSize = (size.value * 0.35f).sp
-            PingoText(
-                text = institution.monogram,
-                style = PingoTheme.typography.label.copy(
-                    fontWeight = FontWeight.Black,
-                    fontSize = fontSize,
-                    lineHeight = fontSize,
-                ),
-                color = Color.White,
-                maxLines = 1,
+            Image(
+                painter = rememberVectorPainter(logo),
+                contentDescription = null,
+                modifier = Modifier.size(size * 0.78f),
             )
         }
     }

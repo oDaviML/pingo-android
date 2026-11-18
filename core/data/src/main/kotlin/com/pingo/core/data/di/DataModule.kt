@@ -15,11 +15,13 @@ import com.pingo.core.data.TransacaoLocal
 import com.pingo.core.data.UsuarioRepository
 import com.pingo.core.data.VoucherRepository
 import com.pingo.core.data.assinatura.AgendadorDeAvisosDeAssinatura
+import com.pingo.core.data.assinatura.ConfirmadorDeAssinatura
 import com.pingo.core.data.captura.ProcessadorDeCaptura
 import com.pingo.core.data.impl.AccountRepositoryImpl
 import com.pingo.core.data.impl.AssinaturaRepositoryImpl
 import com.pingo.core.data.impl.CategoriaRepositoryImpl
 import com.pingo.core.data.impl.ConfiguracaoCartaoRepositoryImpl
+import com.pingo.core.data.impl.ConfirmadorDeAssinaturaPorCategoria
 import com.pingo.core.data.impl.ContaRepositoryImpl
 import com.pingo.core.data.impl.ContasFinanceiroProjectionImpl
 import com.pingo.core.data.impl.CoordenadorDeContaFinanceiroImpl
@@ -88,6 +90,10 @@ abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindAssinaturaRepository(implementation: AssinaturaRepositoryImpl): AssinaturaRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindConfirmadorDeAssinatura(implementation: ConfirmadorDeAssinaturaPorCategoria): ConfirmadorDeAssinatura
 
     @Binds
     @Singleton

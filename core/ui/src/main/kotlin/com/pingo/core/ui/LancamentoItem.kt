@@ -108,6 +108,13 @@ private fun TituloDoLancamento(lancamento: Lancamento) {
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f, fill = false),
         )
+        if (lancamento.totalParcelas > 1) {
+            PingoTag(
+                label = "${lancamento.parcelaNumero}/${lancamento.totalParcelas}",
+                containerColor = cores.primaryContainer,
+                contentColor = cores.onPrimaryContainer,
+            )
+        }
         if (lancamento.status == StatusLancamento.PENDENTE) {
             PingoTag(
                 label = "Pendente",

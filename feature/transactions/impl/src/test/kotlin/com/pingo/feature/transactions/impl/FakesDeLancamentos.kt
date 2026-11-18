@@ -75,6 +75,14 @@ class FakeLancamentoRepository(iniciais: List<Lancamento> = emptyList()) : Lanca
         salvar(atual.copy(excluidoEm = quando))
     }
 
+    override suspend fun listarParcelasDaCompra(raizPublicId: String): List<Lancamento> = todos.value
+        .filter { it.excluidoEm == null && (it.publicId == raizPublicId || it.compraPaiPublicId == raizPublicId) }
+        .sortedBy { it.parcelaNumero }
+
+    override suspend fun excluirTodos(publicIds: List<String>, quando: Instant) {
+        publicIds.forEach { excluir(it, quando) }
+    }
+
     fun atual(publicId: String): Lancamento? = todos.value.firstOrNull { it.publicId == publicId }
 
     fun publicar(lancamentos: List<Lancamento>) {
@@ -169,11 +177,19 @@ internal fun lancamentoDeTeste(
     transferenciaId: String? = null,
     motivoPendencia: String? = null,
     tipoSemTransferencia: TipoLancamento? = null,
+    compraPaiPublicId: String? = null,
+    parcelaNumero: Int = 1,
+    totalParcelas: Int = 1,
+    valorTotalCompraCentavos: Long? = null,
 ): Lancamento = Lancamento(
     publicId = publicId,
     instrumentoPublicId = instrumentoPublicId,
     categoriaPublicId = categoriaPublicId,
     transferenciaId = transferenciaId,
+    compraPaiPublicId = compraPaiPublicId,
+    parcelaNumero = parcelaNumero,
+    totalParcelas = totalParcelas,
+    valorTotalCompraCentavos = valorTotalCompraCentavos,
     valorCentavos = valorCentavos,
     dataHora = dataHora,
     tipo = tipo,

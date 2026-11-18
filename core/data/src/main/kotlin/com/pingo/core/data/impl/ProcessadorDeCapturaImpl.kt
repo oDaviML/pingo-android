@@ -13,6 +13,7 @@ import com.pingo.core.data.captura.ProcessadorDeCaptura
 import com.pingo.core.data.captura.ResolucaoDeInstrumento
 import com.pingo.core.data.captura.ResultadoProcessamento
 import com.pingo.core.data.categoria.CategoriaAprendida
+import com.pingo.core.data.categoria.CategorizadorAutomatico
 import com.pingo.core.data.reconciliacao.ReconciliadorVoucherCaptura
 import com.pingo.core.data.reconciliacao.ResolucaoCapturaCaju
 import com.pingo.core.model.Categoria
@@ -50,8 +51,24 @@ class ProcessadorDeCapturaImpl @Inject constructor(
     private val instrumentoRepository: InstrumentoRepository,
     private val categoriaRepository: CategoriaRepository,
     private val categoriaAprendida: CategoriaAprendida,
+    private val categorizadorAutomatico: CategorizadorAutomatico,
     private val contexto: ContextoDeCaptura,
 ) : ProcessadorDeCaptura {
+    constructor(
+        lancamentoRepository: LancamentoRepository,
+        instrumentoRepository: InstrumentoRepository,
+        categoriaRepository: CategoriaRepository,
+        categoriaAprendida: CategoriaAprendida,
+        contexto: ContextoDeCaptura,
+    ) : this(
+        lancamentoRepository = lancamentoRepository,
+        instrumentoRepository = instrumentoRepository,
+        categoriaRepository = categoriaRepository,
+        categoriaAprendida = categoriaAprendida,
+        categorizadorAutomatico = CategorizadorAutomatico(categoriaRepository),
+        contexto = contexto,
+    )
+
     constructor(
         lancamentoRepository: LancamentoRepository,
         instrumentoRepository: InstrumentoRepository,
@@ -65,6 +82,7 @@ class ProcessadorDeCapturaImpl @Inject constructor(
         instrumentoRepository = instrumentoRepository,
         categoriaRepository = categoriaRepository,
         categoriaAprendida = categoriaAprendida,
+        categorizadorAutomatico = CategorizadorAutomatico(categoriaRepository),
         contexto = ContextoDeCaptura(transacaoLocal, clock, dispatchers, ReconciliadorVoucherCaptura.NoOp),
     )
 
@@ -259,7 +277,13 @@ class ProcessadorDeCapturaImpl @Inject constructor(
             return receitas.firstOrNull { it.nome.equals(CATEGORIA_BENEFICIO, ignoreCase = true) }
                 ?: receitas.firstOrNull { it.nome.equals(CATEGORIA_PADRAO, ignoreCase = true) }
         }
-        return categoriaAprendida.resolver(transacao.estabelecimento) ?: categoriaPadrao(transacao.direcao)
+        return categoriaAprendida.resolver(transacao.estabelecimento)
+            ?: categorizadorAutomatico.sugerir(
+                estabelecimentoBruto = transacao.estabelecimento,
+                tipo = tipoDaCategoria(transacao.direcao),
+                beneficioBruto = transacao.beneficio,
+            )
+            ?: categoriaPadrao(transacao.direcao)
     }
 
     private suspend fun categoriaPadrao(direcao: DirecaoPadrao): Categoria? {

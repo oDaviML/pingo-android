@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -14,12 +13,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.input.KeyboardType
 import com.pingo.core.data.voucher.ValorAjusteSaldoVoucher
 import com.pingo.core.designsystem.component.PingoBottomSheet
 import com.pingo.core.designsystem.component.PingoButton
 import com.pingo.core.designsystem.component.PingoButtonType
 import com.pingo.core.designsystem.component.PingoChoiceChip
+import com.pingo.core.designsystem.component.PingoCurrencyField
 import com.pingo.core.designsystem.component.PingoText
 import com.pingo.core.designsystem.component.PingoTextField
 import com.pingo.core.designsystem.theme.PingoSpacing
@@ -105,7 +104,7 @@ private fun CamposAjustarSaldo(state: ModalAjustarSaldoUiState, onAlterarValor: 
         "Informe o ajuste em reais, ex.: 25,00 ou -25,00"
     }
 
-    PingoTextField(
+    PingoCurrencyField(
         value = state.valorTexto,
         onValueChange = onAlterarValor,
         label = rotuloCampo,
@@ -113,9 +112,7 @@ private fun CamposAjustarSaldo(state: ModalAjustarSaldoUiState, onAlterarValor: 
         supportingText = if (valorInvalido) "Informe um valor em reais." else dicaCampo,
         isError = valorInvalido,
         enabled = !state.salvando,
-        keyboardOptions = KeyboardOptions(
-            keyboardType = if (state.modo == ModoAjusteVoucher.SALDO_ALVO) KeyboardType.Decimal else KeyboardType.Text,
-        ),
+        allowNegative = state.modo == ModoAjusteVoucher.DELTA,
     )
     PingoTextField(
         value = state.observacao,

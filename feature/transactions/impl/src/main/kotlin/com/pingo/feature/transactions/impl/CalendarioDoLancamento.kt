@@ -63,6 +63,12 @@ internal fun CalendarioDoLancamento(data: LocalDate, hoje: LocalDate, onSelecion
                 selecionada = selecionada,
                 hoje = hoje,
                 gestos = GestosDoCalendario(
+                    onAnoAnterior = { mesVisivel = mesVisivel.minusYears(1) },
+                    onAnoSeguinte = { mesVisivel = mesVisivel.plusYears(1) },
+                    onIrParaHoje = {
+                        mesVisivel = YearMonth.from(hoje)
+                        selecionada = hoje
+                    },
                     onMesAnterior = { mesVisivel = mesVisivel.minusMonths(1) },
                     onMesSeguinte = { mesVisivel = mesVisivel.plusMonths(1) },
                     onSelecionarDia = { selecionada = it },
@@ -89,7 +95,7 @@ private fun CorpoDoCalendario(mes: YearMonth, selecionada: LocalDate, hoje: Loca
             .clickable(interactionSource = interacao, indication = null) {}
             .padding(PingoSpacing.xxl)
             .testTag("calendario-do-lancamento"),
-        verticalArrangement = Arrangement.spacedBy(PingoSpacing.lg),
+        verticalArrangement = Arrangement.spacedBy(PingoSpacing.md),
     ) {
         PingoText(
             text = "DATA DO LANÇAMENTO",
@@ -101,6 +107,11 @@ private fun CorpoDoCalendario(mes: YearMonth, selecionada: LocalDate, hoje: Loca
             style = PingoTheme.typography.headline,
         )
         CabecalhoDoMes(mes = mes, onAnterior = gestos.onMesAnterior, onSeguinte = gestos.onMesSeguinte)
+        AtalhosDePeriodo(
+            onAnoAnterior = gestos.onAnoAnterior,
+            onHoje = gestos.onIrParaHoje,
+            onAnoSeguinte = gestos.onAnoSeguinte,
+        )
         DiasDaSemana()
         GradeDeDias(mes = mes, selecionada = selecionada, hoje = hoje, onSelecionar = gestos.onSelecionarDia)
         AcoesDoCalendario(onCancelar = gestos.onFechar, onConfirmar = gestos.onConfirmar)
@@ -108,12 +119,45 @@ private fun CorpoDoCalendario(mes: YearMonth, selecionada: LocalDate, hoje: Loca
 }
 
 private data class GestosDoCalendario(
+    val onAnoAnterior: () -> Unit,
+    val onAnoSeguinte: () -> Unit,
+    val onIrParaHoje: () -> Unit,
     val onMesAnterior: () -> Unit,
     val onMesSeguinte: () -> Unit,
     val onSelecionarDia: (LocalDate) -> Unit,
     val onConfirmar: () -> Unit,
     val onFechar: () -> Unit,
 )
+
+@Composable
+private fun AtalhosDePeriodo(onAnoAnterior: () -> Unit, onHoje: () -> Unit, onAnoSeguinte: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.xs, Alignment.CenterHorizontally),
+    ) {
+        BotaoAtalhoDoCalendario(rotulo = "-1 ano", testTag = "ano-anterior", onClick = onAnoAnterior)
+        BotaoAtalhoDoCalendario(rotulo = "Hoje", testTag = "calendario-hoje", onClick = onHoje)
+        BotaoAtalhoDoCalendario(rotulo = "+1 ano", testTag = "ano-seguinte", onClick = onAnoSeguinte)
+    }
+}
+
+@Composable
+private fun BotaoAtalhoDoCalendario(rotulo: String, testTag: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .background(color = PingoTheme.colors.surfaceVariant, shape = RoundedCornerShape(PingoRadius.full))
+            .testTag(testTag)
+            .clickable(onClick = onClick)
+            .padding(horizontal = PingoSpacing.md, vertical = PingoSpacing.xs),
+        contentAlignment = Alignment.Center,
+    ) {
+        PingoText(
+            text = rotulo,
+            style = PingoTheme.typography.caption,
+            color = PingoTheme.colors.onSurfaceVariant,
+        )
+    }
+}
 
 @Composable
 private fun CabecalhoDoMes(mes: YearMonth, onAnterior: () -> Unit, onSeguinte: () -> Unit) {

@@ -1,5 +1,6 @@
 package com.pingo.feature.transactions.impl
 
+import com.pingo.core.model.fatura.ModoParcelamento
 import java.time.LocalDate
 
 sealed interface NovoLancamentoEvent {
@@ -18,6 +19,10 @@ sealed interface NovoLancamentoEvent {
     data class SelecionarInstrumento(val publicId: String) : NovoLancamentoEvent
 
     data class SelecionarCategoria(val publicId: String) : NovoLancamentoEvent
+
+    data class SelecionarParcelas(val totalParcelas: Int) : NovoLancamentoEvent
+
+    data class SelecionarModoParcelamento(val modo: ModoParcelamento) : NovoLancamentoEvent
 
     data object AbrirCalendario : NovoLancamentoEvent
 

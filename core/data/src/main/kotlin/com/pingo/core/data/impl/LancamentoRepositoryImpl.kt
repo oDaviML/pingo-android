@@ -78,6 +78,9 @@ class LancamentoRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun listarParcelasDaCompra(raizPublicId: String): List<Lancamento> =
+        lancamentoDao.listarParcelasDaCompra(raizPublicId).map { it.toModel() }
+
     override suspend fun excluir(publicId: String, quando: Instant) {
         transacaoLocal.executar {
             val antes = lancamentoDao.buscar(publicId)?.toModel()
@@ -85,6 +88,22 @@ class LancamentoRepositoryImpl @Inject constructor(
             val depois = lancamentoDao.buscar(publicId)?.toModel()
             if (antes != null || depois != null) {
                 reconciliador.aoAlterarLancamentos(listOf(antes to depois))
+            }
+        }
+    }
+
+    override suspend fun excluirTodos(publicIds: List<String>, quando: Instant) {
+        if (publicIds.isEmpty()) return
+        transacaoLocal.executar {
+            val antesPorId = publicIds.mapNotNull { id ->
+                lancamentoDao.buscar(id)?.toModel()?.let { id to it }
+            }
+            lancamentoDao.marcarExcluidos(publicIds, quando)
+            val alteracoes = antesPorId.map { (id, antes) ->
+                antes to lancamentoDao.buscar(id)?.toModel()
+            }
+            if (alteracoes.isNotEmpty()) {
+                reconciliador.aoAlterarLancamentos(alteracoes)
             }
         }
     }

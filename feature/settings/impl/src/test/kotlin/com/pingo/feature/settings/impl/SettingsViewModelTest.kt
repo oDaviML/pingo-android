@@ -15,6 +15,7 @@ import com.pingo.core.data.assinatura.AgendadorDeAvisosDeAssinatura
 import com.pingo.core.data.assinatura.AgendadorDeAvisosOpcional
 import com.pingo.core.datastore.SyncStatus
 import com.pingo.core.datastore.UserPreferencesDataSource
+import com.pingo.core.model.TemaDoApp
 import com.pingo.core.network.update.AtualizacaoDisponivel
 import com.pingo.core.network.update.EstadoDownloadApk
 import com.pingo.core.network.update.MotivoFalhaDownloadApk
@@ -275,6 +276,20 @@ class SettingsViewModelTest {
         assertEquals(info, falha.info)
     }
 
+    @Test
+    fun selecionarTemaPersistePreferenciaEFechaSheet() = runTest {
+        val vm = criarViewModel()
+        assertEquals(TemaDoApp.SISTEMA, vm.uiState.value.tema)
+
+        vm.abrirSheetTema()
+        assertTrue(vm.uiState.value.mostrarSheetTema)
+
+        vm.selecionarTema(TemaDoApp.ESCURO)
+        assertEquals(TemaDoApp.ESCURO, vm.uiState.value.tema)
+        assertEquals(TemaDoApp.ESCURO, preferences.temaDoApp.first())
+        assertFalse(vm.uiState.value.mostrarSheetTema)
+    }
+
     private fun criarViewModel(): SettingsViewModel {
         val gerenciador = GerenciadorDeBloqueioDoApp(
             preferences = preferences,
@@ -400,6 +415,7 @@ class SettingsViewModelTest {
         private val revisar = MutableStateFlow(true)
         private val parada = MutableStateFlow(true)
         private val telemetria = MutableStateFlow(false)
+        private val tema = MutableStateFlow(TemaDoApp.SISTEMA)
 
         override val syncStatus: Flow<SyncStatus> = flowOf(SyncStatus.IDLE)
         override val avisoAssinaturasAtivo: Flow<Boolean> = aviso
@@ -408,6 +424,11 @@ class SettingsViewModelTest {
         override val revisarPelaNotificacaoAtivo: Flow<Boolean> = revisar
         override val alertaCapturaParadaAtivo: Flow<Boolean> = parada
         override val telemetriaOptIn: Flow<Boolean> = telemetria
+        override val temaDoApp: Flow<TemaDoApp> = tema
+
+        override suspend fun setTemaDoApp(tema: TemaDoApp) {
+            this.tema.value = tema
+        }
 
         override suspend fun setAvisoAssinaturasAtivo(ativo: Boolean) {
             aviso.value = ativo

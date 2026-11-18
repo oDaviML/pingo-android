@@ -44,6 +44,9 @@ data class ParDaTransferenciaUi(
 )
 
 @Immutable
+data class ParcelamentoDetalheUi(val parcelaNumero: Int, val totalParcelas: Int, val valorTotalCompraCentavos: Long?)
+
+@Immutable
 data class DetalheDoLancamentoUiState(
     val carregando: Boolean = true,
     val naoEncontrado: Boolean = false,
@@ -57,6 +60,7 @@ data class DetalheDoLancamentoUiState(
     val hoje: LocalDate = LocalDate.MIN,
     val estabelecimento: String = "",
     val aplicarCategoriaATodos: Boolean = false,
+    val parcelamento: ParcelamentoDetalheUi? = null,
     val instrumentos: List<OpcaoDeInstrumento> = emptyList(),
     val destinosDaTransferencia: List<OpcaoDeInstrumento> = emptyList(),
     val categorias: List<OpcaoDeCategoria> = emptyList(),
@@ -69,6 +73,7 @@ data class DetalheDoLancamentoUiState(
     val salvando: Boolean = false,
     val salvo: Boolean = false,
     val dialogoDeExclusao: Boolean = false,
+    val dialogoDeExclusaoParcelas: Boolean = false,
     val excluindo: Boolean = false,
     val excluido: Boolean = false,
     val ocupado: Boolean = false,

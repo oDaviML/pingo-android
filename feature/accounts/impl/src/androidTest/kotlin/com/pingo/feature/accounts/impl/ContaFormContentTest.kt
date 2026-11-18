@@ -167,6 +167,11 @@ class ContaFormContentTest {
         composeRule.onNodeWithText("VA").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Saldo inicial (R$)").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Dia da recarga (opcional)").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Valor da recarga (R$)").performScrollTo().assertIsDisplayed()
+        val boundsDia = composeRule.onNodeWithTag("campo-dia-recarga").performScrollTo().fetchSemanticsNode().boundsInRoot
+        val boundsValor = composeRule.onNodeWithTag("campo-valor-recarga").performScrollTo().fetchSemanticsNode().boundsInRoot
+        assertEquals(boundsDia.top, boundsValor.top, 2f)
+        assertEquals(boundsDia.height, boundsValor.height, 2f)
         composeRule.onNodeWithText("Salvar conta").performScrollTo().assertIsEnabled()
         salvarCaptura("conta-voucher")
     }

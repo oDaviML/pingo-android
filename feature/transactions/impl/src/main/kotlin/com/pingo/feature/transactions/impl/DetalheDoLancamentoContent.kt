@@ -43,6 +43,7 @@ import com.pingo.core.designsystem.component.PingoIconButton
 import com.pingo.core.designsystem.component.PingoIconButtonStyle
 import com.pingo.core.designsystem.component.PingoSpinner
 import com.pingo.core.designsystem.component.PingoStatusTag
+import com.pingo.core.designsystem.component.PingoTag
 import com.pingo.core.designsystem.component.PingoText
 import com.pingo.core.designsystem.component.pingoElevation
 import com.pingo.core.designsystem.icon.PingoIcons
@@ -51,6 +52,7 @@ import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
 import com.pingo.core.ui.AvatarDaInstituicao
+import com.pingo.core.ui.Valores
 import java.time.Instant
 import java.time.ZoneId
 
@@ -210,6 +212,17 @@ private fun BlocoDeValor(state: DetalheDoLancamentoUiState, onEvent: (DetalheDoL
     ) {
         PingoText(text = "Valor", style = PingoTheme.typography.bodySmall, color = corLegenda)
         ValorEmDestaque(valorCentavos = state.valorCentavos, cor = corValor)
+        state.parcelamento?.let { parcelamento ->
+            val rotulo = parcelamento.valorTotalCompraCentavos?.let { total ->
+                "Parcela ${parcelamento.parcelaNumero}/${parcelamento.totalParcelas} · Total ${Valores.formatar(total)}"
+            } ?: "Parcela ${parcelamento.parcelaNumero}/${parcelamento.totalParcelas}"
+            PingoTag(
+                label = rotulo,
+                containerColor = PingoTheme.colors.primaryContainer,
+                contentColor = PingoTheme.colors.onPrimaryContainer,
+                modifier = Modifier.testTag("parcelamento-detalhe"),
+            )
+        }
         PingoText(
             text = RotulosDoDetalhe.legendaDoValor(erro = erro, transferencia = state.ehTransferencia),
             style = PingoTheme.typography.caption,
@@ -567,6 +580,16 @@ private fun AcoesDoDetalhe(state: DetalheDoLancamentoUiState, onEvent: (DetalheD
             modifier = Modifier.testTag("salvar-detalhe"),
         )
         BotaoDaTransferencia(state = state, onEvent = onEvent)
+        state.parcelamento?.let { parcelamento ->
+            PingoButton(
+                text = "Excluir todas as ${parcelamento.totalParcelas} parcelas",
+                onClick = { onEvent(DetalheDoLancamentoEvent.SolicitarExclusaoParcelas) },
+                type = PingoButtonType.Outline,
+                enabled = state.podeSalvar,
+                fillWidth = true,
+                modifier = Modifier.testTag("excluir-todas-parcelas"),
+            )
+        }
         PingoButton(
             text = "Excluir lançamento",
             onClick = { onEvent(DetalheDoLancamentoEvent.SolicitarExclusao) },
@@ -588,7 +611,7 @@ private fun BotaoDaTransferencia(state: DetalheDoLancamentoUiState, onEvent: (De
             fillWidth = true,
             modifier = Modifier.testTag("desfazer-transferencia"),
         )
-    } else {
+    } else if (state.parcelamento == null) {
         PingoButton(
             text = "Marcar como transferência",
             onClick = { onEvent(DetalheDoLancamentoEvent.SolicitarTransferencia) },

@@ -21,6 +21,7 @@ import com.pingo.core.data.assinatura.AgendadorDeAvisosOpcional
 import com.pingo.core.datastore.SyncStatus
 import com.pingo.core.datastore.UserPreferencesDataSource
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.model.TemaDoApp
 import com.pingo.core.network.update.AtualizacaoDisponivel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -242,6 +243,32 @@ class SettingsScreenTest {
 
         assertEquals(0, baixou)
         assertEquals(1, instalou)
+    }
+
+    @Test
+    fun mostraSecaoDeAparenciaEAbreAcaoDeTema() {
+        var abriuTema = 0
+
+        composeRule.setContent {
+            PingoTheme {
+                SettingsContent(
+                    onBack = {},
+                    onShowTerm = {},
+                    onDeleteAccount = {},
+                    aparencia = SettingsAparenciaUi(
+                        tema = TemaDoApp.ESCURO,
+                        onAbrirTema = { abriuTema++ },
+                    ),
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Aparência").assertIsDisplayed()
+        composeRule.onNodeWithText("Tema").assertIsDisplayed()
+        composeRule.onNodeWithText("Escuro").assertIsDisplayed()
+        composeRule.onNodeWithText("Tema").performClick()
+
+        assertEquals(1, abriuTema)
     }
 
     private class FakePermissao(private var concedida: Boolean, private val resultadoSolicitacao: Boolean) :

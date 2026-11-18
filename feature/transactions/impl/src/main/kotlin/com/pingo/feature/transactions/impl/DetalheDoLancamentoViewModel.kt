@@ -175,6 +175,15 @@ class DetalheDoLancamentoViewModel @Inject constructor(
             true
         }
 
+        DetalheDoLancamentoEvent.DispensarMensagem -> {
+            controle.update { it.copy(mensagem = null) }
+            true
+        }
+
+        else -> tratarExclusao(evento)
+    }
+
+    private fun tratarExclusao(evento: DetalheDoLancamentoEvent): Boolean = when (evento) {
         DetalheDoLancamentoEvent.SolicitarExclusao -> {
             controle.update { it.copy(dialogoDeExclusao = true, painel = null, mensagem = null) }
             true
@@ -190,8 +199,18 @@ class DetalheDoLancamentoViewModel @Inject constructor(
             true
         }
 
-        DetalheDoLancamentoEvent.DispensarMensagem -> {
-            controle.update { it.copy(mensagem = null) }
+        DetalheDoLancamentoEvent.SolicitarExclusaoParcelas -> {
+            controle.update { it.copy(dialogoDeExclusaoParcelas = true, painel = null, mensagem = null) }
+            true
+        }
+
+        DetalheDoLancamentoEvent.CancelarExclusaoParcelas -> {
+            controle.update { it.copy(dialogoDeExclusaoParcelas = false) }
+            true
+        }
+
+        DetalheDoLancamentoEvent.ConfirmarExclusaoParcelas -> {
+            confirmarExclusaoTodasParcelas()
             true
         }
 
@@ -252,6 +271,7 @@ class DetalheDoLancamentoViewModel @Inject constructor(
             hoje = LocalDate.now(clock),
             estabelecimento = atual.estabelecimento,
             aplicarCategoriaATodos = atual.aplicarCategoriaATodos,
+            parcelamento = parcelamentoDe(registro),
             instrumentos = opcoes.instrumentos,
             destinosDaTransferencia = opcoes.destinos,
             categorias = opcoes.categorias,
@@ -264,6 +284,7 @@ class DetalheDoLancamentoViewModel @Inject constructor(
             salvando = atual.salvando,
             salvo = atual.salvo,
             dialogoDeExclusao = atual.dialogoDeExclusao,
+            dialogoDeExclusaoParcelas = atual.dialogoDeExclusaoParcelas,
             excluindo = atual.excluindo,
             excluido = atual.excluido,
             ocupado = atual.ocupado,
@@ -397,16 +418,14 @@ class DetalheDoLancamentoViewModel @Inject constructor(
         controle.update { it.copy(salvando = true, erros = emptySet(), mensagem = null) }
         viewModelScope.launch {
             when (val resultado = editarLancamento.editar(edicaoDe(atual))) {
-                is ResultadoDaEdicao.Salvo -> contabilizarSalvo(resultado)
+                is ResultadoDaEdicao.Salvo -> {
+                    registroAtual = resultado.lancamento
+                    controle.update { it.copy(salvando = false, salvo = true, tecladoVisivel = false) }
+                }
                 is ResultadoDaEdicao.Invalido -> controle.update { it.copy(salvando = false, erros = resultado.campos) }
                 ResultadoDaEdicao.NaoEncontrado -> controle.update { it.copy(salvando = false, naoEncontrado = true) }
             }
         }
-    }
-
-    private fun contabilizarSalvo(resultado: ResultadoDaEdicao.Salvo) {
-        registroAtual = resultado.lancamento
-        controle.update { it.copy(salvando = false, salvo = true, tecladoVisivel = false) }
     }
 
     private fun confirmarExclusao() {
@@ -422,9 +441,28 @@ class DetalheDoLancamentoViewModel @Inject constructor(
         }
     }
 
+    private fun confirmarExclusaoTodasParcelas() {
+        val registro = registroAtual ?: return
+        if (controle.value.excluindo) {
+            return
+        }
+
+        val raizPublicId = registro.compraPaiPublicId ?: registro.publicId
+        controle.update { it.copy(excluindo = true, dialogoDeExclusaoParcelas = false) }
+        viewModelScope.launch {
+            runCatching {
+                val parcelas = lancamentos.listarParcelasDaCompra(raizPublicId)
+                val ids = (parcelas.map { it.publicId } + publicId).distinct()
+                lancamentos.excluirTodos(ids, clock.instant())
+            }
+                .onSuccess { controle.update { estado -> estado.copy(excluindo = false, excluido = true) } }
+                .onFailure { controle.update { estado -> estado.copy(excluindo = false, mensagem = MensagemDoDetalhe.FALHA_AO_SALVAR) } }
+        }
+    }
+
     private fun ressemear(registro: Lancamento, par: Lancamento?) {
         registroAtual = registro
-        dados.value = dados.value.copy(lancamentos = atualizarLancamentos(dados.value.lancamentos, registro, par))
+        dados.value = dados.value.copy(lancamentos = atualizarLancamentosNaBase(dados.value.lancamentos, registro, par))
         controle.update {
             it.copy(
                 tipo = registro.tipo,
@@ -444,12 +482,6 @@ class DetalheDoLancamentoViewModel @Inject constructor(
     private fun ressemearDosDesfeitos(lancamentosDesfeitos: List<Lancamento>) {
         val registro = lancamentosDesfeitos.firstOrNull { it.publicId == publicId } ?: return
         ressemear(registro, null)
-    }
-
-    private fun atualizarLancamentos(atuais: List<Lancamento>, registro: Lancamento, par: Lancamento?): List<Lancamento> {
-        val novos = listOfNotNull(registro, par).associateBy { it.publicId }
-
-        return atuais.map { novos[it.publicId] ?: it } + novos.filterKeys { chave -> atuais.none { it.publicId == chave } }.values
     }
 
     private fun edicaoDe(atual: ControleDoDetalhe): EdicaoDoLancamento {
@@ -484,6 +516,7 @@ class DetalheDoLancamentoViewModel @Inject constructor(
         val salvando: Boolean = false,
         val salvo: Boolean = false,
         val dialogoDeExclusao: Boolean = false,
+        val dialogoDeExclusaoParcelas: Boolean = false,
         val excluindo: Boolean = false,
         val excluido: Boolean = false,
         val ocupado: Boolean = false,
@@ -494,4 +527,18 @@ class DetalheDoLancamentoViewModel @Inject constructor(
     private companion object {
         const val VALOR_MAXIMO_CENTAVOS = 999_999_999_999L
     }
+}
+
+private fun parcelamentoDe(registro: Lancamento?): ParcelamentoDetalheUi? = registro?.takeIf { it.totalParcelas > 1 }?.let { item ->
+    ParcelamentoDetalheUi(
+        parcelaNumero = item.parcelaNumero,
+        totalParcelas = item.totalParcelas,
+        valorTotalCompraCentavos = item.valorTotalCompraCentavos,
+    )
+}
+
+private fun atualizarLancamentosNaBase(atuais: List<Lancamento>, registro: Lancamento, par: Lancamento?): List<Lancamento> {
+    val novos = listOfNotNull(registro, par).associateBy { it.publicId }
+
+    return atuais.map { novos[it.publicId] ?: it } + novos.filterKeys { chave -> atuais.none { it.publicId == chave } }.values
 }

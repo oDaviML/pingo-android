@@ -41,13 +41,28 @@ class AssinaturaRepositoryImpl @Inject constructor(
     override fun observeSugestoes(): Flow<List<SugestaoDeAssinatura>> = combine(
         lancamentoDao.observeElegiveisParaDeteccao(),
         assinaturaDao.observeAtivas(),
-    ) { lancamentos, assinaturas ->
+        categoriaDao.observeAtivas(),
+    ) { lancamentos, assinaturas, categorias ->
         val chavesIgnoradas = assinaturas
             .asSequence()
             .filter { it.excluidoEm == null && it.instrumentoPublicId != null && it.status != StatusAssinatura.SUGERIDA }
             .map { ChaveAssinatura(requireNotNull(it.instrumentoPublicId), it.estabelecimentoNormalizado) }
             .toSet()
-        DetectorDeAssinaturas.detectarSugestoes(lancamentos.map { it.toModel() }, chavesIgnoradas)
+        val categoriasAssinaturaIds = categorias
+            .asSequence()
+            .filter {
+                it.excluidoEm == null &&
+                    !it.arquivada &&
+                    it.tipo == TipoCategoria.DESPESA &&
+                    it.nome.equals(NOME_CATEGORIA_ASSINATURAS, ignoreCase = true)
+            }
+            .map { it.publicId }
+            .toSet()
+        DetectorDeAssinaturas.detectarSugestoes(
+            lancamentos = lancamentos.map { it.toModel() },
+            chavesIgnoradas = chavesIgnoradas,
+            categoriasAssinaturaIds = categoriasAssinaturaIds,
+        )
     }
 
     override fun observeCobrancasDaAssinatura(assinaturaPublicId: String): Flow<List<Lancamento>> =

@@ -140,6 +140,9 @@ private fun CamposDeDespesaOuReceita(state: NovoLancamentoUiState, onEvent: (Nov
         ),
         onClick = { onEvent(NovoLancamentoEvent.AbrirPainel(PainelDoNovoLancamento.INSTRUMENTO)) },
     )
+    if (state.podeParcelar) {
+        CampoDeParcelamento(state = state, onEvent = onEvent)
+    }
     CampoDeSelecao(
         campo = CampoSelecionavel(
             rotulo = "Categoria",
@@ -150,6 +153,22 @@ private fun CamposDeDespesaOuReceita(state: NovoLancamentoUiState, onEvent: (Nov
             mensagem = if (state.categoriaSugerida) "Categoria sugerida pelo estabelecimento" else null,
         ),
         onClick = { onEvent(NovoLancamentoEvent.AbrirPainel(PainelDoNovoLancamento.CATEGORIA)) },
+    )
+}
+
+@Composable
+private fun CampoDeParcelamento(state: NovoLancamentoUiState, onEvent: (NovoLancamentoEvent) -> Unit) {
+    CampoDeSelecao(
+        campo = CampoSelecionavel(
+            rotulo = "Parcelamento",
+            texto = RotulosDoNovoLancamento.parcelamento(state),
+            preenchido = state.totalParcelas > 1,
+            icone = PingoIcons.Repeat,
+            testTag = "campo-parcelas",
+            erro = CampoDeLancamentoManual.PARCELAS in state.erros,
+            mensagem = RotulosDoNovoLancamento.mensagemDasParcelas(state),
+        ),
+        onClick = { onEvent(NovoLancamentoEvent.AbrirPainel(PainelDoNovoLancamento.PARCELAS)) },
     )
 }
 

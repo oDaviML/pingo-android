@@ -115,7 +115,9 @@ class ReconciliadorDeAssinaturasLocal @Inject constructor(
     }
 
     private fun pertenceAAssinatura(entidade: LancamentoEntity, assinatura: AssinaturaEntity): Boolean =
-        if (assinatura.instrumentoPublicId == null) {
+        if (entidade.compraPaiPublicId != null || entidade.totalParcelas > 1) {
+            false
+        } else if (assinatura.instrumentoPublicId == null) {
             entidade.assinaturaPublicId == assinatura.publicId
         } else {
             val normalizado = entidade.estabelecimentoNormalizado ?: NormalizadorDeAssinatura.normalizar(entidade.estabelecimento)

@@ -14,4 +14,5 @@ data class SugestaoDeAssinatura(
     val ultimaCobranca: LocalDate,
     val proximaCobrancaEstimada: LocalDate,
     val lancamentosQualificadoresPublicIds: List<String>,
+    val porCategoria: Boolean = false,
 )

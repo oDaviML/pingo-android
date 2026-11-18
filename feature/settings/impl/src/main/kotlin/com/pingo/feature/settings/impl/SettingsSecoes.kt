@@ -39,6 +39,24 @@ import com.pingo.core.designsystem.icon.PingoIcons
 import com.pingo.core.designsystem.theme.PingoRadius
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.model.TemaDoApp
+
+@Composable
+internal fun AparenciaCartao(aparencia: SettingsAparenciaUi) {
+    val shape = RoundedCornerShape(PingoRadius.xl)
+    PingoCard(
+        modifier = Modifier.pingoElevation(level = PingoElevationLevel.Level1, shape = shape),
+        contentPadding = 0.dp,
+        gap = 0.dp,
+    ) {
+        SettingsRow(
+            title = "Tema",
+            subtitle = aparencia.tema.rotulo(),
+            icon = if (aparencia.tema == TemaDoApp.ESCURO) PingoIcons.Moon else PingoIcons.Sun,
+            onClick = aparencia.onAbrirTema,
+        )
+    }
+}
 
 @Composable
 internal fun ContaCartao(conta: SettingsContaUi) {

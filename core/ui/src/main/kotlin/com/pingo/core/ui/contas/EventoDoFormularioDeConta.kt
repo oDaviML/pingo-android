@@ -104,4 +104,4 @@ private fun normalizarDia(texto: String): String = texto.filter { it in '0'..'9'
 private fun normalizarValor(texto: String): String = texto.filter { it in '0'..'9' || it == ',' || it == '.' }.take(TAMANHO_DO_VALOR)
 
 private const val TAMANHO_DO_DIA = 2
-private const val TAMANHO_DO_VALOR = 12
+private const val TAMANHO_DO_VALOR = 16

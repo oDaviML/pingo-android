@@ -53,7 +53,7 @@ class ProcessadorDeCapturaTest {
         assertEquals(OrigemLancamento.NOTIFICACAO, lancamento.origem)
         assertEquals(InstituicaoFinanceira.ITAU, lancamento.instituicaoOrigem)
         assertEquals(instrumento.publicId, lancamento.instrumentoPublicId)
-        assertEquals(categorias.idDe("Outros", TipoCategoria.DESPESA), lancamento.categoriaPublicId)
+        assertEquals(categorias.idDe("Contas da casa", TipoCategoria.DESPESA), lancamento.categoriaPublicId)
         assertEquals(3790L, lancamento.valorCentavos)
         assertEquals(TipoLancamento.DESPESA, lancamento.tipo)
         assertEquals("CLARO *31987905690", lancamento.estabelecimento)

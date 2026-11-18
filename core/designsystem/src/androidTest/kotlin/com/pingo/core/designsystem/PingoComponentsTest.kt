@@ -115,7 +115,7 @@ class PingoComponentsTest {
         }
 
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("N").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Nubank").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Alimentação").assertIsDisplayed()
         composeRule.onNodeWithText("Captura ativa").assertIsDisplayed()
         composeRule.onNodeWithText("3 lançamentos para revisar").assertIsDisplayed()

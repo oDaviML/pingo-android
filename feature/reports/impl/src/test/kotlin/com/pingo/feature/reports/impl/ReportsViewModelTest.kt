@@ -306,6 +306,31 @@ class ReportsViewModelTest {
         assertTrue("Tempo esperado <= 1500ms, obtido ${tempoMs}ms", tempoMs <= 1500L)
     }
 
+    @Test
+    fun `sugestao originada pela categoria assinaturas exibe selo especifico`() {
+        val sugestao = SugestaoDeAssinatura(
+            chave = ChaveAssinatura(cartaoNubank.publicId, "netflix"),
+            estabelecimentoExibicao = "Netflix",
+            valorReferenciaCentavos = 4490L,
+            ultimaCobranca = LocalDate.of(2026, 11, 5),
+            proximaCobrancaEstimada = LocalDate.of(2026, 12, 5),
+            lancamentosQualificadoresPublicIds = listOf("l-1"),
+            porCategoria = true,
+        )
+
+        val estado = mapearEstadoRelatorio(
+            mes = novembro,
+            mesAtual = novembro,
+            detalhado = relatorioVazio(novembro),
+            confirmadas = emptyList(),
+            sugestoes = listOf(sugestao),
+            contas = listOf(contaNubank),
+            instrumentos = listOf(cartaoNubank),
+        )
+
+        assertEquals("Categoria Assinaturas · Mensal", estado.sugestoesAssinatura.single().card.tagLabel)
+    }
+
     private fun gerarLancamentosLote(quantidade: Int): List<Lancamento> {
         val categorias = listOf("cat-alim", "cat-merc", "cat-transp", "cat-lazer", "cat-saude", "cat-outros")
         return (0 until quantidade).map { indice ->

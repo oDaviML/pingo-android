@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -15,6 +16,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.pingo.core.data.manual.CampoDeLancamentoManual
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.model.fatura.ModoParcelamento
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -28,8 +30,8 @@ class NovoLancamentoContentTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     private val hoje = LocalDate.of(2026, 11, 10)
-    private val nubank = OpcaoDeInstrumento("inst-nubank", "Nubank · crédito")
-    private val inter = OpcaoDeInstrumento("inst-inter", "Inter · débito")
+    private val nubank = OpcaoDeInstrumento("inst-nubank", "Nubank · crédito", ehCredito = true)
+    private val inter = OpcaoDeInstrumento("inst-inter", "Inter · débito", ehCredito = false)
     private val alimentacao = OpcaoDeCategoria("cat-alimentacao", "Alimentação")
     private val mercado = OpcaoDeCategoria("cat-mercado", "Mercado")
 
@@ -184,6 +186,60 @@ class NovoLancamentoContentTest {
         assertEquals(1, fechamentos)
     }
 
+    @Test
+    fun parcelamentoApareceParaDespesaNoCreditoESomeEmDebitoEReceita() {
+        val estadoAtual = mutableStateOf(estado(instrumento = nubank, tipo = TipoDoLancamentoManual.DESPESA))
+        composeRule.setContent {
+            PingoTheme {
+                NovoLancamentoContent(state = estadoAtual.value, onEvent = {}, onFechar = {})
+            }
+        }
+        composeRule.onNodeWithTag("campo-parcelas").assertIsDisplayed()
+
+        composeRule.runOnUiThread {
+            estadoAtual.value = estado(instrumento = inter, tipo = TipoDoLancamentoManual.DESPESA)
+        }
+        composeRule.onAllNodesWithText("Parcelamento").assertCountEquals(0)
+
+        composeRule.runOnUiThread {
+            estadoAtual.value = estado(instrumento = nubank, tipo = TipoDoLancamentoManual.RECEITA)
+        }
+        composeRule.onAllNodesWithText("Parcelamento").assertCountEquals(0)
+    }
+
+    @Test
+    fun abrirPainelDeParcelasESelecionarModoEMensagemDeResumo() {
+        val eventos = mutableListOf<NovoLancamentoEvent>()
+        mostrar(
+            estado(
+                instrumento = nubank,
+                valorCentavos = 10000L,
+                totalParcelas = 4,
+                modoParcelamento = ModoParcelamento.VALOR_PARCELA,
+                painel = PainelDoNovoLancamento.PARCELAS,
+            ),
+            eventos = eventos,
+        )
+
+        composeRule.onNodeWithTag("painel-parcelas").assertIsDisplayed()
+        composeRule.onNodeWithText("4x").assertIsDisplayed()
+        composeRule.onAllNodesWithText("4 parcelas de R$ 25,00 · Total R$ 100,00").assertCountEquals(0)
+        composeRule.onNodeWithText("4 parcelas de R$ 100,00 · Total R$ 400,00").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("parcelas-preset-6").performClick()
+        composeRule.onNodeWithTag("parcelas-modo-total").performClick()
+        composeRule.onNodeWithTag("parcelas-confirmar").performClick()
+
+        assertEquals(
+            listOf(
+                NovoLancamentoEvent.SelecionarParcelas(6),
+                NovoLancamentoEvent.SelecionarModoParcelamento(ModoParcelamento.VALOR_TOTAL),
+                NovoLancamentoEvent.FecharPainel,
+            ),
+            eventos,
+        )
+    }
+
     private fun mostrar(estado: NovoLancamentoUiState, eventos: MutableList<NovoLancamentoEvent> = mutableListOf()) {
         composeRule.setContent {
             PingoTheme {
@@ -213,6 +269,8 @@ class NovoLancamentoContentTest {
         categorias: List<OpcaoDeCategoria> = listOf(alimentacao, mercado),
         painel: PainelDoNovoLancamento? = null,
         calendarioVisivel: Boolean = false,
+        totalParcelas: Int = 1,
+        modoParcelamento: ModoParcelamento = ModoParcelamento.VALOR_TOTAL,
         erros: Set<CampoDeLancamentoManual> = emptySet(),
         salvando: Boolean = false,
     ): NovoLancamentoUiState = NovoLancamentoUiState(
@@ -225,6 +283,8 @@ class NovoLancamentoContentTest {
         categoriaSugerida = categoriaSugerida,
         data = hoje,
         hoje = hoje,
+        totalParcelas = totalParcelas,
+        modoParcelamento = modoParcelamento,
         instrumentos = instrumentos,
         categorias = if (tipo == TipoDoLancamentoManual.TRANSFERENCIA) emptyList() else categorias,
         painel = painel,

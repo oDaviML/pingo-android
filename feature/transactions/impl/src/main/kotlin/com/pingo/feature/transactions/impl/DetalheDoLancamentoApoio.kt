@@ -21,6 +21,17 @@ internal fun descricaoDaExclusao(state: DetalheDoLancamentoUiState): String {
     val valor = Valores.formatar(state.valorCentavos)
     val estabelecimento = state.estabelecimento.takeIf { it.isNotBlank() }
     val alvo = estabelecimento?.let { "$it, $valor" } ?: valor
+    val parcelamento = state.parcelamento
 
-    return "$alvo. O lançamento sai da lista e não entra mais nos totais."
+    return if (parcelamento != null) {
+        "$alvo (parcela ${parcelamento.parcelaNumero} de ${parcelamento.totalParcelas}). Apenas esta parcela será excluída."
+    } else {
+        "$alvo. O lançamento sai da lista e não entra mais nos totais."
+    }
+}
+
+internal fun descricaoExclusaoTodasParcelas(state: DetalheDoLancamentoUiState): String {
+    val parcelamento = state.parcelamento ?: return descricaoDaExclusao(state)
+    val estabelecimento = state.estabelecimento.takeIf { it.isNotBlank() } ?: "Esta compra parcelada"
+    return "$estabelecimento em ${parcelamento.totalParcelas}x. Todas as parcelas serão excluídas das faturas."
 }

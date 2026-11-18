@@ -6,16 +6,20 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -28,6 +32,7 @@ import com.pingo.core.auth.GerenciadorDeBloqueioDoApp
 import com.pingo.core.auth.ResultadoAutenticacao
 import com.pingo.core.common.AppDispatchers
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.model.TemaDoApp
 import com.pingo.core.notifications.CapturaController
 import com.pingo.core.notifications.GatilhoDeCapturaParada
 import com.pingo.navigation.PingoNavHost
@@ -60,9 +65,26 @@ class MainActivity : FragmentActivity() {
         agendarReconciliacaoAposPrimeiroQuadro()
 
         setContent {
-            PingoTheme {
+            val tema by viewModel.tema.collectAsStateWithLifecycle()
+            val darkTheme = when (tema) {
+                TemaDoApp.SISTEMA -> isSystemInDarkTheme()
+                TemaDoApp.CLARO -> false
+                TemaDoApp.ESCURO -> true
+            }
+            AplicarBarrasDoSistema(darkTheme = darkTheme)
+            PingoTheme(darkTheme = darkTheme) {
                 ConteudoPrincipal()
             }
+        }
+    }
+
+    @Composable
+    private fun AplicarBarrasDoSistema(darkTheme: Boolean) {
+        val view = LocalView.current
+        SideEffect {
+            val controller = WindowCompat.getInsetsController(window, view)
+            controller.isAppearanceLightStatusBars = !darkTheme
+            controller.isAppearanceLightNavigationBars = !darkTheme
         }
     }
 

@@ -2,6 +2,7 @@ package com.pingo.core.data.manual
 
 import com.pingo.core.model.Lancamento
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.fatura.ModoParcelamento
 import java.time.Instant
 
 enum class CampoDeLancamentoManual {
@@ -10,6 +11,7 @@ enum class CampoDeLancamentoManual {
     INSTRUMENTO,
     ORIGEM,
     DESTINO,
+    PARCELAS,
 }
 
 data class NovoLancamentoManual(
@@ -20,6 +22,8 @@ data class NovoLancamentoManual(
     val categoriaPublicId: String? = null,
     val dataHora: Instant,
     val estabelecimento: String? = null,
+    val totalParcelas: Int = 1,
+    val modoParcelamento: ModoParcelamento = ModoParcelamento.VALOR_TOTAL,
 )
 
 sealed interface ResultadoLancamentoManual {

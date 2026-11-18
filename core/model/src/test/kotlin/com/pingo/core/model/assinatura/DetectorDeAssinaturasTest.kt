@@ -218,4 +218,53 @@ class DetectorDeAssinaturasTest {
         val estorno3 = despesa("e-3", "card-1", "Netflix", 3_990L, d3).copy(estornoDePublicId = "orig-3")
         assertFalse(DetectorDeAssinaturas.correspondeACobrancaConfirmada(estorno3, confirmada, "card-1"))
     }
+
+    @Test
+    fun `compra parcelada nao eh sugerida como assinatura`() {
+        val d1 = instanteSaoPaulo(2026, 3, 15)
+        val d2 = instanteSaoPaulo(2026, 4, 15)
+        val d3 = instanteSaoPaulo(2026, 5, 15)
+        val parcela1 = despesa("p-1", "card-1", "Casas Bahia", 30_000L, d1).copy(
+            parcelaNumero = 1,
+            totalParcelas = 6,
+            valorTotalCompraCentavos = 180_000L,
+        )
+        val parcela2 = despesa("p-2", "card-1", "Casas Bahia", 30_000L, d2).copy(
+            compraPaiPublicId = "p-1",
+            parcelaNumero = 2,
+            totalParcelas = 6,
+        )
+        val parcela3 = despesa("p-3", "card-1", "Casas Bahia", 30_000L, d3).copy(
+            compraPaiPublicId = "p-1",
+            parcelaNumero = 3,
+            totalParcelas = 6,
+        )
+
+        assertFalse(DetectorDeAssinaturas.elegivelParaDeteccao(parcela1))
+        assertFalse(DetectorDeAssinaturas.elegivelParaDeteccao(parcela2))
+        assertTrue(DetectorDeAssinaturas.detectarSugestoes(listOf(parcela1, parcela2, parcela3)).isEmpty())
+    }
+
+    @Test
+    fun `lancamento unico na categoria assinaturas gera sugestao por categoria e ignora parcelado`() {
+        val d1 = instanteSaoPaulo(2026, 11, 5)
+        val netflix = despesa("sub-1", "card-1", "Netflix", 4_490L, d1).copy(categoriaPublicId = "cat-assinaturas")
+        val parcelado = despesa("parc-1", "card-1", "Curso", 10_000L, d1).copy(
+            categoriaPublicId = "cat-assinaturas",
+            parcelaNumero = 1,
+            totalParcelas = 4,
+        )
+
+        val sugestoes = DetectorDeAssinaturas.detectarSugestoes(
+            lancamentos = listOf(netflix, parcelado),
+            categoriasAssinaturaIds = setOf("cat-assinaturas"),
+        )
+
+        assertEquals(1, sugestoes.size)
+        val sugestao = sugestoes.single()
+        assertEquals(ChaveAssinatura("card-1", "netflix"), sugestao.chave)
+        assertEquals(4_490L, sugestao.valorReferenciaCentavos)
+        assertTrue(sugestao.porCategoria)
+        assertEquals(listOf("sub-1"), sugestao.lancamentosQualificadoresPublicIds)
+    }
 }

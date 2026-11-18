@@ -20,6 +20,8 @@ object DetectorDeAssinaturas {
 
     fun elegivelParaDeteccao(lancamento: Lancamento): Boolean = lancamento.excluidoEm == null &&
         lancamento.estornoDePublicId == null &&
+        lancamento.compraPaiPublicId == null &&
+        lancamento.totalParcelas <= 1 &&
         lancamento.status == StatusLancamento.CONFIRMADO &&
         lancamento.tipo == TipoLancamento.DESPESA &&
         lancamento.instrumentoPublicId != null &&
@@ -38,7 +40,11 @@ object DetectorDeAssinaturas {
         return proximoMes.atDay(minOf(ultimaCobranca.dayOfMonth, proximoMes.lengthOfMonth()))
     }
 
-    fun detectarSugestoes(lancamentos: List<Lancamento>, chavesIgnoradas: Set<ChaveAssinatura> = emptySet()): List<SugestaoDeAssinatura> {
+    fun detectarSugestoes(
+        lancamentos: List<Lancamento>,
+        chavesIgnoradas: Set<ChaveAssinatura> = emptySet(),
+        categoriasAssinaturaIds: Set<String> = emptySet(),
+    ): List<SugestaoDeAssinatura> {
         val agrupados = lancamentos
             .asSequence()
             .filter { elegivelParaDeteccao(it) }
@@ -52,7 +58,7 @@ object DetectorDeAssinaturas {
         return agrupados
             .asSequence()
             .filter { (chave, _) -> chave !in chavesIgnoradas }
-            .mapNotNull { (chave, itens) -> construirSugestao(chave, itens) }
+            .mapNotNull { (chave, itens) -> construirSugestao(chave, itens, categoriasAssinaturaIds) }
             .sortedWith(
                 compareBy<SugestaoDeAssinatura> { it.chave.estabelecimentoNormalizado }
                     .thenBy { it.chave.instrumentoPublicId },
@@ -80,16 +86,19 @@ object DetectorDeAssinaturas {
         return normalizado == assinatura.estabelecimentoNormalizado && intervaloOk && valorOk
     }
 
-    private fun construirSugestao(chave: ChaveAssinatura, itens: List<Lancamento>): SugestaoDeAssinatura? {
-        if (itens.size < 2) {
-            return null
-        }
+    private fun construirSugestao(
+        chave: ChaveAssinatura,
+        itens: List<Lancamento>,
+        categoriasAssinaturaIds: Set<String>,
+    ): SugestaoDeAssinatura? {
         val ordenados = itens.sortedWith(compareBy<Lancamento> { it.dataHora }.thenBy { it.publicId })
-        val sequencia = ultimaSequenciaQualificadora(ordenados)
-        if (sequencia.size < 2) {
-            return null
+        val sequencia = if (ordenados.size >= 2) ultimaSequenciaQualificadora(ordenados) else emptyList()
+        val (qualificadores, porCategoria) = if (sequencia.size >= 2) {
+            sequencia to false
+        } else {
+            ordenados.filter { it.categoriaPublicId in categoriasAssinaturaIds } to true
         }
-        val ultima = sequencia.last()
+        val ultima = qualificadores.lastOrNull() ?: return null
         val ultimaData = ZonedDateTime.ofInstant(ultima.dataHora, ZONA_SAO_PAULO).toLocalDate()
         return SugestaoDeAssinatura(
             chave = chave,
@@ -97,7 +106,8 @@ object DetectorDeAssinaturas {
             valorReferenciaCentavos = ultima.valorCentavos,
             ultimaCobranca = ultimaData,
             proximaCobrancaEstimada = calcularProximaCobranca(ultimaData),
-            lancamentosQualificadoresPublicIds = sequencia.map { it.publicId },
+            lancamentosQualificadoresPublicIds = qualificadores.map { it.publicId },
+            porCategoria = porCategoria,
         )
     }
 

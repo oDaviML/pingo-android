@@ -6,6 +6,7 @@ import com.pingo.core.data.CategoriaRepository
 import com.pingo.core.data.ContaRepository
 import com.pingo.core.data.InstrumentoRepository
 import com.pingo.core.data.RegraCategoriaRepository
+import com.pingo.core.data.categoria.CategorizadorAutomatico
 import com.pingo.core.data.manual.CampoDeLancamentoManual
 import com.pingo.core.data.manual.NovoLancamentoManual
 import com.pingo.core.data.manual.RegistrarLancamentoManual
@@ -17,6 +18,8 @@ import com.pingo.core.model.Instrumento
 import com.pingo.core.model.TipoCategoria
 import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.fatura.GeradorDeParcelas
+import com.pingo.core.model.fatura.ModoParcelamento
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -65,19 +68,44 @@ class NovoLancamentoViewModel @Inject constructor(
     }
 
     fun onEvent(evento: NovoLancamentoEvent) {
+        if (!tratarValores(evento) && !tratarSelecoes(evento)) {
+            tratarNavegacaoESalvamento(evento)
+        }
+    }
+
+    private fun tratarValores(evento: NovoLancamentoEvent): Boolean {
+        var tratado = true
         when (evento) {
             is NovoLancamentoEvent.TipoSelecionado -> selecionarTipo(evento.tipo)
             is NovoLancamentoEvent.DigitoPressionado -> digitar(evento.digito)
             NovoLancamentoEvent.ApagarPressionado -> apagar()
             is NovoLancamentoEvent.EstabelecimentoAlterado -> alterarEstabelecimento(evento.texto)
-            is NovoLancamentoEvent.AbrirPainel -> controle.update { it.copy(painel = evento.painel, erros = emptySet()) }
-            NovoLancamentoEvent.FecharPainel -> controle.update { it.copy(painel = null) }
+            else -> tratado = false
+        }
+        return tratado
+    }
+
+    private fun tratarSelecoes(evento: NovoLancamentoEvent): Boolean {
+        var tratado = true
+        when (evento) {
             is NovoLancamentoEvent.SelecionarInstrumento -> selecionarInstrumento(evento.publicId)
             is NovoLancamentoEvent.SelecionarCategoria -> selecionarCategoria(evento.publicId)
+            is NovoLancamentoEvent.SelecionarParcelas -> selecionarParcelas(evento.totalParcelas)
+            is NovoLancamentoEvent.SelecionarModoParcelamento -> selecionarModoParcelamento(evento.modo)
+            else -> tratado = false
+        }
+        return tratado
+    }
+
+    private fun tratarNavegacaoESalvamento(evento: NovoLancamentoEvent) {
+        when (evento) {
+            is NovoLancamentoEvent.AbrirPainel -> controle.update { it.copy(painel = evento.painel, erros = emptySet()) }
+            NovoLancamentoEvent.FecharPainel -> controle.update { it.copy(painel = null) }
             NovoLancamentoEvent.AbrirCalendario -> controle.update { it.copy(calendarioVisivel = true) }
             NovoLancamentoEvent.FecharCalendario -> controle.update { it.copy(calendarioVisivel = false) }
             is NovoLancamentoEvent.SelecionarData -> selecionarData(evento.data)
             NovoLancamentoEvent.Salvar -> salvar()
+            else -> Unit
         }
     }
 
@@ -97,8 +125,14 @@ class NovoLancamentoViewModel @Inject constructor(
         val base = dados.value
         val atual = controle.value
         val instrumentos = base.instrumentosAtivos().map { instrumento ->
-            OpcaoDeInstrumento(instrumento.publicId, rotuloDoInstrumentoDoLancamento(base.contas, instrumento))
+            OpcaoDeInstrumento(
+                publicId = instrumento.publicId,
+                rotulo = rotuloDoInstrumentoDoLancamento(base.contas, instrumento),
+                ehCredito = instrumento.tipo == TipoInstrumento.CREDITO,
+            )
         }
+        val instrumento = instrumentos.firstOrNull { it.publicId == atual.instrumentoPublicId }
+        val podeParcelar = atual.tipo == TipoDoLancamentoManual.DESPESA && instrumento?.ehCredito == true
         val categorias = opcoesDeCategoria(base.categorias, atual.tipo)
         val categoria = categorias.firstOrNull { it.publicId == atual.categoriaPublicId }
 
@@ -106,13 +140,15 @@ class NovoLancamentoViewModel @Inject constructor(
             carregando = !base.carregado,
             tipo = atual.tipo,
             valorCentavos = atual.valorCentavos,
-            instrumento = instrumentos.firstOrNull { it.publicId == atual.instrumentoPublicId },
+            instrumento = instrumento,
             destino = instrumentos.firstOrNull { it.publicId == atual.destinoPublicId },
             categoria = categoria,
             categoriaSugerida = atual.categoriaSugerida && categoria != null,
             data = atual.data,
             hoje = LocalDate.now(clock),
             estabelecimento = atual.estabelecimento,
+            totalParcelas = if (podeParcelar) atual.totalParcelas else 1,
+            modoParcelamento = atual.modoParcelamento,
             instrumentos = instrumentos,
             categorias = categorias,
             painel = atual.painel,
@@ -128,12 +164,15 @@ class NovoLancamentoViewModel @Inject constructor(
             return
         }
 
+        val manterParcelas = tipo == TipoDoLancamentoManual.DESPESA
         controle.update {
             it.copy(
                 tipo = tipo,
                 categoriaPublicId = null,
                 categoriaSugerida = false,
                 categoriaEscolhidaManualmente = false,
+                totalParcelas = if (manterParcelas) it.totalParcelas else 1,
+                modoParcelamento = if (manterParcelas) it.modoParcelamento else ModoParcelamento.VALOR_TOTAL,
                 painel = null,
                 erros = emptySet(),
             )
@@ -212,8 +251,27 @@ class NovoLancamentoViewModel @Inject constructor(
         if (controle.value.painel == PainelDoNovoLancamento.DESTINO) {
             controle.update { it.copy(destinoPublicId = publicId, painel = null, erros = emptySet()) }
         } else {
-            controle.update { it.copy(instrumentoPublicId = publicId, painel = null, erros = emptySet()) }
+            val selecionado = dados.value.instrumentosAtivos().firstOrNull { it.publicId == publicId }
+            val ehCredito = selecionado?.tipo == TipoInstrumento.CREDITO
+            controle.update {
+                it.copy(
+                    instrumentoPublicId = publicId,
+                    totalParcelas = if (ehCredito) it.totalParcelas else 1,
+                    modoParcelamento = if (ehCredito) it.modoParcelamento else ModoParcelamento.VALOR_TOTAL,
+                    painel = null,
+                    erros = emptySet(),
+                )
+            }
         }
+    }
+
+    private fun selecionarParcelas(totalParcelas: Int) {
+        val validado = totalParcelas.coerceIn(GeradorDeParcelas.MIN_PARCELAS, GeradorDeParcelas.MAX_PARCELAS)
+        controle.update { it.copy(totalParcelas = validado, erros = emptySet()) }
+    }
+
+    private fun selecionarModoParcelamento(modo: ModoParcelamento) {
+        controle.update { it.copy(modoParcelamento = modo, erros = emptySet()) }
     }
 
     private fun selecionarCategoria(publicId: String) {
@@ -248,15 +306,22 @@ class NovoLancamentoViewModel @Inject constructor(
         }
     }
 
-    private fun entradaDe(atual: ControleDoNovoLancamento): NovoLancamentoManual = NovoLancamentoManual(
-        tipo = tipoLancamento(atual.tipo),
-        valorCentavos = atual.valorCentavos,
-        instrumentoPublicId = atual.instrumentoPublicId,
-        destinoPublicId = atual.destinoPublicId,
-        categoriaPublicId = atual.categoriaPublicId,
-        dataHora = dataHoraDe(atual.data),
-        estabelecimento = atual.estabelecimento,
-    )
+    private fun entradaDe(atual: ControleDoNovoLancamento): NovoLancamentoManual {
+        val instrumento = dados.value.instrumentosAtivos().firstOrNull { it.publicId == atual.instrumentoPublicId }
+        val podeParcelar = atual.tipo == TipoDoLancamentoManual.DESPESA && instrumento?.tipo == TipoInstrumento.CREDITO
+
+        return NovoLancamentoManual(
+            tipo = tipoLancamento(atual.tipo),
+            valorCentavos = atual.valorCentavos,
+            instrumentoPublicId = atual.instrumentoPublicId,
+            destinoPublicId = atual.destinoPublicId,
+            categoriaPublicId = atual.categoriaPublicId,
+            dataHora = dataHoraDe(atual.data),
+            estabelecimento = atual.estabelecimento,
+            totalParcelas = if (podeParcelar) atual.totalParcelas else 1,
+            modoParcelamento = atual.modoParcelamento,
+        )
+    }
 
     private fun dataHoraDe(data: LocalDate): Instant {
         val agora = clock.instant().atZone(clock.zone)
@@ -292,6 +357,8 @@ class NovoLancamentoViewModel @Inject constructor(
         val categoriaEscolhidaManualmente: Boolean = false,
         val data: LocalDate = LocalDate.MIN,
         val estabelecimento: String = "",
+        val totalParcelas: Int = 1,
+        val modoParcelamento: ModoParcelamento = ModoParcelamento.VALOR_TOTAL,
         val painel: PainelDoNovoLancamento? = null,
         val calendarioVisivel: Boolean = false,
         val erros: Set<CampoDeLancamentoManual> = emptySet(),
@@ -335,10 +402,15 @@ internal class ConsultasDeNovoLancamento(
     private val categoriaRepository: CategoriaRepository,
     private val regraCategoriaRepository: RegraCategoriaRepository,
 ) {
+    private val categorizador = CategorizadorAutomatico(categoriaRepository)
+
     suspend fun sugerir(estabelecimentoBruto: String, tipo: TipoCategoria): Categoria? {
         val estabelecimento = EstabelecimentoNormalizado.de(estabelecimentoBruto) ?: return null
-        val regra = regraCategoriaRepository.buscarPorEstabelecimento(estabelecimento) ?: return null
+        val regra = regraCategoriaRepository.buscarPorEstabelecimento(estabelecimento)
+        val aprendida = regra?.let { encontrada ->
+            categoriaRepository.buscar(encontrada.categoriaPublicId)?.takeIf { it.podeSerEscolhida && it.tipo == tipo }
+        }
 
-        return categoriaRepository.buscar(regra.categoriaPublicId)?.takeIf { it.podeSerEscolhida && it.tipo == tipo }
+        return aprendida ?: categorizador.sugerir(estabelecimentoBruto, tipo)
     }
 }

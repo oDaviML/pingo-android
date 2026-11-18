@@ -83,6 +83,13 @@ class FakeLancamentoDao(private val repo: FakeLancamentoRepository) : Lancamento
         repo.excluir(publicId, quando)
     }
 
+    override suspend fun marcarExcluidos(publicIds: List<String>, quando: Instant) {
+        publicIds.forEach { repo.excluir(it, quando) }
+    }
+
+    override suspend fun listarParcelasDaCompra(raizPublicId: String): List<LancamentoEntity> =
+        repo.listarParcelasDaCompra(raizPublicId).map { it.toEntity() }
+
     override suspend fun definirTextoBruto(publicId: String, textoBruto: String) = Unit
 
     override suspend fun repointarCompraPai(de: String, para: String) = Unit

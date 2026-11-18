@@ -15,6 +15,7 @@ import com.pingo.core.model.TipoCategoria
 import com.pingo.core.model.TipoConta
 import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.fatura.ModoParcelamento
 import com.pingo.core.testing.TestDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -405,6 +406,71 @@ class NovoLancamentoViewModelTest {
         advanceUntilIdle()
 
         assertEquals(1, cenario.lancamentos.observeLancamentos().first().count { it.origem == OrigemLancamento.MANUAL })
+    }
+
+    @Test
+    fun `compra parcelada retroativa no credito salva todas as parcelas e reseta se mudar para debito`() = runTest {
+        val cenario = criarViewModel()
+        advanceUntilIdle()
+
+        cenario.viewModel.onEvent(NovoLancamentoEvent.SelecionarInstrumento("inst-nubank"))
+        cenario.viewModel.onEvent(NovoLancamentoEvent.SelecionarParcelas(6))
+        cenario.viewModel.onEvent(NovoLancamentoEvent.SelecionarModoParcelamento(ModoParcelamento.VALOR_PARCELA))
+        cenario.viewModel.onEvent(NovoLancamentoEvent.SelecionarData(LocalDate.of(2026, 5, 10)))
+        listOf(1, 5, 0, 0, 0).forEach { cenario.viewModel.onEvent(NovoLancamentoEvent.DigitoPressionado(it)) }
+        advanceUntilIdle()
+
+        assertEquals(6, cenario.viewModel.uiState.value.totalParcelas)
+        assertEquals(15000L, cenario.viewModel.uiState.value.valorParcelaPreviewCentavos)
+        assertEquals(90000L, cenario.viewModel.uiState.value.valorTotalPreviewCentavos)
+
+        cenario.viewModel.onEvent(NovoLancamentoEvent.Salvar)
+        advanceUntilIdle()
+
+        val salvas = cenario.lancamentos.observeLancamentos().first().sortedBy { it.parcelaNumero }
+        assertEquals(6, salvas.size)
+        assertEquals(List(6) { 15000L }, salvas.map { it.valorCentavos })
+        assertEquals(90000L, salvas.first().valorTotalCompraCentavos)
+        assertEquals(LocalDate.of(2026, 5, 10), salvas.first().dataHora.atZone(clock.zone).toLocalDate())
+        assertEquals(LocalDate.of(2026, 10, 10), salvas.last().dataHora.atZone(clock.zone).toLocalDate())
+    }
+
+    @Test
+    fun `mudar instrumento para debito ou tipo para receita zera parcelamento`() = runTest {
+        val cenario = criarViewModel()
+        advanceUntilIdle()
+
+        cenario.viewModel.onEvent(NovoLancamentoEvent.SelecionarInstrumento("inst-nubank"))
+        cenario.viewModel.onEvent(NovoLancamentoEvent.SelecionarParcelas(5))
+        advanceUntilIdle()
+        assertEquals(5, cenario.viewModel.uiState.value.totalParcelas)
+
+        cenario.viewModel.onEvent(NovoLancamentoEvent.SelecionarInstrumento("inst-inter"))
+        advanceUntilIdle()
+        assertEquals(1, cenario.viewModel.uiState.value.totalParcelas)
+        assertFalse(cenario.viewModel.uiState.value.podeParcelar)
+
+        cenario.viewModel.onEvent(NovoLancamentoEvent.SelecionarInstrumento("inst-nubank"))
+        cenario.viewModel.onEvent(NovoLancamentoEvent.SelecionarParcelas(4))
+        cenario.viewModel.onEvent(NovoLancamentoEvent.TipoSelecionado(TipoDoLancamentoManual.RECEITA))
+        advanceUntilIdle()
+        assertEquals(1, cenario.viewModel.uiState.value.totalParcelas)
+    }
+
+    @Test
+    fun `sugere categoria automaticamente por padrao quando nao ha regra do usuario`() = runTest {
+        val cenario = criarViewModel(
+            categorias = listOf(alimentacao, mercado, salario),
+            regras = emptyList(),
+        )
+        advanceUntilIdle()
+
+        cenario.viewModel.onEvent(NovoLancamentoEvent.EstabelecimentoAlterado("IFOOD PEDIDO 998"))
+        advanceUntilIdle()
+
+        val estado = cenario.viewModel.uiState.value
+        assertEquals(alimentacao.publicId, estado.categoria?.publicId)
+        assertTrue(estado.categoriaSugerida)
     }
 
     private fun criarViewModel(

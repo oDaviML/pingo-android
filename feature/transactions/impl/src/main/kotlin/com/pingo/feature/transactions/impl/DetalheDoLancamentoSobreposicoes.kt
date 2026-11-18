@@ -28,6 +28,18 @@ internal fun SobreposicoesDoDetalhe(state: DetalheDoLancamentoUiState, onEvent: 
             modifier = Modifier.testTag("dialogo-exclusao"),
         )
     }
+
+    if (state.dialogoDeExclusaoParcelas) {
+        PingoDestructiveDialog(
+            title = "Excluir todas as parcelas?",
+            description = descricaoExclusaoTodasParcelas(state),
+            confirmText = "Excluir todas",
+            confirmLoading = state.excluindo,
+            onConfirm = { onEvent(DetalheDoLancamentoEvent.ConfirmarExclusaoParcelas) },
+            onDismissRequest = { onEvent(DetalheDoLancamentoEvent.CancelarExclusaoParcelas) },
+            modifier = Modifier.testTag("dialogo-exclusao-parcelas"),
+        )
+    }
 }
 
 @Composable

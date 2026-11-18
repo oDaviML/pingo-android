@@ -1,6 +1,8 @@
 package com.pingo.feature.transactions.impl
 
 import com.pingo.core.data.manual.CampoDeLancamentoManual
+import com.pingo.core.model.fatura.ModoParcelamento
+import com.pingo.core.ui.Valores
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -25,11 +27,40 @@ internal object RotulosDoNovoLancamento {
 
     fun mes(mes: YearMonth): String = capitalizado(mes.format(MES))
 
-    fun valor(estado: NovoLancamentoUiState): String = when {
-        CampoDeLancamentoManual.VALOR in estado.erros -> "O valor precisa ser maior que zero"
-        origemIgualAoDestino(estado) -> "Origem e destino precisam ser diferentes"
-        estado.valorCentavos > 0 -> "Pronto para salvar"
-        else -> "Digite no teclado abaixo"
+    fun valor(estado: NovoLancamentoUiState): String {
+        val parcelaPreview = estado.valorParcelaPreviewCentavos
+        val totalPreview = estado.valorTotalPreviewCentavos
+
+        return when {
+            CampoDeLancamentoManual.VALOR in estado.erros && estado.valorCentavos > 0L && estado.parcelado ->
+                "Valor insuficiente para ${estado.totalParcelas} parcelas"
+            CampoDeLancamentoManual.VALOR in estado.erros -> "O valor precisa ser maior que zero"
+            origemIgualAoDestino(estado) -> "Origem e destino precisam ser diferentes"
+            parcelaPreview != null && totalPreview != null ->
+                "${estado.totalParcelas}x de ${Valores.formatar(parcelaPreview)} · Total ${Valores.formatar(totalPreview)}"
+            estado.valorCentavos > 0 -> "Pronto para salvar"
+            else -> "Digite no teclado abaixo"
+        }
+    }
+
+    fun parcelamento(estado: NovoLancamentoUiState): String = when {
+        estado.totalParcelas <= 1 -> "À vista (1x)"
+        estado.modoParcelamento == ModoParcelamento.VALOR_PARCELA -> "${estado.totalParcelas}x (valor de cada parcela)"
+        else -> "${estado.totalParcelas}x (valor total)"
+    }
+
+    fun mensagemDasParcelas(estado: NovoLancamentoUiState): String? = when {
+        CampoDeLancamentoManual.PARCELAS in estado.erros ->
+            "Parcelamento disponível apenas em despesa no crédito"
+        estado.parcelado && estado.valorCentavos > 0L ->
+            resumoParcelas(estado)
+        else -> null
+    }
+
+    fun resumoParcelas(estado: NovoLancamentoUiState): String? {
+        val parcela = estado.valorParcelaPreviewCentavos ?: return null
+        val total = estado.valorTotalPreviewCentavos ?: return null
+        return "${estado.totalParcelas} parcelas de ${Valores.formatar(parcela)} · Total ${Valores.formatar(total)}"
     }
 
     fun origemIgualAoDestino(estado: NovoLancamentoUiState): Boolean =

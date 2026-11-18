@@ -33,4 +33,10 @@ interface LancamentoRepository {
     suspend fun salvarTodos(lancamentos: List<Lancamento>)
 
     suspend fun excluir(publicId: String, quando: Instant)
+
+    suspend fun listarParcelasDaCompra(raizPublicId: String): List<Lancamento> = emptyList()
+
+    suspend fun excluirTodos(publicIds: List<String>, quando: Instant) {
+        publicIds.forEach { excluir(it, quando) }
+    }
 }

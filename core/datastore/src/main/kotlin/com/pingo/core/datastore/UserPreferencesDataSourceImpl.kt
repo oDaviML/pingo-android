@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.pingo.core.model.TemaDoApp
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -194,6 +195,18 @@ class UserPreferencesDataSourceImpl internal constructor(private val dataStore: 
         }
     }
 
+    override val temaDoApp: Flow<TemaDoApp> = dataStore.data.map { preferences ->
+        preferences[Keys.TEMA_DO_APP]
+            ?.let { nome -> runCatching { TemaDoApp.valueOf(nome) }.getOrNull() }
+            ?: TemaDoApp.SISTEMA
+    }
+
+    override suspend fun setTemaDoApp(tema: TemaDoApp) {
+        dataStore.edit { preferences ->
+            preferences[Keys.TEMA_DO_APP] = tema.name
+        }
+    }
+
     override val emailUsuario: Flow<String?> = dataStore.data.map { preferences ->
         preferences[Keys.EMAIL_USUARIO]
     }
@@ -242,6 +255,7 @@ class UserPreferencesDataSourceImpl internal constructor(private val dataStore: 
             val REVISAR_PELA_NOTIFICACAO_ATIVO = booleanPreferencesKey("revisar_pela_notificacao_ativo")
             val ALERTA_CAPTURA_PARADA_ATIVO = booleanPreferencesKey("alerta_captura_parada_ativo")
             val TELEMETRIA_OPT_IN = booleanPreferencesKey("telemetria_opt_in")
+            val TEMA_DO_APP = stringPreferencesKey("tema_do_app")
             val EMAIL_USUARIO = stringPreferencesKey("email_usuario")
             val NOME_USUARIO = stringPreferencesKey("nome_usuario")
         }
