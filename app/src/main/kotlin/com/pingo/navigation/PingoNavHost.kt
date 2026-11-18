@@ -36,6 +36,7 @@ import com.pingo.core.notifications.NotificacoesDeRevisao
 import com.pingo.feature.accounts.api.AccountsRoute
 import com.pingo.feature.accounts.impl.AccountsScreen
 import com.pingo.feature.accounts.impl.ContaFormScreen
+import com.pingo.feature.accounts.impl.FaturasScreen
 import com.pingo.feature.capturestatus.api.CaptureStatusRoute
 import com.pingo.feature.capturestatus.impl.CaptureStatusScreen
 import com.pingo.feature.home.api.HomeRoute
@@ -138,16 +139,7 @@ private fun ContextoInicial(activity: Activity?, destinoInicial: DestinoInicial,
 }
 
 private fun NavGraphBuilder.telasDeAba(navController: NavHostController, reducedMotion: Boolean) {
-    abaComposable(route = HomeRoute.ROUTE, reducedMotion = reducedMotion) {
-        HomeScreen(
-            onOpenSettings = { navController.navigate(SettingsRoute.ROUTE) },
-            onOpenCaptura = { navController.navigate(CaptureStatusRoute.ROUTE) },
-            onOpenRevisao = { navController.navigate(ReviewRoute.ROUTE) },
-            onOpenNovo = { navController.navigate(TransactionsRoute.NOVO_ROUTE) },
-            onSelecionarAba = { aba -> navController.abrirAba(aba) },
-            mostrarBarraInferior = false,
-        )
-    }
+    abaInicio(navController = navController, reducedMotion = reducedMotion)
     abaComposable(route = TransactionsRoute.ROUTE, reducedMotion = reducedMotion) {
         TransactionsScreen(
             onOpenDetalhe = { publicId -> navController.navigate(TransactionsRoute.detalhe(publicId)) },
@@ -161,11 +153,38 @@ private fun NavGraphBuilder.telasDeAba(navController: NavHostController, reduced
             onSelecionarAba = { aba -> navController.abrirAba(aba) },
             onNovaConta = { navController.navigate(AccountsRoute.NOVA_ROUTE) },
             onAbrirConta = { contaPublicId -> navController.navigate(AccountsRoute.editar(contaPublicId)) },
+            onOpenNovo = { navController.navigate(TransactionsRoute.NOVO_ROUTE) },
             mostrarBarraInferior = false,
+            onAbrirFaturas = { instrumentoId -> navController.navigate(AccountsRoute.faturas(instrumentoId)) },
         )
     }
+    abaRelatorios(navController = navController, reducedMotion = reducedMotion)
+}
+
+private fun NavGraphBuilder.abaInicio(navController: NavHostController, reducedMotion: Boolean) {
+    abaComposable(route = HomeRoute.ROUTE, reducedMotion = reducedMotion) {
+        HomeScreen(
+            onOpenSettings = { navController.navigate(SettingsRoute.ROUTE) },
+            onOpenCaptura = { navController.navigate(CaptureStatusRoute.ROUTE) },
+            onOpenRevisao = { navController.navigate(ReviewRoute.ROUTE) },
+            onOpenNovo = { navController.navigate(TransactionsRoute.NOVO_ROUTE) },
+            onSelecionarAba = { aba -> navController.abrirAba(aba) },
+            mostrarBarraInferior = false,
+            onAbrirFaturas = { instrumentoId -> navController.navigate(AccountsRoute.faturas(instrumentoId)) },
+        )
+    }
+}
+
+private fun NavGraphBuilder.abaRelatorios(navController: NavHostController, reducedMotion: Boolean) {
     abaComposable(route = ReportsRoute.ROUTE, reducedMotion = reducedMotion) {
-        ReportsScreen(onSelecionarAba = { aba -> navController.abrirAba(aba) }, mostrarBarraInferior = false)
+        ReportsScreen(
+            onSelecionarAba = { aba -> navController.abrirAba(aba) },
+            onOpenNovo = { navController.navigate(TransactionsRoute.NOVO_ROUTE) },
+            mostrarBarraInferior = false,
+            onAbrirCategoriaNoMes = { categoriaId, mes ->
+                navController.navigate(TransactionsRoute.porCategoria(categoriaId, mes.toString()))
+            },
+        )
     }
 }
 
@@ -189,6 +208,21 @@ private fun NavGraphBuilder.telasDeLancamento(navController: NavHostController, 
             onBack = { navController.popBackStack() },
         )
     }
+    composable(
+        route = TransactionsRoute.POR_CATEGORIA_ROUTE,
+        arguments = listOf(
+            navArgument(TransactionsRoute.ARG_CATEGORIA_ID) { type = NavType.StringType },
+            navArgument(TransactionsRoute.ARG_MES) { type = NavType.StringType },
+        ),
+    ) {
+        TransactionsScreen(
+            onOpenDetalhe = { publicId -> navController.navigate(TransactionsRoute.detalhe(publicId)) },
+            onOpenNovo = { navController.navigate(TransactionsRoute.NOVO_ROUTE) },
+            onSelecionarAba = { aba -> navController.abrirAba(aba) },
+            mostrarBarraInferior = false,
+            onVoltar = { navController.popBackStack() },
+        )
+    }
 }
 
 private fun NavGraphBuilder.telasDeCadastroDeConta(navController: NavHostController) {
@@ -200,6 +234,15 @@ private fun NavGraphBuilder.telasDeCadastroDeConta(navController: NavHostControl
         arguments = listOf(navArgument(AccountsRoute.ARG_CONTA_ID) { type = NavType.StringType }),
     ) {
         ContaFormScreen(onVoltar = { navController.popBackStack() })
+    }
+    composable(
+        route = AccountsRoute.FATURAS_ROUTE,
+        arguments = listOf(navArgument(AccountsRoute.ARG_INSTRUMENTO_ID) { type = NavType.StringType }),
+    ) {
+        FaturasScreen(
+            onVoltar = { navController.popBackStack() },
+            onAbrirLancamento = { publicId -> navController.navigate(TransactionsRoute.detalhe(publicId)) },
+        )
     }
 }
 

@@ -24,10 +24,13 @@ class NavHostRoutesTest {
             OnboardingContasRoute.ROUTE,
             HomeRoute.ROUTE,
             TransactionsRoute.ROUTE,
+            TransactionsRoute.NOVO_ROUTE,
             TransactionsRoute.DETALHE_ROUTE,
+            TransactionsRoute.POR_CATEGORIA_ROUTE,
             AccountsRoute.ROUTE,
             AccountsRoute.NOVA_ROUTE,
             AccountsRoute.EDITAR_ROUTE,
+            AccountsRoute.FATURAS_ROUTE,
             ReportsRoute.ROUTE,
             ReviewRoute.ROUTE,
             CaptureStatusRoute.ROUTE,
@@ -47,6 +50,16 @@ class NavHostRoutesTest {
     }
 
     @Test
+    fun faturasRouteCarregaInstrumentoId() {
+        assertEquals("accounts/faturas/inst-1", AccountsRoute.faturas("inst-1"))
+    }
+
+    @Test
+    fun porCategoriaRouteCarregaCategoriaEMes() {
+        assertEquals("transactions/categoria/cat-1/2026-10", TransactionsRoute.porCategoria("cat-1", "2026-10"))
+    }
+
+    @Test
     fun deepLinkDaNotificacaoApontaParaODetalhe() {
         assertEquals(
             "pingo://detalhe/{${TransactionsRoute.ARG_PUBLIC_ID}}",
@@ -62,6 +75,8 @@ class NavHostRoutesTest {
         assertEquals(AbaInferior.RELATORIOS, abaParaRota(ReportsRoute.ROUTE))
         assertEquals(null, abaParaRota(TransactionsRoute.NOVO_ROUTE))
         assertEquals(null, abaParaRota(TransactionsRoute.DETALHE_ROUTE))
+        assertEquals(null, abaParaRota(TransactionsRoute.POR_CATEGORIA_ROUTE))
+        assertEquals(null, abaParaRota(AccountsRoute.FATURAS_ROUTE))
         assertEquals(null, abaParaRota(ReviewRoute.ROUTE))
         assertEquals(null, abaParaRota(SettingsRoute.ROUTE))
         assertEquals(null, abaParaRota(null))
