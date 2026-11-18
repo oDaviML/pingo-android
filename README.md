@@ -2,11 +2,11 @@
 
 Aplicativo Android do Pingo: captura automática de transações financeiras a partir das notificações dos apps de banco, parser executado no aparelho e interface para acompanhamento de gastos.
 
-## Estado atual (F2)
+## Estado atual (F3)
 
-O F1 entregou o fluxo completo de captura automática e as telas principais. O F2 concluiu a organização de contas, faturas, vouchers, relatórios, assinaturas, lembretes e o alinhamento ao Design System:
+O F1 entregou a captura automática e as telas principais; o F2 organizou contas, faturas, vouchers, relatórios e assinaturas; o F3 concluiu os fluxos de segurança, configurações, atualização nativa, exportação CSV, telemetria opt-in, ícone adaptativo e otimização de cold start para o beta fechado:
 
-- Onboarding passos 1–7: login Google via Credential Manager, termo LGPD, acesso às notificações, permissão para o Pingo notificar, bateria/autostart e escolha de bancos/instrumentos. Biometria fica para F3.
+- Onboarding passos 1–8 (`STR-205`): login Google via Credential Manager, termo LGPD (`>= 48.dp` validado em `STR-227`), acesso às notificações, permissão para o Pingo notificar, bateria/autostart, escolha de bancos/instrumentos e ativação opcional de biometria (`Passo 8 de 8`).
 - Contas e Faturas (`STR-197`, `STR-198`): lista agrupada por instituição com subcards por instrumento (fatura aberta/fechamento/vencimento no crédito, gastos do mês no débito e saldo/última recarga no voucher — sem exibir saldo de conta corrente), modal `Completar datas` para cartões legados, `FaturasScreen` com abas `Aberta`, `Próximas` e `Fechadas` (`X/N` e estornos abatendo o total com clamp `>= 0`), além de arquivamento/reativação em cascata preservando histórico.
 - Cadastro compartilhado entre onboarding e Contas (`STR-181`): instituição, apelido, tipo de conta, crédito (fechamento/vencimento e últimos quatro dígitos opcionais), débito e voucher (benefício, saldo inicial e recarga opcional). Outra instituição fica restrita a lançamentos manuais.
 - Vouchers e Revisão (`STR-199`): saldo por referência válida mais recente (`Abertura`/`Observado`/`Ajuste`), materialização idempotente de recargas programadas, modal `Ajustar saldo` e revisão explícita para `BENEFICIO_AMBIGUO` e `DIVERGENCIA_RECARGA`.
@@ -15,6 +15,9 @@ O F1 entregou o fluxo completo de captura automática e as telas principais. O F
 - Revisão de pendências, notificações por pendente (Confirmar sem abrir o app e Corrigir abrindo o detalhe) e Status da captura com permissões, contadores e reconexão.
 - Relatórios e Assinaturas (`STR-201`, `STR-202`): visão mensal em `America/Sao_Paulo`, gráfico de rosca acessível com comparação MoM (`"sem base"` quando o mês anterior é zero), barras de receitas × despesas de 6 meses, drill-down para `Lançamentos` filtrado por categoria e mês, detecção/decisão de assinaturas por instrumento + estabelecimento normalizado e seção `Assinaturas` com total mensal e estado vazio.
 - Lembretes de assinatura (`STR-203`): preferência DataStore `avisoAssinaturasAtivo` (padrão `false`), `AvisoDeAssinaturaWorker` via WorkManager (`09:00 America/Sao_Paulo`, 2 dias antes, janela do mesmo dia `<= 23:59`, sem `textoBruto` conforme RNF-11), toggle e tratamento de `POST_NOTIFICATIONS` em Configurações.
+- Biometria e bloqueio do app (`STR-205`): `AutenticadorBiometricoAndroid` (`BIOMETRIC_WEAK or DEVICE_CREDENTIAL`), `GerenciadorDeBloqueioDoApp` (`0s`/`1 min`/`5 min`/`15 min`/`Nunca`), `FLAG_SECURE` nas telas recentes quando bloqueado e passo 8 opcional no onboarding.
+- Configurações, Categorias e Regras (`STR-209`, `RN-10`): tela completa com seção Conta (`Sair`), Segurança e categorias, Notificações do Pingo (`Revisar pela notificação`, `Alertar se captura parar`, `Avisos de assinaturas`), Privacidade (`Telemetria anônima` opt-in, termo, excluir conta) e Sobre/atualização (`CategoriasERegrasScreen` com criação, renomeação, arquivo, exclusão com migração atômica em Room e exclusão de regras aprendidas).
+- Exportação CSV (`STR-204`), Telemetria (`STR-208`), Atualização via GitHub Releases (`STR-210`) e Ícone Adaptativo (`STR-292`): `ExportadorCsvDeLancamentos` respeitando busca/filtros via `FileProvider`, `:core:analytics` com opt-in padrão `false` e filtro `RNF-11` (sem `textoBruto`), `VerificadorDeAtualizacaoApk` + `BaixadorDeApk` (SHA-256) + `InstaladorDeApk`, ícone adaptativo + monocromático e cold start `<= 1.500 ms` (`STR-196`).
 
 ## Como buildar
 
@@ -178,6 +181,8 @@ dotnet run --project tests/Pingo.Api.TestHost/Pingo.Api.TestHost.csproj --no-lau
 O TestHost não vai para produção e não contém segredos: a autenticação de teste é uma fixture do assembly de testes. Credenciais reais do Auth0 continuam fora do repositório, em `local.properties` ou variáveis de ambiente do CI.
 
 Gate F2 verificado: `./gradlew --max-workers=2 test spotlessCheck detekt assembleDebug` (1585/1585 unitários verdes, `spotlessCheck` e `detekt` sem erros) e `./gradlew --max-workers=2 connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.pingo.syncHost=http://10.0.2.2:8080/` nos 12 módulos em Android 15 (`API 35`) e Android 16 (`API 36.1`) contra `Pingo.Api.TestHost` + PostgreSQL 18 (0 falhas, 0 erros, apenas os 2 skips esperados em `FixtureDeAberturaFriaTest`), incluindo `SyncHttpIntegrationTest` (6/6), `AvisoDeAssinaturaWorkManagerTest` (8/8), `FaturasEIndicadoresFluxoTest`, `VoucherCajuEFluxoFinanceiroTest`, `RelatoriosAssinaturasEToggleTest` e o benchmark `VAL-REP-006` (`<= 1.500 ms`).
+
+Gate F3 verificado: nos emuladores Android 15 (`API 35`) e Android 16 (`API 36.1`) contra `Pingo.Api.TestHost` + PostgreSQL 18, todos os 9 módulos impactados (`:core:datastore` 15/15, `:core:data` 26/26, `:core:database` 37/37, `:core:auth` 1/1, `:core:notifications` 8/8, `:feature:onboarding:impl` 44/44, `:feature:settings:impl` 10/10, `:feature:transactions:impl` 70/70 e `:app` 55/55 além dos 2 skips esperados de `FixtureDeAberturaFriaTest`) passaram com `0` falhas, incluindo `BetaE2EInstituicoesETrocaAparelhoTest` (Nubank, Inter, Itaú, Mercado Pago e Caju sem `textoBruto`), `DeleteAccountRoomTest` (SQLCipher real) e `ConsentimentoCheckboxAcessibilidadeTest` (`>= 48.dp`). Medição `RNF-04` (`abertura 5`, APK `release`): média **`1.029 ms`** (`API 35`) e **`1.107 ms`** (`API 36.1`), ambas `<= 1.500 ms`. Documentação beta em [`docs/guia-instalacao-beta.md`](docs/guia-instalacao-beta.md) e métricas em [`docs/medicao-desempenho-bateria.md`](docs/medicao-desempenho-bateria.md).
 
 ## Documentação
 

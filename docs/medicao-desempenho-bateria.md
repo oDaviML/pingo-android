@@ -111,3 +111,16 @@ Para medir o tempo exato em milissegundos entre a emissão da notificação e a 
 2. Dispare uma notificação bancária (real no aparelho ou sintética em build debug).
 3. Compare o timestamp do recebimento da notificação (`onNotificationPosted`) com o timestamp de conclusão da gravação no banco.
 4. **Critério de aprovação:** diferença **`<= 2.000 ms` (`<= 2 s`)**.
+
+---
+
+## 4. Resultados registrados — F3 Beta (AVD `emulator-5580`, build release)
+
+Medições executadas em `2026-11-18` após pré-carga de sessão, consentimento, conta e 20 lançamentos via `FixtureDeAberturaFriaTest#preparaSessaoConsentimentoEContasComVinteLancamentos`, usando `./scripts/medir-desempenho-bateria.sh -s emulator-5580 abertura 5` sobre APK `release`:
+
+| Ambiente AVD | Iterações (`TotalTime` ms) | Média | Mín / Máx | Meta (`RNF-04`) | Resultado |
+| --- | --- | --- | --- | --- | --- |
+| **Android 15 (`API 35`)** | `940`, `1023`, `1026`, `1061`, `1096` | **`1.029 ms`** | `940 ms` / `1.096 ms` | `<= 1.500 ms` | **APROVADO** |
+| **Android 16 (`API 36.1`)** | `932`, `1441`, `957`, `1135`, `1072` | **`1.107 ms`** | `932 ms` / `1.441 ms` | `<= 1.500 ms` | **APROVADO** |
+
+> **Nota (`RNF-02`):** O consumo de bateria em 24h (`reset-bateria` → 24h → `coletar-bateria`) depende de aparelho físico em uso real e permanece pendente da execução em dispositivo real antes do fechamento de `STR-211`.
