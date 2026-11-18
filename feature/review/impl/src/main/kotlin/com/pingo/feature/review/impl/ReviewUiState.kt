@@ -5,9 +5,13 @@ import com.pingo.core.data.detalhe.MotivoDaRecusa
 import com.pingo.core.data.detalhe.ResultadoDaEdicao
 import com.pingo.core.data.detalhe.ResultadoDaTransferencia
 import com.pingo.core.data.revisao.ResultadoDaConfirmacao
+import com.pingo.core.model.BeneficioVoucher
 import com.pingo.core.model.MotivoPendencia
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.voucher.DecisaoRecargaVoucher
+import com.pingo.core.model.voucher.MotivoRevisaoRecarga
 import java.time.Instant
+import java.time.LocalDate
 
 enum class MotivoDaRevisao {
     BAIXA_CONFIANCA,
@@ -18,6 +22,8 @@ enum class MotivoDaRevisao {
     INSTRUMENTO_NAO_ENCONTRADO,
     MOEDA_ESTRANGEIRA,
     DADOS_INCOMPLETOS,
+    BENEFICIO_AMBIGUO,
+    DIVERGENCIA_RECARGA,
     OUTRO,
 }
 
@@ -38,7 +44,76 @@ data class PendenciaDaRevisao(
     val categoriaNome: String?,
     val textoInterpretado: String?,
     val podeConfirmar: Boolean,
+) {
+    val ehRevisaoVoucher: Boolean
+        get() = motivo == MotivoDaRevisao.BENEFICIO_AMBIGUO || motivo == MotivoDaRevisao.DIVERGENCIA_RECARGA
+}
+
+enum class TipoDecisaoVoucher {
+    SUBSTITUIR_PREVISAO,
+    REGISTRAR_EXTRA,
+}
+
+@Immutable
+data class VoucherElegivelDaRevisao(val publicId: String, val beneficio: BeneficioVoucher?, val titulo: String, val detalhe: String?)
+
+@Immutable
+data class OcorrenciaPrevistaDaRevisao(
+    val publicId: String,
+    val instrumentoPublicId: String,
+    val beneficio: BeneficioVoucher,
+    val dataPrevista: LocalDate,
+    val dataPrevistaFormatada: String,
+    val valorPrevistoCentavos: Long,
 )
+
+@Immutable
+data class ResolucaoDeVoucherDaRevisao(
+    val lancamentoPublicId: String,
+    val motivo: MotivoRevisaoRecarga,
+    val estabelecimento: String,
+    val valorCapturadoCentavos: Long,
+    val vouchersElegiveis: List<VoucherElegivelDaRevisao>,
+    val ocorrenciasCandidatas: List<OcorrenciaPrevistaDaRevisao>,
+    val voucherSelecionadoPublicId: String? = null,
+    val ocorrenciaSelecionadaPublicId: String? = null,
+    val decisaoSelecionada: TipoDecisaoVoucher? = null,
+) {
+    val voucherSelecionado: VoucherElegivelDaRevisao?
+        get() = vouchersElegiveis.firstOrNull { it.publicId == voucherSelecionadoPublicId }
+
+    val ocorrenciasDoVoucherSelecionado: List<OcorrenciaPrevistaDaRevisao>
+        get() = voucherSelecionadoPublicId?.let { id ->
+            ocorrenciasCandidatas.filter { it.instrumentoPublicId == id }
+        }.orEmpty()
+
+    val exigeEscolhaDeDecisao: Boolean
+        get() = motivo == MotivoRevisaoRecarga.DIVERGENCIA_RECARGA ||
+            ocorrenciasDoVoucherSelecionado.isNotEmpty()
+
+    val podeConfirmar: Boolean
+        get() {
+            val voucherId = voucherSelecionadoPublicId ?: return false
+            if (vouchersElegiveis.none { it.publicId == voucherId }) {
+                return false
+            }
+            val ocorrencias = ocorrenciasDoVoucherSelecionado
+            return when {
+                !exigeEscolhaDeDecisao -> true
+                decisaoSelecionada == TipoDecisaoVoucher.REGISTRAR_EXTRA -> true
+                decisaoSelecionada == TipoDecisaoVoucher.SUBSTITUIR_PREVISAO ->
+                    ocorrenciaSelecionadaPublicId != null && ocorrencias.any { it.publicId == ocorrenciaSelecionadaPublicId }
+                else -> false
+            }
+        }
+
+    fun decisaoParaResolver(): DecisaoRecargaVoucher? = when {
+        !podeConfirmar -> null
+        !exigeEscolhaDeDecisao || decisaoSelecionada == TipoDecisaoVoucher.REGISTRAR_EXTRA ->
+            DecisaoRecargaVoucher.RegistrarExtra
+        else -> ocorrenciaSelecionadaPublicId?.let { DecisaoRecargaVoucher.SubstituirPrevisao(it) }
+    }
+}
 
 @Immutable
 data class TrocaDeCategoriaDaRevisao(
@@ -70,6 +145,8 @@ sealed interface MensagemDaRevisao {
 
     data class LoteComPendentes(val restantes: Int) : MensagemDaRevisao
 
+    data class VoucherPendenteManual(val restantes: Int, val apenasVouchers: Boolean) : MensagemDaRevisao
+
     data object TransferenciaBloqueada : MensagemDaRevisao
 
     data object MesmaConta : MensagemDaRevisao
@@ -85,6 +162,7 @@ data class ReviewUiState(
     val pendentes: List<PendenciaDaRevisao> = emptyList(),
     val painelDeCategoria: TrocaDeCategoriaDaRevisao? = null,
     val painelDeTransferencia: MarcarTransferenciaDaRevisao? = null,
+    val painelDeVoucher: ResolucaoDeVoucherDaRevisao? = null,
     val ocupado: Boolean = false,
     val mensagem: MensagemDaRevisao? = null,
 ) {
@@ -107,6 +185,8 @@ internal fun motivoDe(motivo: String?): MotivoDaRevisao = when (motivo) {
     MotivoPendencia.INSTRUMENTO_NAO_ENCONTRADO.name -> MotivoDaRevisao.INSTRUMENTO_NAO_ENCONTRADO
     MotivoPendencia.MOEDA_ESTRANGEIRA.name -> MotivoDaRevisao.MOEDA_ESTRANGEIRA
     MotivoPendencia.CAMPOS_INCOMPLETOS.name -> MotivoDaRevisao.DADOS_INCOMPLETOS
+    MotivoPendencia.BENEFICIO_AMBIGUO.name -> MotivoDaRevisao.BENEFICIO_AMBIGUO
+    MotivoPendencia.DIVERGENCIA_RECARGA.name -> MotivoDaRevisao.DIVERGENCIA_RECARGA
     else -> MotivoDaRevisao.OUTRO
 }
 

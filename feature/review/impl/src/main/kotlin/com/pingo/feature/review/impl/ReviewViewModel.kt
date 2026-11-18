@@ -10,20 +10,30 @@ import com.pingo.core.data.detalhe.EdicaoDoLancamento
 import com.pingo.core.data.detalhe.EditarLancamento
 import com.pingo.core.data.detalhe.MarcarTransferencia
 import com.pingo.core.data.revisao.ConfirmarPendencias
+import com.pingo.core.data.voucher.ResolverRecargaVoucherUseCase
 import com.pingo.core.model.Lancamento
+import com.pingo.core.model.StatusLancamento
+import com.pingo.core.model.voucher.CandidatosRevisaoVoucher
+import com.pingo.core.model.voucher.ResultadoResolucaoRecarga
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
 import javax.inject.Inject
 
-@Suppress("LongParameterList")
+@OptIn(ExperimentalCoroutinesApi::class)
+@Suppress("LongParameterList", "TooManyFunctions")
 @HiltViewModel
-class ReviewViewModel @Inject constructor(
+class ReviewViewModel private constructor(
     private val lancamentoRepository: LancamentoRepository,
     contaRepository: ContaRepository,
     instrumentoRepository: InstrumentoRepository,
@@ -32,9 +42,55 @@ class ReviewViewModel @Inject constructor(
     private val editarLancamento: EditarLancamento,
     private val marcarTransferencia: MarcarTransferencia,
     private val clock: Clock,
+    private val resolverRecargaVoucher: ResolverRecargaVoucherUseCase?,
 ) : ViewModel() {
+    @Inject
+    constructor(
+        lancamentoRepository: LancamentoRepository,
+        contaRepository: ContaRepository,
+        instrumentoRepository: InstrumentoRepository,
+        categoriaRepository: CategoriaRepository,
+        confirmarPendencias: ConfirmarPendencias,
+        editarLancamento: EditarLancamento,
+        marcarTransferencia: MarcarTransferencia,
+        resolverRecargaVoucher: ResolverRecargaVoucherUseCase,
+        clock: Clock,
+    ) : this(
+        lancamentoRepository = lancamentoRepository,
+        contaRepository = contaRepository,
+        instrumentoRepository = instrumentoRepository,
+        categoriaRepository = categoriaRepository,
+        confirmarPendencias = confirmarPendencias,
+        editarLancamento = editarLancamento,
+        marcarTransferencia = marcarTransferencia,
+        clock = clock,
+        resolverRecargaVoucher = resolverRecargaVoucher as ResolverRecargaVoucherUseCase?,
+    )
+
+    constructor(
+        lancamentoRepository: LancamentoRepository,
+        contaRepository: ContaRepository,
+        instrumentoRepository: InstrumentoRepository,
+        categoriaRepository: CategoriaRepository,
+        confirmarPendencias: ConfirmarPendencias,
+        editarLancamento: EditarLancamento,
+        marcarTransferencia: MarcarTransferencia,
+        clock: Clock,
+    ) : this(
+        lancamentoRepository = lancamentoRepository,
+        contaRepository = contaRepository,
+        instrumentoRepository = instrumentoRepository,
+        categoriaRepository = categoriaRepository,
+        confirmarPendencias = confirmarPendencias,
+        editarLancamento = editarLancamento,
+        marcarTransferencia = marcarTransferencia,
+        clock = clock,
+        resolverRecargaVoucher = null,
+    )
+
     private val base = MutableStateFlow(BaseDaRevisao())
     private val controle = MutableStateFlow(ControleDaRevisao())
+    private val candidatosVoucher = MutableStateFlow<Map<String, CandidatosRevisaoVoucher>>(emptyMap())
     private val mutableUiState = MutableStateFlow(ReviewUiState())
 
     val uiState: StateFlow<ReviewUiState> = mutableUiState.asStateFlow()
@@ -55,6 +111,30 @@ class ReviewViewModel @Inject constructor(
                     categorias = categorias,
                 )
             }.collect { baseAtual -> base.value = baseAtual }
+        }
+        if (resolverRecargaVoucher != null) {
+            viewModelScope.launch {
+                base
+                    .map { baseAtual ->
+                        val pendentesVoucher = baseAtual.lancamentos
+                            .filter {
+                                it.status == StatusLancamento.PENDENTE &&
+                                    it.excluidoEm == null &&
+                                    ehPendenciaVoucher(it.motivoPendencia)
+                            }
+                            .map { it.publicId to it.motivoPendencia }
+                        pendentesVoucher to baseAtual.instrumentos
+                    }
+                    .distinctUntilChanged()
+                    .collectLatest { (pendentesVoucher, _) ->
+                        val carregados = buildMap {
+                            pendentesVoucher.forEach { (publicId, _) ->
+                                resolverRecargaVoucher.listarCandidatos(publicId)?.let { put(publicId, it) }
+                            }
+                        }
+                        candidatosVoucher.value = carregados
+                    }
+            }
         }
         viewModelScope.launch {
             combine(base, controle) { baseAtual, controleAtual ->
@@ -77,6 +157,19 @@ class ReviewViewModel @Inject constructor(
             is ReviewEvent.SelecionarCategoria -> selecionarCategoria(evento.publicId)
             is ReviewEvent.AbrirMarcarTransferencia -> abrirMarcarTransferencia(evento.publicId)
             is ReviewEvent.SelecionarDestino -> selecionarDestino(evento.instrumentoPublicId)
+            else -> onVoucherEvent(evento)
+        }
+    }
+
+    private fun onVoucherEvent(evento: ReviewEvent) {
+        when (evento) {
+            ReviewEvent.ConfirmarResolucaoVoucher -> confirmarResolucaoVoucher()
+            ReviewEvent.FecharResolucaoVoucher -> controle.update { it.copy(painelDeVoucher = null) }
+            is ReviewEvent.AbrirResolucaoVoucher -> abrirResolucaoVoucher(evento.publicId)
+            is ReviewEvent.SelecionarVoucher -> selecionarVoucher(evento.instrumentoPublicId)
+            is ReviewEvent.SelecionarDecisaoVoucher -> selecionarDecisaoVoucher(evento.decisao)
+            is ReviewEvent.SelecionarOcorrenciaVoucher -> selecionarOcorrenciaVoucher(evento.ocorrenciaPublicId)
+            else -> Unit
         }
     }
 
@@ -100,7 +193,22 @@ class ReviewViewModel @Inject constructor(
         viewModelScope.launch {
             controle.update { it.copy(ocupado = true, mensagem = null) }
             val resultado = confirmarPendencias.confirmarTodos()
-            controle.update { it.copy(ocupado = false, mensagem = mensagemDe(resultado)) }
+            val mensagem = if (resultado.mantidos > 0) {
+                val restantes = lancamentoRepository.observeLancamentos().first()
+                    .filter { it.status == StatusLancamento.PENDENTE && it.excluidoEm == null }
+                val vouchersRestantes = restantes.count { ehPendenciaVoucher(it.motivoPendencia) }
+                if (vouchersRestantes > 0) {
+                    MensagemDaRevisao.VoucherPendenteManual(
+                        restantes = resultado.mantidos,
+                        apenasVouchers = vouchersRestantes == restantes.size,
+                    )
+                } else {
+                    mensagemDe(resultado)
+                }
+            } else {
+                null
+            }
+            controle.update { it.copy(ocupado = false, mensagem = mensagem) }
         }
     }
 
@@ -207,6 +315,94 @@ class ReviewViewModel @Inject constructor(
             controle.update { it.copy(ocupado = true, mensagem = null) }
             val resultado = marcarTransferencia.marcar(painel.lancamentoPublicId, instrumentoPublicId)
             controle.update { it.copy(ocupado = false, painelDeTransferencia = null, mensagem = mensagemDe(resultado)) }
+        }
+    }
+
+    private fun abrirResolucaoVoucher(publicId: String) {
+        val useCase = resolverRecargaVoucher ?: return
+        viewModelScope.launch {
+            val candidatos = useCase.listarCandidatos(publicId) ?: candidatosVoucher.value[publicId] ?: return@launch
+            candidatosVoucher.update { it + (publicId to candidatos) }
+            val painel = montarPainelDeVoucher(candidatos, base.value.contas, clock.zone)
+            controle.update { it.copy(painelDeVoucher = painel, mensagem = null) }
+        }
+    }
+
+    private fun selecionarVoucher(instrumentoPublicId: String) {
+        controle.update { atual ->
+            val painel = atual.painelDeVoucher ?: return@update atual
+            val lancamento = lancamentoAtual(painel.lancamentoPublicId)
+            val dataRef = (lancamento?.dataHora ?: clock.instant()).atZone(clock.zone).toLocalDate()
+            val ocorrenciasDoVoucher = painel.ocorrenciasCandidatas.filter { it.instrumentoPublicId == instrumentoPublicId }
+            val ocorrenciaPadrao = ocorrenciaMaisProxima(ocorrenciasDoVoucher, dataRef)
+            atual.copy(
+                painelDeVoucher = painel.copy(
+                    voucherSelecionadoPublicId = instrumentoPublicId,
+                    ocorrenciaSelecionadaPublicId = ocorrenciaPadrao,
+                    decisaoSelecionada = null,
+                ),
+            )
+        }
+    }
+
+    private fun selecionarDecisaoVoucher(decisao: TipoDecisaoVoucher) {
+        controle.update { atual ->
+            val painel = atual.painelDeVoucher ?: return@update atual
+            val lancamento = lancamentoAtual(painel.lancamentoPublicId)
+            val dataRef = (lancamento?.dataHora ?: clock.instant()).atZone(clock.zone).toLocalDate()
+            val ocorrenciaId = if (decisao == TipoDecisaoVoucher.SUBSTITUIR_PREVISAO) {
+                painel.ocorrenciaSelecionadaPublicId ?: ocorrenciaMaisProxima(painel.ocorrenciasDoVoucherSelecionado, dataRef)
+            } else {
+                painel.ocorrenciaSelecionadaPublicId
+            }
+            atual.copy(
+                painelDeVoucher = painel.copy(
+                    decisaoSelecionada = decisao,
+                    ocorrenciaSelecionadaPublicId = ocorrenciaId,
+                ),
+            )
+        }
+    }
+
+    private fun selecionarOcorrenciaVoucher(ocorrenciaPublicId: String) {
+        controle.update { atual ->
+            val painel = atual.painelDeVoucher ?: return@update atual
+            atual.copy(
+                painelDeVoucher = painel.copy(
+                    ocorrenciaSelecionadaPublicId = ocorrenciaPublicId,
+                    decisaoSelecionada = painel.decisaoSelecionada ?: TipoDecisaoVoucher.SUBSTITUIR_PREVISAO,
+                ),
+            )
+        }
+    }
+
+    private fun confirmarResolucaoVoucher() {
+        val useCase = resolverRecargaVoucher
+        val painel = controle.value.painelDeVoucher
+        val instrumentoPublicId = painel?.voucherSelecionadoPublicId
+        val decisao = painel?.decisaoParaResolver()
+        val podeResolver = useCase != null &&
+            painel != null &&
+            instrumentoPublicId != null &&
+            decisao != null &&
+            !controle.value.ocupado
+        if (!podeResolver) {
+            return
+        }
+
+        viewModelScope.launch {
+            controle.update { it.copy(ocupado = true, mensagem = null) }
+            val mensagem = when (useCase.resolver(painel.lancamentoPublicId, instrumentoPublicId, decisao)) {
+                is ResultadoResolucaoRecarga.Resolvido -> null
+                ResultadoResolucaoRecarga.NaoEncontrado, ResultadoResolucaoRecarga.Invalido -> MensagemDaRevisao.FalhaAoSalvar
+            }
+            controle.update {
+                it.copy(
+                    ocupado = false,
+                    painelDeVoucher = if (mensagem == null) null else it.painelDeVoucher,
+                    mensagem = mensagem,
+                )
+            }
         }
     }
 

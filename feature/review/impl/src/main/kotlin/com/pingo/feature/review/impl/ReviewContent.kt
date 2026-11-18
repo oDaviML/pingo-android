@@ -72,13 +72,22 @@ fun ReviewContent(
             )
         }
 
-        state.painelDeCategoria?.let { painel ->
-            PainelDeTrocaDeCategoriaDaRevisao(painel = painel, onEvent = onEvent)
-        }
+        PaineisDaRevisao(state = state, onEvent = onEvent)
+    }
+}
 
-        state.painelDeTransferencia?.let { painel ->
-            PainelDeMarcarTransferenciaDaRevisao(painel = painel, onEvent = onEvent)
-        }
+@Composable
+private fun PaineisDaRevisao(state: ReviewUiState, onEvent: (ReviewEvent) -> Unit) {
+    state.painelDeCategoria?.let { painel ->
+        PainelDeTrocaDeCategoriaDaRevisao(painel = painel, onEvent = onEvent)
+    }
+
+    state.painelDeTransferencia?.let { painel ->
+        PainelDeMarcarTransferenciaDaRevisao(painel = painel, onEvent = onEvent)
+    }
+
+    state.painelDeVoucher?.let { painel ->
+        PainelDeResolucaoVoucher(painel = painel, ocupado = state.ocupado, onEvent = onEvent)
     }
 }
 

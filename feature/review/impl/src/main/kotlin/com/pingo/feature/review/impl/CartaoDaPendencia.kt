@@ -50,7 +50,7 @@ internal fun CartaoDaPendencia(pendencia: PendenciaDaRevisao, onEvent: (ReviewEv
         TrechoInterpretado(pendencia = pendencia)
         if (!pendencia.podeConfirmar) {
             PingoText(
-                text = RotulosDaRevisao.INSTRUMENTO_NECESSARIO,
+                text = RotulosDaRevisao.orientacao(pendencia),
                 style = PingoTheme.typography.bodySmall,
                 color = PingoTheme.colors.warning,
                 modifier = Modifier.testTag("orientacao-${pendencia.publicId}"),
@@ -166,6 +166,21 @@ private fun TrechoInterpretado(pendencia: PendenciaDaRevisao) {
 @Composable
 private fun AcoesDaPendencia(pendencia: PendenciaDaRevisao, onEvent: (ReviewEvent) -> Unit, onCorrigir: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(PingoSpacing.xs)) {
+        if (pendencia.ehRevisaoVoucher) {
+            val textoAcao = if (pendencia.motivo == MotivoDaRevisao.BENEFICIO_AMBIGUO) {
+                "Escolher benefício"
+            } else {
+                "Resolver divergência"
+            }
+            PingoButton(
+                text = textoAcao,
+                onClick = { onEvent(ReviewEvent.AbrirResolucaoVoucher(pendencia.publicId)) },
+                type = PingoButtonType.Primary,
+                size = PingoButtonSize.Small,
+                fillWidth = true,
+                modifier = Modifier.testTag("resolver-voucher-${pendencia.publicId}"),
+            )
+        }
         AcoesSecundarias(pendencia = pendencia, onEvent = onEvent, onCorrigir = onCorrigir)
         AcoesPrincipais(pendencia = pendencia, onEvent = onEvent)
     }

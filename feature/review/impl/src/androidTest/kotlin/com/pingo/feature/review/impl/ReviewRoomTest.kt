@@ -30,9 +30,13 @@ import com.pingo.core.data.impl.InstrumentoRepositoryImpl
 import com.pingo.core.data.impl.LancamentoRepositoryImpl
 import com.pingo.core.data.impl.RegraCategoriaRepositoryImpl
 import com.pingo.core.data.impl.RoomTransacaoLocal
+import com.pingo.core.data.reconciliacao.ReconciliadorFinanceiro
 import com.pingo.core.data.revisao.ConfirmarPendencias
+import com.pingo.core.data.voucher.ResolverRecargaVoucherUseCase
 import com.pingo.core.database.PingoDatabase
+import com.pingo.core.database.entity.RecargaProgramadaVoucherEntity
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.model.BeneficioVoucher
 import com.pingo.core.model.Categoria
 import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.Instrumento
@@ -46,6 +50,7 @@ import com.pingo.core.model.TipoCategoria
 import com.pingo.core.model.TipoConta
 import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.voucher.StatusRecargaProgramada
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -61,6 +66,7 @@ import org.junit.runner.RunWith
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.Base64
 
@@ -469,6 +475,168 @@ class ReviewRoomTest {
 
         assertEquals(listOf("padaria"), corrigidos)
     }
+
+    @Test
+    fun resolveBeneficioAmbiguoComRoomEAtualizaLancamento() {
+        val vouchers = runBlocking { criarVouchersCaju() }
+        runBlocking {
+            lancamentos.salvar(
+                Lancamento(
+                    publicId = "rec-amb-room",
+                    instrumentoPublicId = null,
+                    categoriaPublicId = null,
+                    valorCentavos = 70000,
+                    dataHora = agora,
+                    tipo = TipoLancamento.RECEITA,
+                    estabelecimento = "Recarga Caju",
+                    status = StatusLancamento.PENDENTE,
+                    origem = OrigemLancamento.NOTIFICACAO,
+                    instituicaoOrigem = InstituicaoFinanceira.CAJU,
+                    confianca = 0.7,
+                    motivoPendencia = MotivoPendencia.BENEFICIO_AMBIGUO.name,
+                    criadoEm = agora,
+                    atualizadoEm = agora,
+                    textoBruto = "Recarga recebida R\$ 700,00",
+                ),
+            )
+        }
+
+        val viewModel = criarViewModelComVoucher()
+        mostrar(viewModel)
+        aguardarCarregamento(viewModel)
+
+        composeRule.onNodeWithTag("confirmar-rec-amb-room").assertIsNotEnabled()
+        composeRule.onNodeWithTag("resolver-voucher-rec-amb-room").performClick()
+        composeRule.waitUntil(TEMPO_ESPERA) { viewModel.uiState.value.painelDeVoucher != null }
+
+        composeRule.onNodeWithTag("voucher-opcao-${vouchers.vr.publicId}").performClick()
+        composeRule.onNodeWithTag("confirmar-voucher-revisao").performClick()
+        composeRule.waitUntil(TEMPO_ESPERA) { viewModel.uiState.value.vazia }
+
+        val salvo = runBlocking { lancamentos.buscar("rec-amb-room") }
+        assertEquals(StatusLancamento.CONFIRMADO, salvo?.status)
+        assertEquals(vouchers.vr.publicId, salvo?.instrumentoPublicId)
+        assertEquals(BeneficioVoucher.VR, salvo?.beneficio)
+    }
+
+    @Test
+    fun resolveDivergenciaRecargaComRoomSubstituindoPrevisao() {
+        val vouchers = runBlocking { criarVouchersCaju() }
+        runBlocking {
+            database.recargaProgramadaVoucherDao().upsert(
+                RecargaProgramadaVoucherEntity(
+                    publicId = "prog-room-1",
+                    instrumentoPublicId = vouchers.va.publicId,
+                    beneficio = BeneficioVoucher.VA,
+                    competenciaMes = LocalDate.of(2026, 11, 1),
+                    dataPrevista = LocalDate.of(2026, 11, 10),
+                    valorPrevistoCentavos = 50000,
+                    status = StatusRecargaProgramada.PENDENTE,
+                    lancamentoPublicId = null,
+                    criadoEm = agora,
+                    atualizadoEm = agora,
+                    excluidoEm = null,
+                ),
+            )
+            lancamentos.salvar(
+                Lancamento(
+                    publicId = "rec-div-room",
+                    instrumentoPublicId = vouchers.va.publicId,
+                    categoriaPublicId = null,
+                    valorCentavos = 65000,
+                    dataHora = agora,
+                    tipo = TipoLancamento.RECEITA,
+                    estabelecimento = "Recarga Caju",
+                    status = StatusLancamento.PENDENTE,
+                    origem = OrigemLancamento.NOTIFICACAO,
+                    instituicaoOrigem = InstituicaoFinanceira.CAJU,
+                    beneficio = BeneficioVoucher.VA,
+                    confianca = 0.7,
+                    motivoPendencia = MotivoPendencia.DIVERGENCIA_RECARGA.name,
+                    criadoEm = agora,
+                    atualizadoEm = agora,
+                    textoBruto = "Recarga VA R\$ 650,00",
+                ),
+            )
+        }
+
+        val viewModel = criarViewModelComVoucher()
+        mostrar(viewModel)
+        aguardarCarregamento(viewModel)
+
+        composeRule.onNodeWithTag("resolver-voucher-rec-div-room").performClick()
+        composeRule.waitUntil(TEMPO_ESPERA) { viewModel.uiState.value.painelDeVoucher != null }
+
+        composeRule.onNodeWithTag("decisao-substituir-previsao").performClick()
+        composeRule.onNodeWithTag("confirmar-voucher-revisao").performClick()
+        composeRule.waitUntil(TEMPO_ESPERA) { viewModel.uiState.value.vazia }
+
+        val salvo = runBlocking { lancamentos.buscar("rec-div-room") }
+        val recarga = runBlocking { database.recargaProgramadaVoucherDao().buscar("prog-room-1") }
+        assertEquals(StatusLancamento.CONFIRMADO, salvo?.status)
+        assertEquals(StatusRecargaProgramada.SUBSTITUIDA, recarga?.status)
+        assertEquals("rec-div-room", recarga?.lancamentoPublicId)
+    }
+
+    private fun criarViewModelComVoucher(): ReviewViewModel {
+        val transacao = RoomTransacaoLocal(database)
+        val resolver = ResolverRecargaVoucherUseCase(
+            transacaoLocal = transacao,
+            lancamentoDao = database.lancamentoDao(),
+            instrumentoDao = database.instrumentoDao(),
+            recargaDao = database.recargaProgramadaVoucherDao(),
+            categoriaDao = database.categoriaDao(),
+            reconciliador = ReconciliadorFinanceiro.NoOp,
+            clock = clock,
+        )
+        return ReviewViewModel(
+            lancamentoRepository = lancamentos,
+            contaRepository = contas,
+            instrumentoRepository = instrumentos,
+            categoriaRepository = categorias,
+            confirmarPendencias = ConfirmarPendencias(lancamentos, instrumentos, clock),
+            editarLancamento = EditarLancamento(
+                lancamentoRepository = lancamentos,
+                instrumentoRepository = instrumentos,
+                categoriaRepository = categorias,
+                categoriaAprendida = aprendida(),
+                transacaoLocal = transacao,
+                clock = clock,
+            ),
+            marcarTransferencia = MarcarTransferencia(
+                lancamentoRepository = lancamentos,
+                instrumentoRepository = instrumentos,
+                transacaoLocal = transacao,
+                clock = clock,
+            ),
+            resolverRecargaVoucher = resolver,
+            clock = clock,
+        )
+    }
+
+    private suspend fun criarVouchersCaju(): VouchersDeTeste {
+        contas.criarComInstrumentos(
+            listOf(
+                NovaConta(
+                    instituicao = InstituicaoFinanceira.CAJU,
+                    apelido = "Caju",
+                    tipo = TipoConta.BENEFICIO,
+                    instrumentos = listOf(
+                        NovoInstrumento(tipo = TipoInstrumento.VOUCHER, apelido = "Refeição", beneficio = BeneficioVoucher.VR),
+                        NovoInstrumento(tipo = TipoInstrumento.VOUCHER, apelido = "Alimentação", beneficio = BeneficioVoucher.VA),
+                    ),
+                ),
+            ),
+            agora,
+        )
+        val todos = instrumentos.observeInstrumentos().first()
+        return VouchersDeTeste(
+            vr = todos.first { it.beneficio == BeneficioVoucher.VR },
+            va = todos.first { it.beneficio == BeneficioVoucher.VA },
+        )
+    }
+
+    private data class VouchersDeTeste(val vr: Instrumento, val va: Instrumento)
 
     private fun criarViewModel(): ReviewViewModel {
         val transacao = RoomTransacaoLocal(database)

@@ -10,6 +10,7 @@ dependencies {
     implementation(project(":feature:review:api"))
     implementation(project(":core:data"))
     testImplementation(project(":core:auth"))
+    testImplementation(project(":core:database"))
     testImplementation(project(":core:testing"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

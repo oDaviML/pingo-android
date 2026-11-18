@@ -13,13 +13,16 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.model.BeneficioVoucher
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.voucher.MotivoRevisaoRecarga
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.time.Instant
+import java.time.LocalDate
 
 @RunWith(AndroidJUnit4::class)
 class ReviewContentTest {
@@ -271,6 +274,124 @@ class ReviewContentTest {
         assertEquals(listOf<ReviewEvent>(ReviewEvent.DispensarMensagem), eventos)
     }
 
+    @Test
+    fun beneficioAmbiguoEDivergenciaDesabilitamConfirmarEMostramBotaoDeResolucao() {
+        mostrar(
+            estado(
+                listOf(
+                    pendencia(
+                        publicId = "ambiguo",
+                        motivo = MotivoDaRevisao.BENEFICIO_AMBIGUO,
+                        podeConfirmar = false,
+                    ),
+                    pendencia(
+                        publicId = "divergencia",
+                        motivo = MotivoDaRevisao.DIVERGENCIA_RECARGA,
+                        podeConfirmar = false,
+                    ),
+                ),
+            ),
+        )
+
+        composeRule.onNodeWithText("Benefício ambíguo").assertIsDisplayed()
+        composeRule.onNodeWithTag("confirmar-ambiguo").assertIsNotEnabled()
+        composeRule.onNodeWithTag("resolver-voucher-ambiguo").performClick()
+        assertEquals(listOf<ReviewEvent>(ReviewEvent.AbrirResolucaoVoucher("ambiguo")), eventos)
+
+        rolarAte("pendencia-divergencia")
+        composeRule.onNodeWithText("Divergência na recarga").assertIsDisplayed()
+        composeRule.onNodeWithTag("confirmar-divergencia").assertIsNotEnabled()
+        composeRule.onNodeWithTag("resolver-voucher-divergencia").performClick()
+        assertTrue(eventos.contains(ReviewEvent.AbrirResolucaoVoucher("divergencia")))
+    }
+
+    @Test
+    fun painelBeneficioAmbiguoListaVouchersEBloqueiaSemEscolha() {
+        mostrar(
+            estado(
+                pendentes = listOf(
+                    pendencia(
+                        publicId = "v-amb",
+                        motivo = MotivoDaRevisao.BENEFICIO_AMBIGUO,
+                        podeConfirmar = false,
+                    ),
+                ),
+                painelDeVoucher = ResolucaoDeVoucherDaRevisao(
+                    lancamentoPublicId = "v-amb",
+                    motivo = MotivoRevisaoRecarga.BENEFICIO_AMBIGUO,
+                    estabelecimento = "Recarga Caju",
+                    valorCapturadoCentavos = 75000,
+                    vouchersElegiveis = listOf(
+                        VoucherElegivelDaRevisao("inst-vr", BeneficioVoucher.VR, "VR · Caju", "final 1111 · Saldo R$ 520,00"),
+                        VoucherElegivelDaRevisao("inst-va", BeneficioVoucher.VA, "VA · Caju", "final 2222 · Saldo R$ 340,00"),
+                    ),
+                    ocorrenciasCandidatas = emptyList(),
+                ),
+            ),
+        )
+
+        composeRule.onNodeWithTag("painel-voucher-revisao").assertIsDisplayed()
+        composeRule.onNodeWithText("Qual benefício recebeu?").assertIsDisplayed()
+        composeRule.onNodeWithText("VR · Caju").assertIsDisplayed()
+        composeRule.onNodeWithText("VA · Caju").assertIsDisplayed()
+        composeRule.onNodeWithTag("confirmar-voucher-revisao").assertIsNotEnabled()
+
+        composeRule.onNodeWithTag("voucher-opcao-inst-vr").performClick()
+        assertEquals(listOf<ReviewEvent>(ReviewEvent.SelecionarVoucher("inst-vr")), eventos)
+    }
+
+    @Test
+    fun painelDivergenciaMostraComparacaoEOpcoesDeDecisao() {
+        mostrar(
+            estado(
+                pendentes = listOf(
+                    pendencia(
+                        publicId = "v-div",
+                        motivo = MotivoDaRevisao.DIVERGENCIA_RECARGA,
+                        podeConfirmar = false,
+                    ),
+                ),
+                painelDeVoucher = ResolucaoDeVoucherDaRevisao(
+                    lancamentoPublicId = "v-div",
+                    motivo = MotivoRevisaoRecarga.DIVERGENCIA_RECARGA,
+                    estabelecimento = "Recarga Caju",
+                    valorCapturadoCentavos = 85000,
+                    vouchersElegiveis = listOf(
+                        VoucherElegivelDaRevisao("inst-vr", BeneficioVoucher.VR, "VR · Caju", null),
+                    ),
+                    ocorrenciasCandidatas = listOf(
+                        OcorrenciaPrevistaDaRevisao(
+                            publicId = "prog-1",
+                            instrumentoPublicId = "inst-vr",
+                            beneficio = BeneficioVoucher.VR,
+                            dataPrevista = LocalDate.of(2026, 11, 10),
+                            dataPrevistaFormatada = "10/11/2026",
+                            valorPrevistoCentavos = 60000,
+                        ),
+                    ),
+                    voucherSelecionadoPublicId = "inst-vr",
+                    ocorrenciaSelecionadaPublicId = "prog-1",
+                ),
+            ),
+        )
+
+        composeRule.onNodeWithTag("voucher-identificado").assertIsDisplayed()
+        composeRule.onNodeWithText("Valor capturado: R$ 850,00").assertIsDisplayed()
+        composeRule.onNodeWithText("Previsto: R$ 600,00").assertIsDisplayed()
+        composeRule.onNodeWithText("Data prevista: 10/11/2026").assertIsDisplayed()
+        composeRule.onNodeWithTag("confirmar-voucher-revisao").assertIsNotEnabled()
+
+        composeRule.onNodeWithTag("decisao-substituir-previsao").performClick()
+        composeRule.onNodeWithTag("decisao-registrar-extra").performClick()
+        assertEquals(
+            listOf<ReviewEvent>(
+                ReviewEvent.SelecionarDecisaoVoucher(TipoDecisaoVoucher.SUBSTITUIR_PREVISAO),
+                ReviewEvent.SelecionarDecisaoVoucher(TipoDecisaoVoucher.REGISTRAR_EXTRA),
+            ),
+            eventos,
+        )
+    }
+
     private fun mostrar(state: ReviewUiState) {
         composeRule.setContent {
             PingoTheme {
@@ -292,12 +413,14 @@ class ReviewContentTest {
         pendentes: List<PendenciaDaRevisao>,
         painelDeCategoria: TrocaDeCategoriaDaRevisao? = null,
         painelDeTransferencia: MarcarTransferenciaDaRevisao? = null,
+        painelDeVoucher: ResolucaoDeVoucherDaRevisao? = null,
         mensagem: MensagemDaRevisao? = null,
     ): ReviewUiState = ReviewUiState(
         carregando = false,
         pendentes = pendentes,
         painelDeCategoria = painelDeCategoria,
         painelDeTransferencia = painelDeTransferencia,
+        painelDeVoucher = painelDeVoucher,
         mensagem = mensagem,
     )
 

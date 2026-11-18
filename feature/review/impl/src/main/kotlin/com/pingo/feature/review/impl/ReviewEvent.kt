@@ -23,5 +23,17 @@ sealed interface ReviewEvent {
 
     data object FecharMarcarTransferencia : ReviewEvent
 
+    data class AbrirResolucaoVoucher(val publicId: String) : ReviewEvent
+
+    data class SelecionarVoucher(val instrumentoPublicId: String) : ReviewEvent
+
+    data class SelecionarDecisaoVoucher(val decisao: TipoDecisaoVoucher) : ReviewEvent
+
+    data class SelecionarOcorrenciaVoucher(val ocorrenciaPublicId: String) : ReviewEvent
+
+    data object ConfirmarResolucaoVoucher : ReviewEvent
+
+    data object FecharResolucaoVoucher : ReviewEvent
+
     data object DispensarMensagem : ReviewEvent
 }

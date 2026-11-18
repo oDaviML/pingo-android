@@ -4,14 +4,21 @@ import com.pingo.core.model.Categoria
 import com.pingo.core.model.Conta
 import com.pingo.core.model.Instrumento
 import com.pingo.core.model.Lancamento
+import com.pingo.core.model.MotivoPendencia
 import com.pingo.core.model.StatusLancamento
 import com.pingo.core.model.TipoCategoria
 import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.voucher.CandidatosRevisaoVoucher
+import com.pingo.core.model.voucher.MotivoRevisaoRecarga
+import com.pingo.core.ui.Valores
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.Locale
+import kotlin.math.abs
 
 internal data class BaseDaRevisao(
     val carregado: Boolean = false,
@@ -24,6 +31,7 @@ internal data class BaseDaRevisao(
 internal data class ControleDaRevisao(
     val painelDeCategoria: TrocaDeCategoriaDaRevisao? = null,
     val painelDeTransferencia: MarcarTransferenciaDaRevisao? = null,
+    val painelDeVoucher: ResolucaoDeVoucherDaRevisao? = null,
     val ocupado: Boolean = false,
     val mensagem: MensagemDaRevisao? = null,
 )
@@ -38,10 +46,13 @@ internal fun montarRevisao(base: BaseDaRevisao, controle: ControleDaRevisao, ago
         .map { lancamento ->
             val instrumento = instrumentoValido(lancamento, instrumentosPorId)
             val conta = instrumento?.let { contasPorId[it.contaPublicId] }
+            val motivo = motivoDe(lancamento.motivoPendencia)
+            val ehRevisaoVoucher = motivo == MotivoDaRevisao.BENEFICIO_AMBIGUO ||
+                motivo == MotivoDaRevisao.DIVERGENCIA_RECARGA
 
             PendenciaDaRevisao(
                 publicId = lancamento.publicId,
-                motivo = motivoDe(lancamento.motivoPendencia),
+                motivo = motivo,
                 confianca = lancamento.confianca,
                 estabelecimento = lancamento.estabelecimento,
                 valorCentavos = lancamento.valorCentavos,
@@ -51,7 +62,7 @@ internal fun montarRevisao(base: BaseDaRevisao, controle: ControleDaRevisao, ago
                 vinculo = rotuloDoVinculo(instrumento, conta),
                 categoriaNome = lancamento.categoriaPublicId?.let { categoriasPorId[it]?.nome },
                 textoInterpretado = trechoDe(lancamento.textoBruto),
-                podeConfirmar = instrumento != null,
+                podeConfirmar = instrumento != null && !ehRevisaoVoucher,
             )
         }
 
@@ -60,6 +71,7 @@ internal fun montarRevisao(base: BaseDaRevisao, controle: ControleDaRevisao, ago
         pendentes = pendentes,
         painelDeCategoria = controle.painelDeCategoria,
         painelDeTransferencia = controle.painelDeTransferencia,
+        painelDeVoucher = controle.painelDeVoucher,
         ocupado = controle.ocupado,
         mensagem = controle.mensagem,
     )
@@ -135,6 +147,69 @@ internal fun horarioDe(dataHora: Instant, agora: Instant, zona: ZoneId): String 
     return "$dia, ${HORA.format(momento)}"
 }
 
+internal fun ehPendenciaVoucher(motivo: String?): Boolean = motivo == MotivoPendencia.BENEFICIO_AMBIGUO.name ||
+    motivo == MotivoPendencia.DIVERGENCIA_RECARGA.name
+
+internal fun montarPainelDeVoucher(candidatos: CandidatosRevisaoVoucher, contas: List<Conta>, zona: ZoneId): ResolucaoDeVoucherDaRevisao {
+    val contasPorId = contas.associateBy { it.publicId }
+    val vouchers = candidatos.vouchersElegiveis.map { voucherElegivelDe(it, contasPorId) }
+    val ocorrencias = candidatos.ocorrenciasCandidatas.map { recarga ->
+        OcorrenciaPrevistaDaRevisao(
+            publicId = recarga.publicId,
+            instrumentoPublicId = recarga.instrumentoPublicId,
+            beneficio = recarga.beneficio,
+            dataPrevista = recarga.dataPrevista,
+            dataPrevistaFormatada = DATA_COMPLETA.format(recarga.dataPrevista),
+            valorPrevistoCentavos = recarga.valorPrevistoCentavos,
+        )
+    }
+    val voucherInicial = if (candidatos.motivo == MotivoRevisaoRecarga.DIVERGENCIA_RECARGA) {
+        candidatos.lancamento.instrumentoPublicId?.takeIf { id -> vouchers.any { it.publicId == id } }
+            ?: vouchers.firstOrNull()?.publicId
+    } else {
+        null
+    }
+    val dataLancamento = candidatos.lancamento.dataHora.atZone(zona).toLocalDate()
+    val ocorrenciaInicial = voucherInicial?.let { id ->
+        ocorrenciaMaisProxima(ocorrencias.filter { it.instrumentoPublicId == id }, dataLancamento)
+    }
+    return ResolucaoDeVoucherDaRevisao(
+        lancamentoPublicId = candidatos.lancamento.publicId,
+        motivo = candidatos.motivo,
+        estabelecimento = candidatos.lancamento.estabelecimento ?: "Recarga de voucher",
+        valorCapturadoCentavos = candidatos.lancamento.valorCentavos,
+        vouchersElegiveis = vouchers,
+        ocorrenciasCandidatas = ocorrencias,
+        voucherSelecionadoPublicId = voucherInicial,
+        ocorrenciaSelecionadaPublicId = ocorrenciaInicial,
+    )
+}
+
+private fun voucherElegivelDe(instrumento: Instrumento, contasPorId: Map<String, Conta>): VoucherElegivelDaRevisao {
+    val conta = contasPorId[instrumento.contaPublicId]
+    val tipo = instrumento.beneficio?.name ?: "Voucher"
+    val contaNome = conta?.apelido ?: instrumento.apelido
+    val partesDetalhe = buildList {
+        instrumento.apelido.takeIf { conta != null && it.isNotBlank() && it != conta.apelido }?.let(::add)
+        instrumento.ultimosDigitos?.takeIf { it.isNotBlank() }?.let { add("final $it") }
+        instrumento.saldoCentavos?.let { add("Saldo ${Valores.formatar(it)}") }
+    }
+    return VoucherElegivelDaRevisao(
+        publicId = instrumento.publicId,
+        beneficio = instrumento.beneficio,
+        titulo = "$tipo · $contaNome",
+        detalhe = partesDetalhe.joinToString(" · ").takeIf { it.isNotEmpty() },
+    )
+}
+
+internal fun ocorrenciaMaisProxima(ocorrencias: List<OcorrenciaPrevistaDaRevisao>, dataReferencia: LocalDate): String? = ocorrencias
+    .minWithOrNull(
+        compareBy<OcorrenciaPrevistaDaRevisao> { abs(ChronoUnit.DAYS.between(it.dataPrevista, dataReferencia)) }
+            .thenByDescending { it.dataPrevista },
+    )
+    ?.publicId
+
 private const val LIMITE_DO_TRECHO = 160
 private val DATA: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM", Locale.forLanguageTag("pt-BR"))
+private val DATA_COMPLETA: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.forLanguageTag("pt-BR"))
 private val HORA: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.forLanguageTag("pt-BR"))
