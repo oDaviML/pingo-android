@@ -1,26 +1,27 @@
 package com.pingo.feature.settings.impl
 
 import android.Manifest
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -31,7 +32,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -42,20 +42,17 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.pingo.core.designsystem.component.PingoActionDialog
 import com.pingo.core.designsystem.component.PingoBanner
 import com.pingo.core.designsystem.component.PingoBannerTone
-import com.pingo.core.designsystem.component.PingoCard
+import com.pingo.core.designsystem.component.PingoBottomSheet
 import com.pingo.core.designsystem.component.PingoDestructiveDialog
-import com.pingo.core.designsystem.component.PingoElevationLevel
 import com.pingo.core.designsystem.component.PingoIcon
 import com.pingo.core.designsystem.component.PingoText
 import com.pingo.core.designsystem.component.PingoTopBar
 import com.pingo.core.designsystem.component.SectionHeader
-import com.pingo.core.designsystem.component.SettingsRow
-import com.pingo.core.designsystem.component.SettingsRowStyle
-import com.pingo.core.designsystem.component.pingoElevation
 import com.pingo.core.designsystem.icon.PingoIcons
-import com.pingo.core.designsystem.theme.PingoRadius
+import com.pingo.core.designsystem.theme.PingoLayout
 import com.pingo.core.designsystem.theme.PingoSpacing
 import com.pingo.core.designsystem.theme.PingoTheme
 import com.pingo.core.notifications.IntentsDeSistema
@@ -123,66 +120,141 @@ private fun rememberPermissaoDeNotificacaoSettings(): PermissaoDeNotificacaoSett
     return permissao
 }
 
+@Suppress("LongParameterList")
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
     onAccountDeleted: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
     permissaoDeNotificacao: PermissaoDeNotificacaoSettings = rememberPermissaoDeNotificacaoSettings(),
+    onLoggedOut: () -> Unit = onAccountDeleted,
+    onAbrirCategoriasERegras: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showTerm by remember { mutableStateOf(false) }
     var permissaoConcedida by remember(permissaoDeNotificacao) { mutableStateOf(permissaoDeNotificacao.concedida()) }
 
-    SincronizarPermissaoAoRetomar(permissaoDeNotificacao) { concedida ->
+    SincronizarAoRetomar(permissaoDeNotificacao, viewModel) { concedida ->
         permissaoConcedida = concedida
         viewModel.sincronizarPermissaoDeNotificacao(concedida)
     }
 
+    NavegarAoSairOuExcluir(state = state, onAccountDeleted = onAccountDeleted, onLoggedOut = onLoggedOut)
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        SettingsContent(
+            onBack = onBack,
+            onShowTerm = { showTerm = true },
+            onDeleteAccount = viewModel::showDeleteDialog,
+            notificacoes = criarNotificacoesUi(state, permissaoConcedida, permissaoDeNotificacao, viewModel, context) {
+                permissaoConcedida = it
+            },
+            conta = SettingsContaUi(state.nomeUsuario, state.emailUsuario, viewModel::solicitarLogout),
+            seguranca = criarSegurancaUi(state, viewModel, context, onAbrirCategoriasERegras),
+            privacidade = SettingsPrivacidadeUi(
+                telemetriaOptIn = state.telemetriaOptIn,
+                onToggleTelemetria = viewModel::alternarTelemetria,
+                onShowTerm = { showTerm = true },
+                onDeleteAccount = viewModel::showDeleteDialog,
+            ),
+            sobre = criarSobreUi(state, viewModel, context),
+        )
+        if (state.mostrarSheetTempoBloqueio) {
+            BloquearAposBottomSheet(
+                selecionado = OpcaoBloqueio.deSegundos(state.tempoBloqueioSegundos),
+                onSelecionar = viewModel::selecionarTempoBloqueio,
+                onDismissRequest = viewModel::fecharSheetTempoBloqueio,
+            )
+        }
+    }
+
+    SettingsDialogs(showTerm = showTerm, onDismissTerm = { showTerm = false }, state = state, viewModel = viewModel)
+}
+
+@Composable
+private fun NavegarAoSairOuExcluir(state: SettingsUiState, onAccountDeleted: () -> Unit, onLoggedOut: () -> Unit) {
     LaunchedEffect(state.accountDeleted) {
         if (state.accountDeleted) {
             onAccountDeleted()
         }
     }
-
-    SettingsContent(
-        onBack = onBack,
-        onShowTerm = { showTerm = true },
-        onDeleteAccount = viewModel::showDeleteDialog,
-        notificacoes = SettingsNotificacoesUi(
-            avisoAssinaturasAtivo = state.avisoAssinaturasAtivo && permissaoConcedida,
-            permissaoNotificacaoNegada = state.permissaoNotificacaoNegada,
-            onToggleAvisoAssinaturas = { novoValor ->
-                tratarToggleAvisoAssinaturas(novoValor, permissaoDeNotificacao, viewModel) { permissaoConcedida = it }
-            },
-            onAbrirConfiguracoesNotificacao = {
-                IntentsDeSistema.abrir(context, IntentsDeSistema.notificacoesDoApp(context.packageName))
-            },
-        ),
-    )
-
-    SettingsDialogs(
-        showTerm = showTerm,
-        onDismissTerm = { showTerm = false },
-        state = state,
-        viewModel = viewModel,
-    )
+    LaunchedEffect(state.loggedOut) {
+        if (state.loggedOut) {
+            onLoggedOut()
+        }
+    }
 }
 
 @Composable
-private fun SincronizarPermissaoAoRetomar(permissaoDeNotificacao: PermissaoDeNotificacaoSettings, aoAtualizar: (Boolean) -> Unit) {
+private fun SincronizarAoRetomar(
+    permissaoDeNotificacao: PermissaoDeNotificacaoSettings,
+    viewModel: SettingsViewModel,
+    aoAtualizarPermissao: (Boolean) -> Unit,
+) {
     val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner, permissaoDeNotificacao) {
+    DisposableEffect(lifecycleOwner, permissaoDeNotificacao, viewModel) {
         val observador = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                aoAtualizar(permissaoDeNotificacao.concedida())
+                aoAtualizarPermissao(permissaoDeNotificacao.concedida())
+                viewModel.atualizarDisponibilidadeBiometria()
+                viewModel.atualizarPermissaoInstalacao()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observador)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observador) }
     }
 }
+
+private fun criarNotificacoesUi(
+    state: SettingsUiState,
+    permissaoConcedida: Boolean,
+    permissaoDeNotificacao: PermissaoDeNotificacaoSettings,
+    viewModel: SettingsViewModel,
+    context: Context,
+    atualizarPermissao: (Boolean) -> Unit,
+): SettingsNotificacoesUi = SettingsNotificacoesUi(
+    avisoAssinaturasAtivo = state.avisoAssinaturasAtivo && permissaoConcedida,
+    permissaoNotificacaoNegada = state.permissaoNotificacaoNegada,
+    onToggleAvisoAssinaturas = { novoValor ->
+        tratarToggleAvisoAssinaturas(novoValor, permissaoDeNotificacao, viewModel, atualizarPermissao)
+    },
+    onAbrirConfiguracoesNotificacao = {
+        IntentsDeSistema.abrir(context, IntentsDeSistema.notificacoesDoApp(context.packageName))
+    },
+    revisarPelaNotificacaoAtivo = state.revisarPelaNotificacaoAtivo,
+    onToggleRevisarPelaNotificacao = viewModel::alternarRevisarPelaNotificacao,
+    alertaCapturaParadaAtivo = state.alertaCapturaParadaAtivo,
+    onToggleAlertaCapturaParada = viewModel::alternarAlertaCapturaParada,
+)
+
+private fun criarSegurancaUi(
+    state: SettingsUiState,
+    viewModel: SettingsViewModel,
+    context: Context,
+    onAbrirCategoriasERegras: () -> Unit,
+): SettingsSegurancaUi = SettingsSegurancaUi(
+    biometriaAtiva = state.biometriaAtiva,
+    disponibilidadeBiometria = state.disponibilidadeBiometria,
+    tempoBloqueio = OpcaoBloqueio.deSegundos(state.tempoBloqueioSegundos),
+    mensagemSeguranca = state.mensagemSeguranca,
+    mostrarAtalhoCadastroBiometria = state.mostrarAtalhoCadastroBiometria,
+    onToggleBiometria = { ativo -> viewModel.alternarBiometria(ativo, context.encontrarActivity()) },
+    onAbrirTempoBloqueio = viewModel::abrirSheetTempoBloqueio,
+    onAbrirConfiguracoesSeguranca = { context.encontrarActivity()?.let(viewModel::abrirConfiguracoesDeSeguranca) },
+    onAbrirCategoriasERegras = onAbrirCategoriasERegras,
+)
+
+private fun criarSobreUi(state: SettingsUiState, viewModel: SettingsViewModel, context: Context): SettingsSobreUi = SettingsSobreUi(
+    versaoApp = state.versaoApp,
+    codigoVersaoApp = state.codigoVersaoApp,
+    estadoAtualizacao = state.estadoAtualizacao,
+    onVerificarAtualizacao = viewModel::verificarAtualizacao,
+    onBaixarAtualizacao = viewModel::baixarAtualizacao,
+    onInstalarAtualizacao = { arquivo -> runCatching { context.startActivity(viewModel.intentInstalacaoApk(arquivo)) } },
+    onAbrirPermissaoFontes = { runCatching { context.startActivity(viewModel.intentPermissaoFontesDesconhecidas()) } },
+    onAbrirPaginaRelease = { url -> runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } },
+)
 
 private fun tratarToggleAvisoAssinaturas(
     novoValor: Boolean,
@@ -194,20 +266,14 @@ private fun tratarToggleAvisoAssinaturas(
         viewModel.alternarAvisoAssinaturas(false)
         return
     }
-
     if (permissaoDeNotificacao.concedida()) {
         onPermissaoAtualizada(true)
         viewModel.alternarAvisoAssinaturas(true)
         return
     }
-
     permissaoDeNotificacao.solicitar { concedida ->
         onPermissaoAtualizada(concedida)
-        if (concedida) {
-            viewModel.alternarAvisoAssinaturas(true)
-        } else {
-            viewModel.aoNegarPermissaoDeNotificacao()
-        }
+        if (concedida) viewModel.alternarAvisoAssinaturas(true) else viewModel.aoNegarPermissaoDeNotificacao()
     }
 }
 
@@ -216,7 +282,16 @@ private fun SettingsDialogs(showTerm: Boolean, onDismissTerm: () -> Unit, state:
     if (showTerm) {
         PrivacyTermDialog(onDismiss = onDismissTerm)
     }
-
+    if (state.showLogoutDialog) {
+        PingoActionDialog(
+            title = "Sair da conta?",
+            description = "Seus lançamentos e configurações continuam salvos neste aparelho.",
+            confirmText = "Sair",
+            onConfirm = viewModel::confirmarLogout,
+            onDismissRequest = viewModel::cancelarLogout,
+            confirmLoading = state.saindoDaConta,
+        )
+    }
     if (state.showDeleteDialog) {
         PingoDestructiveDialog(
             title = "Excluir conta e dados?",
@@ -230,12 +305,48 @@ private fun SettingsDialogs(showTerm: Boolean, onDismissTerm: () -> Unit, state:
 }
 
 @Composable
+private fun BloquearAposBottomSheet(selecionado: OpcaoBloqueio, onSelecionar: (OpcaoBloqueio) -> Unit, onDismissRequest: () -> Unit) {
+    PingoBottomSheet(
+        onDismissRequest = onDismissRequest,
+        title = "Bloquear após",
+        subtitle = "Escolha quanto tempo o Pingo aguarda em segundo plano.",
+    ) {
+        OpcaoBloqueio.entries.forEach { opcao ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = PingoLayout.minTouchTarget)
+                    .selectable(selected = opcao == selecionado, role = Role.RadioButton, onClick = { onSelecionar(opcao) })
+                    .padding(horizontal = PingoSpacing.sm, vertical = PingoSpacing.xs),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                PingoText(text = opcao.rotulo, style = PingoTheme.typography.body)
+                if (opcao == selecionado) {
+                    PingoIcon(
+                        imageVector = PingoIcons.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = PingoTheme.colors.primary,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Suppress("LongParameterList")
+@Composable
 fun SettingsContent(
     onBack: () -> Unit,
     onShowTerm: () -> Unit,
     onDeleteAccount: () -> Unit,
     modifier: Modifier = Modifier,
     notificacoes: SettingsNotificacoesUi = SettingsNotificacoesUi(),
+    conta: SettingsContaUi = SettingsContaUi(),
+    seguranca: SettingsSegurancaUi = SettingsSegurancaUi(),
+    privacidade: SettingsPrivacidadeUi = SettingsPrivacidadeUi(onShowTerm = onShowTerm, onDeleteAccount = onDeleteAccount),
+    sobre: SettingsSobreUi = SettingsSobreUi(),
 ) {
     Column(
         modifier = modifier
@@ -251,11 +362,12 @@ fun SettingsContent(
                 .padding(horizontal = PingoSpacing.xl, vertical = PingoSpacing.sm),
             verticalArrangement = Arrangement.spacedBy(PingoSpacing.md),
         ) {
+            SectionHeader("Conta")
+            ContaCartao(conta = conta)
+            SectionHeader("Segurança e categorias")
+            SegurancaCartao(seguranca = seguranca)
             SectionHeader("Notificações do Pingo")
-            NotificacoesCartao(
-                avisoAssinaturasAtivo = notificacoes.avisoAssinaturasAtivo,
-                onToggleAvisoAssinaturas = notificacoes.onToggleAvisoAssinaturas,
-            )
+            NotificacoesCartao(notificacoes = notificacoes)
             if (notificacoes.permissaoNotificacaoNegada) {
                 PingoBanner(
                     title = "Permissão de notificações bloqueada",
@@ -265,146 +377,10 @@ fun SettingsContent(
                 )
             }
             SectionHeader("Privacidade e dados")
-            PrivacidadeCartao(onShowTerm = onShowTerm, onDeleteAccount = onDeleteAccount)
+            PrivacidadeCartao(privacidade = privacidade.copy(onShowTerm = onShowTerm, onDeleteAccount = onDeleteAccount))
+            SectionHeader("Sobre o Pingo")
+            SobreCartao(sobre = sobre)
         }
-    }
-}
-
-@Composable
-private fun NotificacoesCartao(avisoAssinaturasAtivo: Boolean, onToggleAvisoAssinaturas: (Boolean) -> Unit) {
-    val shape = RoundedCornerShape(PingoRadius.xl)
-    PingoCard(
-        modifier = Modifier.pingoElevation(level = PingoElevationLevel.Level1, shape = shape),
-        contentPadding = 0.dp,
-        gap = 0.dp,
-    ) {
-        ToggleSettingsRow(
-            title = "Avisos de assinaturas",
-            subtitle = "2 dias antes da cobrança estimada",
-            checked = avisoAssinaturasAtivo,
-            onCheckedChange = onToggleAvisoAssinaturas,
-        )
-    }
-}
-
-@Composable
-private fun ToggleSettingsRow(title: String, subtitle: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .toggleable(
-                value = checked,
-                role = Role.Switch,
-                onValueChange = onCheckedChange,
-            )
-            .padding(horizontal = PingoSpacing.lg, vertical = PingoSpacing.md),
-        horizontalArrangement = Arrangement.spacedBy(PingoSpacing.md),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        ToggleSettingsIcon()
-        ToggleSettingsTexts(title = title, subtitle = subtitle, modifier = Modifier.weight(1f))
-        PingoSwitch(checked = checked)
-    }
-}
-
-@Composable
-private fun ToggleSettingsIcon() {
-    val colors = PingoTheme.colors
-    Box(
-        modifier = Modifier
-            .size(40.dp)
-            .background(color = colors.primaryContainer, shape = CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        PingoIcon(
-            imageVector = PingoIcons.Repeat,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            tint = colors.onPrimaryContainer,
-        )
-    }
-}
-
-@Composable
-private fun ToggleSettingsTexts(title: String, subtitle: String, modifier: Modifier = Modifier) {
-    val colors = PingoTheme.colors
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        PingoText(
-            text = title,
-            style = PingoTheme.typography.bodyStrong,
-            color = colors.onBackground,
-        )
-        PingoText(
-            text = subtitle,
-            style = PingoTheme.typography.bodySmall,
-            color = colors.onSurfaceVariant,
-        )
-    }
-}
-
-@Composable
-private fun PingoSwitch(checked: Boolean) {
-    val colors = PingoTheme.colors
-    val trackModifier = if (checked) {
-        Modifier
-            .size(width = 52.dp, height = 32.dp)
-            .clip(CircleShape)
-            .background(colors.primary)
-            .padding(4.dp)
-    } else {
-        Modifier
-            .size(width = 52.dp, height = 32.dp)
-            .clip(CircleShape)
-            .background(colors.surfaceVariant)
-            .border(width = 2.dp, color = colors.outline, shape = CircleShape)
-            .padding(horizontal = 8.dp)
-    }
-
-    Box(
-        modifier = trackModifier,
-        contentAlignment = if (checked) Alignment.CenterEnd else Alignment.CenterStart,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(if (checked) 24.dp else 16.dp)
-                .background(
-                    color = if (checked) colors.onPrimary else colors.onSurfaceVariant,
-                    shape = CircleShape,
-                ),
-        )
-    }
-}
-
-@Composable
-private fun PrivacidadeCartao(onShowTerm: () -> Unit, onDeleteAccount: () -> Unit) {
-    val shape = RoundedCornerShape(PingoRadius.xl)
-    PingoCard(
-        modifier = Modifier.pingoElevation(level = PingoElevationLevel.Level1, shape = shape),
-        contentPadding = 0.dp,
-        gap = 0.dp,
-    ) {
-        SettingsRow(
-            title = "Termo de privacidade",
-            subtitle = "Como o Pingo trata seus dados",
-            icon = PingoIcons.FileText,
-            onClick = onShowTerm,
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(PingoTheme.colors.outlineVariant),
-        )
-        SettingsRow(
-            title = "Excluir conta e dados",
-            subtitle = "Apaga tudo no aparelho e na nuvem",
-            icon = PingoIcons.Trash2,
-            onClick = onDeleteAccount,
-            style = SettingsRowStyle.Danger,
-        )
     }
 }
 
@@ -416,4 +392,10 @@ private fun deleteDescription(failed: Boolean): String {
     } else {
         base
     }
+}
+
+private tailrec fun Context.encontrarActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.encontrarActivity()
+    else -> null
 }

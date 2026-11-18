@@ -6,10 +6,13 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.pingo.core.data.AccountRepository
@@ -18,6 +21,7 @@ import com.pingo.core.data.assinatura.AgendadorDeAvisosOpcional
 import com.pingo.core.datastore.SyncStatus
 import com.pingo.core.datastore.UserPreferencesDataSource
 import com.pingo.core.designsystem.theme.PingoTheme
+import com.pingo.core.network.update.AtualizacaoDisponivel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -27,6 +31,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
 import java.time.Instant
 import java.util.Optional
 
@@ -36,7 +41,7 @@ class SettingsScreenTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
-    fun mostraNotificacoesPrivacidadeEExclusaoDeContaComToggleDesligadoPorPadrao() {
+    fun mostraSecoesNotificacoesPrivacidadeESobreComTogglesPadrao() {
         composeRule.setContent {
             PingoTheme {
                 SettingsContent(
@@ -48,12 +53,16 @@ class SettingsScreenTest {
         }
 
         composeRule.onNodeWithText("Configurações").assertIsDisplayed()
-        composeRule.onNodeWithText("Notificações do Pingo").assertIsDisplayed()
-        composeRule.onNodeWithText("Avisos de assinaturas").assertIsDisplayed()
-        composeRule.onNode(isToggleable()).assertIsOff()
-        composeRule.onNodeWithText("Privacidade e dados").assertIsDisplayed()
-        composeRule.onNodeWithText("Termo de privacidade").assertIsDisplayed()
-        composeRule.onNodeWithText("Excluir conta e dados").assertIsDisplayed()
+        composeRule.onNodeWithText("Conta").assertIsDisplayed()
+        composeRule.onNodeWithText("Segurança e categorias").assertIsDisplayed()
+        composeRule.onNodeWithText("Notificações do Pingo").performScrollTo().assertIsDisplayed()
+        composeRule.onNode(isToggleable() and hasText("Avisos de assinaturas")).performScrollTo().assertIsOff()
+        composeRule.onNode(isToggleable() and hasText("Telemetria anônima")).performScrollTo().assertIsOff()
+        composeRule.onNodeWithText("Privacidade e dados").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Termo de privacidade").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Excluir conta e dados").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Sobre o Pingo").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Procurar atualização").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -75,8 +84,8 @@ class SettingsScreenTest {
             }
         }
 
-        composeRule.onNode(isToggleable()).assertIsOff()
-        composeRule.onNodeWithText("Permissão de notificações bloqueada").assertIsDisplayed()
+        composeRule.onNode(isToggleable() and hasText("Avisos de assinaturas")).performScrollTo().assertIsOff()
+        composeRule.onNodeWithText("Permissão de notificações bloqueada").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Permissão de notificações bloqueada").performClick()
 
         assertEquals(1, abriuConfiguracoes)
@@ -104,16 +113,14 @@ class SettingsScreenTest {
             }
         }
 
-        composeRule.onNode(isToggleable()).assertIsOff()
-        composeRule.onNodeWithText("Avisos de assinaturas").performClick()
-
+        composeRule.onNodeWithText("Avisos de assinaturas").performScrollTo().performClick()
         composeRule.waitForIdle()
 
         assertEquals(1, permissao.solicitacoes)
         assertFalse(preferences.estado.value)
         assertEquals(0, agendador.reconciliacoes)
-        composeRule.onNode(isToggleable()).assertIsOff()
-        composeRule.onNodeWithText("Permissão de notificações bloqueada").assertIsDisplayed()
+        composeRule.onNode(isToggleable() and hasText("Avisos de assinaturas")).assertIsOff()
+        composeRule.onNodeWithText("Permissão de notificações bloqueada").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -138,13 +145,13 @@ class SettingsScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("Avisos de assinaturas").performClick()
+        composeRule.onNodeWithText("Avisos de assinaturas").performScrollTo().performClick()
         composeRule.waitForIdle()
 
         assertEquals(1, permissao.solicitacoes)
         assertTrue(preferences.estado.value)
         assertEquals(1, agendador.reconciliacoes)
-        composeRule.onNode(isToggleable()).assertIsOn()
+        composeRule.onNode(isToggleable() and hasText("Avisos de assinaturas")).assertIsOn()
         composeRule.onNodeWithText("Permissão de notificações bloqueada").assertDoesNotExist()
     }
 
@@ -170,8 +177,10 @@ class SettingsScreenTest {
     }
 
     @Test
-    fun abreOConfirmacaoDeExclusao() {
+    fun abreConfirmacaoDeExclusaoESolicitaSairECategorias() {
         var deleteClicks = 0
+        var logoutClicks = 0
+        var categoriasClicks = 0
 
         composeRule.setContent {
             PingoTheme {
@@ -179,13 +188,60 @@ class SettingsScreenTest {
                     onBack = {},
                     onShowTerm = {},
                     onDeleteAccount = { deleteClicks++ },
+                    conta = SettingsContaUi("Ana", "ana@pingo.app", onSolicitarLogout = { logoutClicks++ }),
+                    seguranca = SettingsSegurancaUi(onAbrirCategoriasERegras = { categoriasClicks++ }),
                 )
             }
         }
 
-        composeRule.onNodeWithText("Excluir conta e dados").performClick()
+        composeRule.onNodeWithText("Ana").assertIsDisplayed()
+        composeRule.onNodeWithText("ana@pingo.app").assertIsDisplayed()
+        composeRule.onNodeWithText("Sair da conta").performScrollTo().performClick()
+        composeRule.onNodeWithText("Categorias e regras aprendidas").performScrollTo().performClick()
+        composeRule.onNodeWithText("Excluir conta e dados").performScrollTo().performClick()
 
+        assertEquals(1, logoutClicks)
+        assertEquals(1, categoriasClicks)
         assertEquals(1, deleteClicks)
+    }
+
+    @Test
+    fun exibeEstadosDeAtualizacaoApkBaixarEInstalar() {
+        var baixou = 0
+        var instalou = 0
+        val info = AtualizacaoDisponivel(
+            "0.3.0",
+            "v0.3.0",
+            "Beta",
+            "Notas",
+            "https://github.com/o/r",
+            "https://example.com/a.apk",
+            "pingo.apk",
+        )
+
+        composeRule.setContent {
+            PingoTheme {
+                SettingsContent(
+                    onBack = {},
+                    onShowTerm = {},
+                    onDeleteAccount = {},
+                    sobre = SettingsSobreUi(
+                        estadoAtualizacao = EstadoAtualizacaoAppUi.ProntoParaInstalar(
+                            info,
+                            File("pingo.apk"),
+                            precisaPermissaoFontes = false,
+                        ),
+                        onBaixarAtualizacao = { baixou++ },
+                        onInstalarAtualizacao = { instalou++ },
+                    ),
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("botao_instalar_atualizacao").performScrollTo().performClick()
+
+        assertEquals(0, baixou)
+        assertEquals(1, instalou)
     }
 
     private class FakePermissao(private var concedida: Boolean, private val resultadoSolicitacao: Boolean) :
