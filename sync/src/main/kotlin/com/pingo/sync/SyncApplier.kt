@@ -6,11 +6,14 @@ import com.pingo.core.database.entity.LancamentoEntity
 import com.pingo.core.model.TipoLancamento
 import com.pingo.core.network.sync.AssinaturaSnapshotDto
 import com.pingo.core.network.sync.CategoriaSnapshotDto
+import com.pingo.core.network.sync.ConfiguracaoCartaoSnapshotDto
 import com.pingo.core.network.sync.ContaSnapshotDto
 import com.pingo.core.network.sync.FaturaSnapshotDto
 import com.pingo.core.network.sync.InstrumentoSnapshotDto
 import com.pingo.core.network.sync.LancamentoSnapshotDto
 import com.pingo.core.network.sync.PullChangesResult
+import com.pingo.core.network.sync.RecargaProgramadaVoucherSnapshotDto
+import com.pingo.core.network.sync.ReferenciaSaldoVoucherSnapshotDto
 import com.pingo.core.network.sync.RegraCategoriaSnapshotDto
 
 internal class SyncApplier(private val database: PingoDatabase) {
@@ -18,11 +21,14 @@ internal class SyncApplier(private val database: PingoDatabase) {
         database.withTransaction {
             applyContas(result.contas)
             applyInstrumentos(result.instrumentos)
+            applyConfiguracoesCartao(result.configuracoesCartao)
             applyCategorias(result.categorias)
             applyRegrasCategoria(result.regrasCategoria)
             applyAssinaturas(result.assinaturas)
             applyFaturas(result.faturas)
             applyLancamentos(result.lancamentos)
+            applyReferenciasSaldoVoucher(result.referenciasSaldoVoucher)
+            applyRecargasProgramadasVoucher(result.recargasProgramadasVoucher)
         }
     }
 
@@ -40,6 +46,15 @@ internal class SyncApplier(private val database: PingoDatabase) {
             val local = database.instrumentoDao().buscar(snapshot.publicId)
             if (local == null || !local.atualizadoEm.isAfter(snapshot.atualizadoEm.toInstantValue())) {
                 database.instrumentoDao().upsert(snapshot.toEntity(local))
+            }
+        }
+    }
+
+    private suspend fun applyConfiguracoesCartao(snapshots: List<ConfiguracaoCartaoSnapshotDto>) {
+        for (snapshot in snapshots) {
+            val local = database.configuracaoCartaoDao().buscar(snapshot.publicId)
+            if (local == null || !local.atualizadoEm.isAfter(snapshot.atualizadoEm.toInstantValue())) {
+                database.configuracaoCartaoDao().upsert(snapshot.toEntity())
             }
         }
     }
@@ -66,7 +81,7 @@ internal class SyncApplier(private val database: PingoDatabase) {
         for (snapshot in snapshots) {
             val local = database.assinaturaDao().buscar(snapshot.publicId)
             if (local == null || !local.atualizadoEm.isAfter(snapshot.atualizadoEm.toInstantValue())) {
-                database.assinaturaDao().upsert(snapshot.toEntity())
+                database.assinaturaDao().upsert(snapshot.toEntity(local))
             }
         }
     }
@@ -91,6 +106,24 @@ internal class SyncApplier(private val database: PingoDatabase) {
         database.lancamentoDao().upsertAll(comEstorno.toEntitiesLocais())
     }
 
+    private suspend fun applyReferenciasSaldoVoucher(snapshots: List<ReferenciaSaldoVoucherSnapshotDto>) {
+        for (snapshot in snapshots) {
+            val local = database.referenciaSaldoVoucherDao().buscar(snapshot.publicId)
+            if (local == null || !local.atualizadoEm.isAfter(snapshot.atualizadoEm.toInstantValue())) {
+                database.referenciaSaldoVoucherDao().upsert(snapshot.toEntity())
+            }
+        }
+    }
+
+    private suspend fun applyRecargasProgramadasVoucher(snapshots: List<RecargaProgramadaVoucherSnapshotDto>) {
+        for (snapshot in snapshots) {
+            val local = database.recargaProgramadaVoucherDao().buscar(snapshot.publicId)
+            if (local == null || !local.atualizadoEm.isAfter(snapshot.atualizadoEm.toInstantValue())) {
+                database.recargaProgramadaVoucherDao().upsert(snapshot.toEntity(local))
+            }
+        }
+    }
+
     private suspend fun deveAplicarLancamento(snapshot: LancamentoSnapshotDto): Boolean {
         val local = database.lancamentoDao().buscar(snapshot.publicId) ?: return true
 
@@ -100,8 +133,7 @@ internal class SyncApplier(private val database: PingoDatabase) {
     private suspend fun List<LancamentoSnapshotDto>.toEntitiesLocais(): List<LancamentoEntity> = map { snapshot ->
         val local = database.lancamentoDao().buscar(snapshot.publicId)
 
-        snapshot.toEntity().copy(
-            textoBruto = local?.textoBruto,
+        snapshot.toEntity(local).copy(
             tipoSemTransferencia = snapshot.direcaoPreservada(local),
         )
     }

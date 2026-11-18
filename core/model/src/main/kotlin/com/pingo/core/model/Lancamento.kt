@@ -32,4 +32,7 @@ data class Lancamento(
     val atualizadoEm: Instant,
     val excluidoEm: Instant? = null,
     val textoBruto: String? = null,
+    val estabelecimentoNormalizado: String? = null,
+    val beneficio: BeneficioVoucher? = null,
+    val saldoObservadoCentavos: Long? = null,
 )

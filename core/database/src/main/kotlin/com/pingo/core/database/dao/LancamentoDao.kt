@@ -18,6 +18,70 @@ abstract class LancamentoDao {
     @Query("SELECT * FROM lancamentos WHERE excluidoEm IS NULL AND dataHora BETWEEN :inicio AND :fim ORDER BY dataHora DESC")
     abstract fun observePorPeriodo(inicio: Instant, fim: Instant): Flow<List<LancamentoEntity>>
 
+    @Query(
+        """
+        SELECT * FROM lancamentos
+        WHERE excluidoEm IS NULL
+        AND status = 'CONFIRMADO'
+        AND tipo IN ('RECEITA', 'DESPESA')
+        AND dataHora >= :inicioInclusivo
+        AND dataHora < :fimExclusivo
+        ORDER BY dataHora DESC
+        """,
+    )
+    abstract fun observeElegiveisParaRelatorioNoPeriodo(inicioInclusivo: Instant, fimExclusivo: Instant): Flow<List<LancamentoEntity>>
+
+    @Query(
+        """
+        SELECT * FROM lancamentos
+        WHERE excluidoEm IS NULL
+        AND status = 'CONFIRMADO'
+        AND tipo IN ('RECEITA', 'DESPESA')
+        AND dataHora >= :inicioInclusivo
+        AND dataHora < :fimExclusivo
+        ORDER BY dataHora DESC
+        """,
+    )
+    abstract suspend fun listarElegiveisParaRelatorioNoPeriodo(inicioInclusivo: Instant, fimExclusivo: Instant): List<LancamentoEntity>
+
+    @Query(
+        """
+        SELECT * FROM lancamentos
+        WHERE excluidoEm IS NULL
+        AND status = 'CONFIRMADO'
+        AND tipo = 'DESPESA'
+        AND instrumentoPublicId IS NOT NULL
+        AND valorCentavos > 0
+        ORDER BY dataHora ASC, publicId ASC
+        """,
+    )
+    abstract fun observeElegiveisParaDeteccao(): Flow<List<LancamentoEntity>>
+
+    @Query(
+        """
+        SELECT * FROM lancamentos
+        WHERE excluidoEm IS NULL
+        AND status = 'CONFIRMADO'
+        AND tipo = 'DESPESA'
+        AND instrumentoPublicId IS NOT NULL
+        AND valorCentavos > 0
+        ORDER BY dataHora ASC, publicId ASC
+        """,
+    )
+    abstract suspend fun listarElegiveisParaDeteccao(): List<LancamentoEntity>
+
+    @Query("SELECT * FROM lancamentos WHERE faturaPublicId = :faturaPublicId AND excluidoEm IS NULL ORDER BY dataHora DESC")
+    abstract suspend fun listarPorFatura(faturaPublicId: String): List<LancamentoEntity>
+
+    @Query("SELECT * FROM lancamentos WHERE instrumentoPublicId = :instrumentoPublicId AND excluidoEm IS NULL ORDER BY dataHora ASC")
+    abstract suspend fun listarPorInstrumento(instrumentoPublicId: String): List<LancamentoEntity>
+
+    @Query("SELECT * FROM lancamentos WHERE assinaturaPublicId = :assinaturaPublicId AND excluidoEm IS NULL ORDER BY dataHora DESC")
+    abstract fun observePorAssinatura(assinaturaPublicId: String): Flow<List<LancamentoEntity>>
+
+    @Query("SELECT * FROM lancamentos WHERE assinaturaPublicId = :assinaturaPublicId AND excluidoEm IS NULL ORDER BY dataHora ASC")
+    abstract suspend fun listarPorAssinatura(assinaturaPublicId: String): List<LancamentoEntity>
+
     @Query("SELECT * FROM lancamentos WHERE publicId = :publicId")
     abstract suspend fun buscar(publicId: String): LancamentoEntity?
 

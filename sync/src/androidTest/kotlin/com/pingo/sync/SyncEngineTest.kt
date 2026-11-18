@@ -16,27 +16,44 @@ import com.pingo.core.data.categoria.CategoriaSeeder
 import com.pingo.core.data.impl.CategoriaRepositoryImpl
 import com.pingo.core.data.impl.InstrumentoRepositoryImpl
 import com.pingo.core.database.PingoDatabase
+import com.pingo.core.database.entity.AssinaturaEntity
+import com.pingo.core.database.entity.ConfiguracaoCartaoEntity
 import com.pingo.core.database.entity.ContaEntity
+import com.pingo.core.database.entity.FaturaEntity
 import com.pingo.core.database.entity.InstrumentoEntity
 import com.pingo.core.database.entity.LancamentoEntity
+import com.pingo.core.database.entity.RecargaProgramadaVoucherEntity
+import com.pingo.core.database.entity.ReferenciaSaldoVoucherEntity
 import com.pingo.core.datastore.SyncStatus
 import com.pingo.core.datastore.UserPreferencesDataSource
+import com.pingo.core.model.BeneficioVoucher
 import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.OrigemLancamento
+import com.pingo.core.model.StatusAssinatura
+import com.pingo.core.model.StatusFatura
 import com.pingo.core.model.StatusLancamento
 import com.pingo.core.model.TipoConta
 import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.voucher.StatusRecargaProgramada
+import com.pingo.core.model.voucher.TipoReferenciaSaldoVoucher
 import com.pingo.core.network.ApiProfile
 import com.pingo.core.network.PingoApiClient
 import com.pingo.core.network.rules.ParserRulesResponse
+import com.pingo.core.network.sync.AssinaturaSnapshotDto
+import com.pingo.core.network.sync.CampoPresenca
 import com.pingo.core.network.sync.CategoriaSnapshotDto
+import com.pingo.core.network.sync.ConfiguracaoCartaoSnapshotDto
 import com.pingo.core.network.sync.ContaSnapshotDto
+import com.pingo.core.network.sync.FaturaSnapshotDto
 import com.pingo.core.network.sync.InstrumentoSnapshotDto
+import com.pingo.core.network.sync.LancamentoSnapshotDto
 import com.pingo.core.network.sync.PublicIdAliasDto
 import com.pingo.core.network.sync.PullChangesResult
 import com.pingo.core.network.sync.PushChangesPayload
 import com.pingo.core.network.sync.PushChangesResult
+import com.pingo.core.network.sync.RecargaProgramadaVoucherSnapshotDto
+import com.pingo.core.network.sync.ReferenciaSaldoVoucherSnapshotDto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -49,7 +66,10 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.IOException
+import java.time.Clock
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.util.Base64
 
 @RunWith(AndroidJUnit4::class)
@@ -854,6 +874,261 @@ class SyncEngineTest {
         DeviceActivator(api, preferences),
         seederDe(database, tokensDo("auth0|lucas")),
     )
+
+    @Test
+    fun f2PushPullPreservaEntidadesNovasECampoPresencaLegado() = runTest {
+        database.contaDao().upsert(contaEntity("conta-1").copy(instituicao = InstituicaoFinanceira.CAJU))
+        database.instrumentoDao().upsert(
+            instrumentoEntity("inst-voucher", "conta-1").copy(
+                tipo = TipoInstrumento.VOUCHER,
+                beneficio = BeneficioVoucher.VA,
+                saldoCentavos = 50000L,
+            ),
+        )
+        database.lancamentoDao().upsert(
+            lancamentoEntity("lanc-1", estornoDe = null, textoBruto = TEXTO_LOCAL).copy(
+                instrumentoPublicId = "inst-voucher",
+                estabelecimentoNormalizado = "LOJA",
+                beneficio = BeneficioVoucher.VA,
+                saldoObservadoCentavos = 45000L,
+            ),
+        )
+        database.configuracaoCartaoDao().upsert(
+            ConfiguracaoCartaoEntity("cfg-1", "inst-voucher", init, 5, 12, init, init, null),
+        )
+        database.referenciaSaldoVoucherDao().upsert(
+            ReferenciaSaldoVoucherEntity(
+                "ref-1",
+                "inst-voucher",
+                TipoReferenciaSaldoVoucher.OBSERVADO_APOS_TRANSACAO,
+                45000L,
+                null,
+                init,
+                "lanc-1",
+                init,
+                init,
+                null,
+            ),
+        )
+        database.recargaProgramadaVoucherDao().upsert(
+            RecargaProgramadaVoucherEntity(
+                "rec-1",
+                "inst-voucher",
+                BeneficioVoucher.VA,
+                LocalDate.of(2026, 10, 1),
+                LocalDate.of(2026, 10, 5),
+                60000L,
+                StatusRecargaProgramada.SUBSTITUIDA,
+                "lanc-1",
+                init,
+                init,
+                null,
+            ),
+        )
+        database.assinaturaDao().upsert(
+            AssinaturaEntity(
+                "sub-1",
+                "Spotify",
+                "SPOTIFY",
+                2190L,
+                LocalDate.of(2026, 10, 1),
+                LocalDate.of(2026, 11, 1),
+                StatusAssinatura.CONFIRMADA,
+                init,
+                init,
+                null,
+                instrumentoPublicId = "inst-voucher",
+            ),
+        )
+
+        val maisNovo = init.plusSeconds(30)
+        api.pullResult = PullChangesResult(
+            proximoCursor = "cursor-legado",
+            servidorEm = maisNovo.toString(),
+            assinaturas = listOf(
+                AssinaturaSnapshotDto(
+                    publicId = "sub-1",
+                    estabelecimento = "Spotify",
+                    estabelecimentoNormalizado = "SPOTIFY",
+                    valorReferencia = 21.9,
+                    status = "Confirmada",
+                    criadoEm = init.toString(),
+                    atualizadoEm = maisNovo.toString(),
+                ),
+            ),
+            lancamentos = listOf(
+                lancamentoSnapshot("lanc-1", instrumentoPublicId = "inst-voucher", atualizadoEm = maisNovo),
+            ),
+            configuracoesCartao = listOf(
+                ConfiguracaoCartaoSnapshotDto("cfg-srv", "inst-voucher", init.toString(), 6, 13, init.toString(), maisNovo.toString()),
+            ),
+            referenciasSaldoVoucher = listOf(
+                ReferenciaSaldoVoucherSnapshotDto(
+                    "ref-srv",
+                    "inst-voucher",
+                    "Abertura",
+                    50000L,
+                    null,
+                    init.toString(),
+                    null,
+                    init.toString(),
+                    maisNovo.toString(),
+                ),
+            ),
+            recargasProgramadasVoucher = listOf(
+                RecargaProgramadaVoucherSnapshotDto(
+                    "rec-srv",
+                    "inst-voucher",
+                    CampoPresenca.de("VA"),
+                    "2026-10-01",
+                    "2026-10-05",
+                    60000L,
+                    "Pendente",
+                    null,
+                    init.toString(),
+                    maisNovo.toString(),
+                ),
+            ),
+        )
+
+        engine.run()
+
+        val payload = requireNotNull(api.pushed)
+        assertEquals(1, payload.configuracoesCartao.size)
+        assertEquals(1, payload.referenciasSaldoVoucher.size)
+        assertEquals(1, payload.recargasProgramadasVoucher.size)
+        assertEquals("inst-voucher", database.assinaturaDao().buscar("sub-1")?.instrumentoPublicId)
+        val lancPos = database.lancamentoDao().buscar("lanc-1")
+        assertEquals(BeneficioVoucher.VA, lancPos?.beneficio)
+        assertEquals(45000L, lancPos?.saldoObservadoCentavos)
+        assertEquals("LOJA", lancPos?.estabelecimentoNormalizado)
+        assertEquals(TEXTO_LOCAL, lancPos?.textoBruto)
+        assertNotNull(database.configuracaoCartaoDao().buscar("cfg-srv"))
+        assertNotNull(database.referenciaSaldoVoucherDao().buscar("ref-srv"))
+        assertNotNull(database.recargaProgramadaVoucherDao().buscar("rec-srv"))
+    }
+
+    @Test
+    fun f2AliasRewiresReferenciaERecargaERecalculaFatura() = runTest {
+        database.contaDao().upsert(contaEntity("conta-1"))
+        database.instrumentoDao().upsert(instrumentoEntity("inst-1", "conta-1").copy(tipo = TipoInstrumento.CREDITO))
+        database.faturaDao().upsert(
+            FaturaEntity(
+                publicId = "fat-1",
+                instrumentoPublicId = "inst-1",
+                competencia = LocalDate.of(2026, 10, 1),
+                dataFechamento = LocalDate.of(2026, 10, 5),
+                dataVencimento = LocalDate.of(2026, 10, 12),
+                totalCentavos = 2000L,
+                totalPagoCentavos = 0L,
+                status = StatusFatura.ABERTA,
+                dataPagamento = null,
+                pagamentoLancamentoPublicId = null,
+                criadoEm = init,
+                atualizadoEm = init,
+                excluidoEm = null,
+            ),
+        )
+        database.lancamentoDao().upsertAll(
+            listOf(
+                lancamentoEntity("lanc-dup", estornoDe = null, textoBruto = null).copy(
+                    instrumentoPublicId = "inst-1",
+                    faturaPublicId = "fat-1",
+                    valorCentavos = 1000L,
+                ),
+                lancamentoEntity("lanc-dono", estornoDe = null, textoBruto = null).copy(
+                    instrumentoPublicId = "inst-1",
+                    faturaPublicId = "fat-1",
+                    valorCentavos = 1000L,
+                ),
+            ),
+        )
+        database.referenciaSaldoVoucherDao().upsert(
+            ReferenciaSaldoVoucherEntity(
+                "ref-1",
+                "inst-1",
+                TipoReferenciaSaldoVoucher.OBSERVADO_APOS_TRANSACAO,
+                10000L,
+                null,
+                init,
+                "lanc-dup",
+                init,
+                init,
+                null,
+            ),
+        )
+        database.recargaProgramadaVoucherDao().upsert(
+            RecargaProgramadaVoucherEntity(
+                "rec-1",
+                "inst-1",
+                BeneficioVoucher.VA,
+                LocalDate.of(2026, 10, 1),
+                LocalDate.of(2026, 10, 5),
+                50000L,
+                StatusRecargaProgramada.SUBSTITUIDA,
+                "lanc-dup",
+                init,
+                init,
+                null,
+            ),
+        )
+        api.pullResult = PullChangesResult(proximoCursor = "c-alias", servidorEm = init.toString())
+        api.pushResult = PushChangesResult(
+            lancamentos = 1,
+            aliases = listOf(PublicIdAliasDto(publicId = "lanc-dup", ownerPublicId = "lanc-dono")),
+        )
+
+        engine.run()
+
+        assertNull(database.lancamentoDao().buscar("lanc-dup"))
+        assertEquals("lanc-dono", database.referenciaSaldoVoucherDao().buscar("ref-1")?.lancamentoPublicId)
+        assertEquals("lanc-dono", database.recargaProgramadaVoucherDao().buscar("rec-1")?.lancamentoPublicId)
+        assertEquals(1000L, database.faturaDao().buscar("fat-1")?.totalCentavos)
+    }
+
+    @Test
+    fun f2SyncMaterializaRecargasDevidasSemDuplicarExistentes() = runTest {
+        val criadoAntes = Instant.parse("2026-10-01T10:00:00Z")
+        val hojeSync = Instant.parse("2026-10-20T12:00:00Z")
+        val engineDatado = SyncEngine(
+            api,
+            database,
+            preferences,
+            FakeAuth(),
+            DeviceActivator(api, preferences),
+            seederDe(database, null),
+            SyncEngineExtras(Clock.fixed(hojeSync, ZoneOffset.UTC)),
+        )
+        api.pullResult = PullChangesResult(
+            proximoCursor = "c-rec",
+            servidorEm = hojeSync.toString(),
+            contas = listOf(
+                ContaSnapshotDto("conta-caju", "Caju", "Caju", "Beneficio", false, criadoAntes.toString(), criadoAntes.toString()),
+            ),
+            instrumentos = listOf(
+                InstrumentoSnapshotDto(
+                    publicId = "inst-vr",
+                    contaPublicId = "conta-caju",
+                    tipo = "Voucher",
+                    apelido = "VR",
+                    arquivado = false,
+                    beneficio = CampoPresenca.de("VR"),
+                    saldo = CampoPresenca.de(0.0),
+                    diaRecarga = CampoPresenca.de(5),
+                    valorRecarga = CampoPresenca.de(600.0),
+                    criadoEm = criadoAntes.toString(),
+                    atualizadoEm = criadoAntes.toString(),
+                ),
+            ),
+        )
+
+        engineDatado.run()
+        engineDatado.run()
+
+        val recargas = database.recargaProgramadaVoucherDao().listarPorInstrumento("inst-vr")
+        assertEquals(1, recargas.size)
+        assertEquals(StatusRecargaProgramada.EFETIVADA, recargas.single().status)
+    }
 
     private companion object {
         const val TEXTO_LOCAL = "Compra aprovada de R$ 10,00 em LOJA"

@@ -9,6 +9,7 @@ import com.pingo.core.model.MotivoPendencia
 import com.pingo.core.model.OrigemLancamento
 import com.pingo.core.model.StatusLancamento
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.assinatura.NormalizadorDeAssinatura
 import kotlinx.coroutines.flow.first
 import java.time.Clock
 import java.time.Duration
@@ -113,6 +114,7 @@ class RegistrarLancamentoManual @Inject constructor(
     private fun montar(novo: NovoLancamentoManual, instrumentoPublicId: String, duplicata: Boolean, transferenciaId: String?): Lancamento {
         val agora = clock.instant()
         val transferencia = novo.tipo == TipoLancamento.TRANSFERENCIA
+        val estabelecimento = novo.estabelecimento?.trim()?.takeIf { it.isNotEmpty() }
 
         return Lancamento(
             publicId = UUID.randomUUID().toString(),
@@ -123,14 +125,20 @@ class RegistrarLancamentoManual @Inject constructor(
             dataHora = novo.dataHora,
             tipo = novo.tipo,
             tipoSemTransferencia = TipoLancamento.DESPESA.takeIf { transferencia },
-            estabelecimento = novo.estabelecimento?.trim()?.takeIf { it.isNotEmpty() },
+            estabelecimento = estabelecimento,
             status = statusDaDuplicata(duplicata),
             origem = OrigemLancamento.MANUAL,
             confianca = 1.0,
             motivoPendencia = motivoDaDuplicata(duplicata),
             criadoEm = agora,
             atualizadoEm = agora,
+            estabelecimentoNormalizado = NormalizadorDeAssinatura.normalizar(estabelecimento)?.take(LIMITE_NORMALIZADO),
         )
+    }
+
+    private companion object {
+        val JANELA_DE_DUPLICATA: Duration = Duration.ofHours(24)
+        const val LIMITE_NORMALIZADO = 200
     }
 
     private fun Lancamento.comDuplicata(duplicata: Boolean): Lancamento = copy(
@@ -142,8 +150,4 @@ class RegistrarLancamentoManual @Inject constructor(
         if (duplicata) StatusLancamento.PENDENTE else StatusLancamento.CONFIRMADO
 
     private fun motivoDaDuplicata(duplicata: Boolean): String? = if (duplicata) MotivoPendencia.POSSIVEL_DUPLICATA.name else null
-
-    private companion object {
-        val JANELA_DE_DUPLICATA: Duration = Duration.ofHours(24)
-    }
 }

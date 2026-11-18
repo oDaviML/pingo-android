@@ -3,10 +3,13 @@ package com.pingo.core.database
 import android.content.Context
 import com.pingo.core.database.dao.AssinaturaDao
 import com.pingo.core.database.dao.CategoriaDao
+import com.pingo.core.database.dao.ConfiguracaoCartaoDao
 import com.pingo.core.database.dao.ContaDao
 import com.pingo.core.database.dao.FaturaDao
 import com.pingo.core.database.dao.InstrumentoDao
 import com.pingo.core.database.dao.LancamentoDao
+import com.pingo.core.database.dao.RecargaProgramadaVoucherDao
+import com.pingo.core.database.dao.ReferenciaSaldoVoucherDao
 import com.pingo.core.database.dao.RegraCategoriaDao
 import com.pingo.core.database.dao.RegraParserDao
 import com.pingo.core.database.dao.UsuarioDao
@@ -51,4 +54,13 @@ object DatabaseModule {
 
     @Provides
     fun provideRegraParserDao(database: PingoDatabase): RegraParserDao = database.regraParserDao()
+
+    @Provides
+    fun provideConfiguracaoCartaoDao(database: PingoDatabase): ConfiguracaoCartaoDao = database.configuracaoCartaoDao()
+
+    @Provides
+    fun provideReferenciaSaldoVoucherDao(database: PingoDatabase): ReferenciaSaldoVoucherDao = database.referenciaSaldoVoucherDao()
+
+    @Provides
+    fun provideRecargaProgramadaVoucherDao(database: PingoDatabase): RecargaProgramadaVoucherDao = database.recargaProgramadaVoucherDao()
 }

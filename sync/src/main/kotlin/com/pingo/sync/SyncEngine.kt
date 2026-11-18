@@ -4,6 +4,9 @@ import androidx.room.withTransaction
 import com.pingo.core.auth.AuthRepository
 import com.pingo.core.auth.SessionState
 import com.pingo.core.data.categoria.CategoriaSeeder
+import com.pingo.core.data.impl.ReconciliadorDeFaturasLocal
+import com.pingo.core.data.impl.RoomTransacaoLocal
+import com.pingo.core.data.voucher.MaterializarRecargasVencidasUseCase
 import com.pingo.core.database.PingoDatabase
 import com.pingo.core.datastore.SyncStatus
 import com.pingo.core.datastore.UserPreferencesDataSource
@@ -29,9 +32,27 @@ class SyncEngine @Inject constructor(
     private val authRepository: AuthRepository,
     private val deviceActivator: DeviceActivator,
     private val categoriaSeeder: CategoriaSeeder,
+    private val extras: SyncEngineExtras = SyncEngineExtras(),
 ) : SyncRunner {
+    private val clock = extras.clock
+    private val agendadorDeAvisos = extras.agendadorDeAvisos
     private val applier = SyncApplier(database)
     private val syncMutex = Mutex()
+    private val materializador = MaterializarRecargasVencidasUseCase(
+        transacaoLocal = RoomTransacaoLocal(database),
+        instrumentoDao = database.instrumentoDao(),
+        recargaDao = database.recargaProgramadaVoucherDao(),
+        lancamentoDao = database.lancamentoDao(),
+        categoriaDao = database.categoriaDao(),
+        clock = clock,
+    )
+    private val reconciliadorDeFaturas = ReconciliadorDeFaturasLocal(
+        instrumentoDao = database.instrumentoDao(),
+        configuracaoCartaoDao = database.configuracaoCartaoDao(),
+        faturaDao = database.faturaDao(),
+        lancamentoDao = database.lancamentoDao(),
+        clock = clock,
+    )
 
     override suspend fun run() = syncMutex.withLock {
         if (authRepository.session.value != SessionState.LoggedIn || preferences.consentVersion() == null) {
@@ -47,14 +68,16 @@ class SyncEngine @Inject constructor(
                 }
             }
 
-            val inicio = Instant.now()
+            val inicio = clock.instant()
             val payload = coletar(preferences.pushCursor() ?: Instant.EPOCH)
 
             pull()
-            categoriaSeeder.garantirPadroes(Instant.now())
+            categoriaSeeder.garantirPadroes(clock.instant())
+            materializador()
             push(payload = payload, inicio = inicio)
+            agendadorDeAvisos.reconciliarTodas()
 
-            preferences.setLastSyncAt(Instant.now())
+            preferences.setLastSyncAt(clock.instant())
             preferences.setSyncStatus(SyncStatus.IDLE)
         } catch (exception: CancellationException) {
             throw exception
@@ -87,11 +110,14 @@ class SyncEngine @Inject constructor(
     private suspend fun coletar(desde: Instant): PushChangesPayload = PushChangesPayload(
         contas = database.contaDao().atualizadasDesde(desde).map { it.toChangeDto() },
         instrumentos = database.instrumentoDao().atualizadosDesde(desde).map { it.toChangeDto() },
+        configuracoesCartao = database.configuracaoCartaoDao().atualizadasDesde(desde).map { it.toChangeDto() },
         categorias = database.categoriaDao().atualizadasDesde(desde).map { it.toChangeDto() },
         regrasCategoria = database.regraCategoriaDao().atualizadasDesde(desde).map { it.toChangeDto() },
         assinaturas = database.assinaturaDao().atualizadasDesde(desde).map { it.toChangeDto() },
         faturas = database.faturaDao().atualizadasDesde(desde).map { it.toChangeDto() },
         lancamentos = database.lancamentoDao().atualizadosDesde(desde).map { it.toChangeDto() },
+        referenciasSaldoVoucher = database.referenciaSaldoVoucherDao().atualizadasDesde(desde).map { it.toChangeDto() },
+        recargasProgramadasVoucher = database.recargaProgramadaVoucherDao().atualizadasDesde(desde).map { it.toChangeDto() },
     )
 
     private suspend fun aplicarAliases(aliases: List<PublicIdAliasDto>) {
@@ -100,6 +126,7 @@ class SyncEngine @Inject constructor(
         }
 
         database.withTransaction {
+            val faturasAfetadas = linkedSetOf<String>()
             for (alias in aliases) {
                 val duplicado = database.lancamentoDao().buscar(alias.publicId)
                 val dono = database.lancamentoDao().buscar(alias.ownerPublicId)
@@ -109,12 +136,17 @@ class SyncEngine @Inject constructor(
                     if (dono.textoBruto == null && textoDoDuplicado != null) {
                         database.lancamentoDao().definirTextoBruto(dono.publicId, textoDoDuplicado)
                     }
+                    duplicado.faturaPublicId?.let { faturasAfetadas.add(it) }
+                    dono.faturaPublicId?.let { faturasAfetadas.add(it) }
                     database.lancamentoDao().repointarCompraPai(de = duplicado.publicId, para = dono.publicId)
                     database.lancamentoDao().repointarEstorno(de = duplicado.publicId, para = dono.publicId)
                     database.faturaDao().repointarPagamento(de = duplicado.publicId, para = dono.publicId)
+                    database.referenciaSaldoVoucherDao().repointarLancamento(de = duplicado.publicId, para = dono.publicId)
+                    database.recargaProgramadaVoucherDao().repointarLancamento(de = duplicado.publicId, para = dono.publicId)
                     database.lancamentoDao().apagar(duplicado.publicId)
                 }
             }
+            reconciliadorDeFaturas.recalcularTotais(faturasAfetadas)
         }
     }
 }

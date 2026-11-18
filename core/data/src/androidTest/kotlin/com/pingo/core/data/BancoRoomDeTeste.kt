@@ -8,17 +8,35 @@ import com.pingo.core.auth.StoredTokens
 import com.pingo.core.auth.TokenStore
 import com.pingo.core.auth.UsuarioAutenticado
 import com.pingo.core.common.AppDispatchers
+import com.pingo.core.data.assinatura.AgendadorDeAvisosOpcional
 import com.pingo.core.data.categoria.CategoriaAprendida
 import com.pingo.core.data.detalhe.EditarLancamento
 import com.pingo.core.data.detalhe.MarcarTransferencia
+import com.pingo.core.data.fatura.CompletarDatasDoCartaoUseCase
+import com.pingo.core.data.impl.AssinaturaRepositoryImpl
 import com.pingo.core.data.impl.CategoriaRepositoryImpl
 import com.pingo.core.data.impl.ContaRepositoryImpl
+import com.pingo.core.data.impl.ContasFinanceiroProjectionImpl
+import com.pingo.core.data.impl.ContextoDeCaptura
+import com.pingo.core.data.impl.CoordenadorDeContaFinanceiroImpl
+import com.pingo.core.data.impl.FontesContasProjection
+import com.pingo.core.data.impl.InicioFinanceiroProjectionImpl
 import com.pingo.core.data.impl.InstrumentoRepositoryImpl
 import com.pingo.core.data.impl.LancamentoRepositoryImpl
 import com.pingo.core.data.impl.ProcessadorDeCapturaImpl
+import com.pingo.core.data.impl.ReconciliadorDeAssinaturasLocal
+import com.pingo.core.data.impl.ReconciliadorDeFaturasLocal
+import com.pingo.core.data.impl.ReconciliadorDeVouchersLocal
+import com.pingo.core.data.impl.ReconciliadorFinanceiroImpl
+import com.pingo.core.data.impl.ReconciliadorVoucherCapturaImpl
 import com.pingo.core.data.impl.RegraCategoriaRepositoryImpl
+import com.pingo.core.data.impl.RelatoriosProjectionImpl
 import com.pingo.core.data.impl.RoomTransacaoLocal
 import com.pingo.core.data.manual.RegistrarLancamentoManual
+import com.pingo.core.data.revisao.ConfirmarPendencias
+import com.pingo.core.data.voucher.AjustarSaldoVoucherUseCase
+import com.pingo.core.data.voucher.MaterializarRecargasVencidasUseCase
+import com.pingo.core.data.voucher.ResolverRecargaVoucherUseCase
 import com.pingo.core.database.PingoDatabase
 import com.pingo.core.database.entity.CategoriaEntity
 import com.pingo.core.database.entity.ContaEntity
@@ -41,12 +59,22 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withTimeout
 import java.time.Clock
 import java.time.Instant
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
+internal class RelogioDeTeste(var instante: Instant) : Clock() {
+    override fun getZone(): ZoneId = ZoneId.of("America/Sao_Paulo")
+
+    override fun withZone(zone: ZoneId): Clock = this
+
+    override fun instant(): Instant = instante
+}
+
 internal class BancoRoomDeTeste(private val context: Context, nomeArquivo: String) {
     val agora: Instant = Instant.parse("2026-11-10T12:00:00Z")
+    val relogio = RelogioDeTeste(agora)
     val clock: Clock = Clock.fixed(agora, ZoneOffset.UTC)
     private val queryExecutor: ExecutorService = Executors.newFixedThreadPool(4)
     private val transactionExecutor: ExecutorService = Executors.newFixedThreadPool(2)
@@ -137,6 +165,175 @@ internal class BancoRoomDeTeste(private val context: Context, nomeArquivo: Strin
         transacaoLocal = transacao,
         clock = clock,
     )
+
+    val coordenadorConta = CoordenadorDeContaFinanceiroImpl(
+        configuracaoCartaoDao = database.configuracaoCartaoDao(),
+        referenciaDao = database.referenciaSaldoVoucherDao(),
+    )
+
+    val reconciliadorDeFaturas = ReconciliadorDeFaturasLocal(
+        instrumentoDao = database.instrumentoDao(),
+        configuracaoCartaoDao = database.configuracaoCartaoDao(),
+        faturaDao = database.faturaDao(),
+        lancamentoDao = database.lancamentoDao(),
+        clock = relogio,
+    )
+
+    val reconciliadorDeVouchers = ReconciliadorDeVouchersLocal(
+        instrumentoDao = database.instrumentoDao(),
+        referenciaDao = database.referenciaSaldoVoucherDao(),
+        recargaDao = database.recargaProgramadaVoucherDao(),
+        clock = relogio,
+    )
+
+    val reconciliadorDeAssinaturas = ReconciliadorDeAssinaturasLocal(
+        assinaturaDao = database.assinaturaDao(),
+        lancamentoDao = database.lancamentoDao(),
+        categoriaDao = database.categoriaDao(),
+        agendadorDeAvisos = AgendadorDeAvisosOpcional(),
+        clock = relogio,
+    )
+
+    val reconciliadorFinanceiro = ReconciliadorFinanceiroImpl(
+        faturas = reconciliadorDeFaturas,
+        vouchers = reconciliadorDeVouchers,
+        assinaturas = reconciliadorDeAssinaturas,
+    )
+
+    val lancamentosF2 = LancamentoRepositoryImpl(
+        lancamentoDao = database.lancamentoDao(),
+        transacaoLocal = roomTx,
+        reconciliador = reconciliadorFinanceiro,
+    )
+
+    val reconciliadorVoucherCaptura = ReconciliadorVoucherCapturaImpl(
+        recargaDao = database.recargaProgramadaVoucherDao(),
+        lancamentoDao = database.lancamentoDao(),
+    )
+
+    fun contasF2(): ContaRepositoryImpl = ContaRepositoryImpl(
+        contaDao = database.contaDao(),
+        instrumentoDao = database.instrumentoDao(),
+        transacao = roomTx,
+        financeiro = coordenadorConta,
+    )
+
+    fun processadorF2(): ProcessadorDeCapturaImpl = ProcessadorDeCapturaImpl(
+        lancamentoRepository = lancamentosF2,
+        instrumentoRepository = instrumentoRepository,
+        categoriaRepository = categoriaRepository,
+        categoriaAprendida = categoriaAprendida,
+        contexto = ContextoDeCaptura(roomTx, relogio, dispatchers, reconciliadorVoucherCaptura),
+    )
+
+    fun manualF2(): RegistrarLancamentoManual = RegistrarLancamentoManual(
+        lancamentoRepository = lancamentosF2,
+        instrumentoRepository = instrumentoRepository,
+        transacaoLocal = roomTx,
+        clock = relogio,
+    )
+
+    fun editorF2(): EditarLancamento = EditarLancamento(
+        lancamentoRepository = lancamentosF2,
+        instrumentoRepository = instrumentoRepository,
+        categoriaRepository = categoriaRepository,
+        categoriaAprendida = categoriaAprendida,
+        transacaoLocal = roomTx,
+        clock = relogio,
+    )
+
+    fun marcadorF2(): MarcarTransferencia = MarcarTransferencia(
+        lancamentoRepository = lancamentosF2,
+        instrumentoRepository = instrumentoRepository,
+        transacaoLocal = roomTx,
+        clock = relogio,
+    )
+
+    fun confirmarF2(): ConfirmarPendencias = ConfirmarPendencias(
+        lancamentoRepository = lancamentosF2,
+        instrumentoRepository = instrumentoRepository,
+        clock = relogio,
+        transacaoLocal = roomTx,
+    )
+
+    fun completarDatasF2(): CompletarDatasDoCartaoUseCase = CompletarDatasDoCartaoUseCase(
+        transacaoLocal = roomTx,
+        instrumentoDao = database.instrumentoDao(),
+        configuracaoCartaoDao = database.configuracaoCartaoDao(),
+        reconciliadorDeFaturas = reconciliadorDeFaturas,
+        clock = relogio,
+    )
+
+    fun ajustarSaldoF2(): AjustarSaldoVoucherUseCase = AjustarSaldoVoucherUseCase(
+        transacaoLocal = roomTx,
+        instrumentoDao = database.instrumentoDao(),
+        referenciaDao = database.referenciaSaldoVoucherDao(),
+        lancamentoDao = database.lancamentoDao(),
+        clock = relogio,
+    )
+
+    fun materializarRecargasF2(): MaterializarRecargasVencidasUseCase = MaterializarRecargasVencidasUseCase(
+        transacaoLocal = roomTx,
+        instrumentoDao = database.instrumentoDao(),
+        recargaDao = database.recargaProgramadaVoucherDao(),
+        lancamentoDao = database.lancamentoDao(),
+        categoriaDao = database.categoriaDao(),
+        clock = relogio,
+    )
+
+    fun resolverRecargaF2(): ResolverRecargaVoucherUseCase = ResolverRecargaVoucherUseCase(
+        transacaoLocal = roomTx,
+        lancamentoDao = database.lancamentoDao(),
+        instrumentoDao = database.instrumentoDao(),
+        recargaDao = database.recargaProgramadaVoucherDao(),
+        categoriaDao = database.categoriaDao(),
+        reconciliador = reconciliadorFinanceiro,
+        clock = relogio,
+    )
+
+    fun assinaturasF2(): AssinaturaRepositoryImpl = AssinaturaRepositoryImpl(
+        assinaturaDao = database.assinaturaDao(),
+        lancamentoDao = database.lancamentoDao(),
+        categoriaDao = database.categoriaDao(),
+        transacaoLocal = roomTx,
+        agendadorDeAvisos = AgendadorDeAvisosOpcional(),
+        clock = relogio,
+    )
+
+    fun contasProjectionF2(): ContasFinanceiroProjectionImpl = ContasFinanceiroProjectionImpl(
+        fontes = FontesContasProjection(
+            contaDao = database.contaDao(),
+            instrumentoDao = database.instrumentoDao(),
+            faturaDao = database.faturaDao(),
+            configuracaoCartaoDao = database.configuracaoCartaoDao(),
+            referenciaDao = database.referenciaSaldoVoucherDao(),
+            recargaDao = database.recargaProgramadaVoucherDao(),
+            lancamentoDao = database.lancamentoDao(),
+        ),
+        materializarRecargasVencidas = materializarRecargasF2(),
+        clock = relogio,
+    )
+
+    fun inicioProjectionF2(): InicioFinanceiroProjectionImpl = InicioFinanceiroProjectionImpl(
+        contasProjection = contasProjectionF2(),
+        instrumentoDao = database.instrumentoDao(),
+    )
+
+    fun relatoriosProjectionF2(): RelatoriosProjectionImpl = RelatoriosProjectionImpl(
+        lancamentoDao = database.lancamentoDao(),
+        categoriaDao = database.categoriaDao(),
+    )
+
+    suspend fun semearCategoriasF2() {
+        database.categoriaDao().upsertAll(
+            listOf(
+                CategoriaEntity("cat-outros-despesa", "Outros", TipoCategoria.DESPESA, true, false, agora, agora, null),
+                CategoriaEntity("cat-assinaturas", "Assinaturas", TipoCategoria.DESPESA, true, false, agora, agora, null),
+                CategoriaEntity("cat-beneficio-receita", "Benefício", TipoCategoria.RECEITA, true, false, agora, agora, null),
+                CategoriaEntity("cat-outros-receita", "Outros", TipoCategoria.RECEITA, true, false, agora, agora, null),
+            ),
+        )
+    }
 
     suspend fun semearCategoriasPadrao() {
         database.categoriaDao().upsertAll(

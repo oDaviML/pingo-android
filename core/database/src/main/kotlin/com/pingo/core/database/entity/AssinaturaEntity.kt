@@ -1,6 +1,7 @@
 package com.pingo.core.database.entity
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.pingo.core.model.StatusAssinatura
@@ -9,7 +10,20 @@ import java.time.LocalDate
 
 @Entity(
     tableName = "assinaturas",
-    indices = [Index("atualizadoEm"), Index("excluidoEm")],
+    foreignKeys = [
+        ForeignKey(
+            entity = InstrumentoEntity::class,
+            parentColumns = ["publicId"],
+            childColumns = ["instrumentoPublicId"],
+            onDelete = ForeignKey.NO_ACTION,
+        ),
+    ],
+    indices = [
+        Index("instrumentoPublicId"),
+        Index("instrumentoPublicId", "estabelecimentoNormalizado"),
+        Index("atualizadoEm"),
+        Index("excluidoEm"),
+    ],
 )
 data class AssinaturaEntity(
     @PrimaryKey val publicId: String,
@@ -22,4 +36,5 @@ data class AssinaturaEntity(
     val criadoEm: Instant,
     val atualizadoEm: Instant,
     val excluidoEm: Instant?,
+    val instrumentoPublicId: String? = null,
 )

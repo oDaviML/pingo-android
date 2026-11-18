@@ -176,6 +176,7 @@ class PingoDatabaseMigrationTest {
             PingoMigrations.MIGRACAO_2_3,
             PingoMigrations.MIGRACAO_3_4,
             PingoMigrations.MIGRACAO_4_5,
+            PingoMigrations.MIGRACAO_5_6,
         )
 
         migrado
@@ -196,6 +197,94 @@ class PingoDatabaseMigrationTest {
                 assertEquals("lancamento-1", cursor.getString(2))
                 assertTrue(cursor.isNull(4))
             }
+
+        migrado.close()
+    }
+
+    @Test
+    fun migracaoDaVersao5Para6PreservaDadosLegadosEAdicionaTabelasF2() {
+        helper.createDatabase(DATABASE_NAME, 5).use { database ->
+            database.execSQL(INSERCAO_NA_VERSAO_4_CONTA)
+            database.execSQL(INSERCAO_NA_VERSAO_5_CARTAO_INCOMPLETO)
+            database.execSQL(INSERCAO_NA_VERSAO_5_VOUCHER)
+            database.execSQL(INSERCAO_NA_VERSAO_5_ASSINATURA_LEGADA)
+            database.execSQL(INSERCAO_NA_VERSAO_5_LANCAMENTO_COM_ASSINATURA)
+        }
+
+        val migrado = helper.runMigrationsAndValidate(
+            DATABASE_NAME,
+            6,
+            true,
+            PingoMigrations.MIGRACAO_5_6,
+        )
+
+        migrado
+            .query(
+                "SELECT publicId, fechamentoDia, vencimentoDia FROM instrumentos WHERE publicId = 'inst-credito-incompleto'",
+            )
+            .use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertTrue(cursor.isNull(1))
+                assertTrue(cursor.isNull(2))
+            }
+
+        migrado
+            .query(
+                "SELECT publicId, instrumentoPublicId, estabelecimentoNormalizado FROM assinaturas WHERE publicId = 'assinatura-legada'",
+            )
+            .use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals("assinatura-legada", cursor.getString(0))
+                assertTrue(cursor.isNull(1))
+                assertEquals("SPOTIFY", cursor.getString(2))
+            }
+
+        migrado
+            .query(
+                "SELECT publicId, assinaturaPublicId, estabelecimentoNormalizado, beneficio, saldoObservadoCentavos " +
+                    "FROM lancamentos WHERE publicId = 'lanc-legado-sub'",
+            )
+            .use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals("assinatura-legada", cursor.getString(1))
+                assertTrue(cursor.isNull(2))
+                assertTrue(cursor.isNull(3))
+                assertTrue(cursor.isNull(4))
+            }
+
+        migrado.execSQL(
+            """
+            INSERT INTO configuracoes_cartao (
+                publicId, instrumentoPublicId, vigenciaInicio, fechamentoDia, vencimentoDia,
+                criadoEm, atualizadoEm, excluidoEm
+            ) VALUES (
+                'cfg-1', 'inst-credito-incompleto', 1762788000000, 10, 17,
+                1762788000000, 1762788000000, NULL
+            )
+            """.trimIndent(),
+        )
+        migrado.execSQL(
+            """
+            INSERT INTO referencias_saldo_voucher (
+                publicId, instrumentoPublicId, tipoReferencia, saldoCentavos, deltaCentavos,
+                instanteReferencia, lancamentoPublicId, criadoEm, atualizadoEm, excluidoEm
+            ) VALUES (
+                'ref-1', 'inst-voucher', 'ABERTURA', 50000, NULL,
+                1762788000000, NULL, 1762788000000, 1762788000000, NULL
+            )
+            """.trimIndent(),
+        )
+        migrado.execSQL(
+            """
+            INSERT INTO recargas_programadas_voucher (
+                publicId, instrumentoPublicId, beneficio, competenciaMes, dataPrevista,
+                valorPrevistoCentavos, status, lancamentoPublicId, criadoEm, atualizadoEm, excluidoEm
+            ) VALUES (
+                'rec-1', 'inst-voucher', 'VA', 21123, 21127,
+                60000, 'PENDENTE', NULL, 1762788000000, 1762788000000, NULL
+            )
+            """.trimIndent(),
+        )
 
         migrado.close()
     }
@@ -316,5 +405,51 @@ class PingoDatabaseMigrationTest {
             "index_lancamentos_excluidoEm",
             "index_lancamentos_hashDuplicata",
         )
+        const val INSERCAO_NA_VERSAO_5_CARTAO_INCOMPLETO = """
+            INSERT INTO instrumentos (
+                publicId, contaPublicId, tipo, apelido, ultimosDigitos, arquivado, fechamentoDia, vencimentoDia,
+                beneficio, saldoCentavos, diaRecarga, valorRecargaCentavos, limiteCreditoCentavos,
+                criadoEm, atualizadoEm, excluidoEm, arquivadoPorCascata
+            ) VALUES (
+                'inst-credito-incompleto', 'conta-1', 'CREDITO', 'Cartão Legado', '4321', 0, NULL, NULL,
+                NULL, NULL, NULL, NULL, 500000,
+                1762788000000, 1762788000000, NULL, 0
+            )
+        """
+        const val INSERCAO_NA_VERSAO_5_VOUCHER = """
+            INSERT INTO instrumentos (
+                publicId, contaPublicId, tipo, apelido, ultimosDigitos, arquivado, fechamentoDia, vencimentoDia,
+                beneficio, saldoCentavos, diaRecarga, valorRecargaCentavos, limiteCreditoCentavos,
+                criadoEm, atualizadoEm, excluidoEm, arquivadoPorCascata
+            ) VALUES (
+                'inst-voucher', 'conta-1', 'VOUCHER', 'Caju VA', NULL, 0, NULL, NULL,
+                'VA', 50000, 5, 60000, NULL,
+                1762788000000, 1762788000000, NULL, 0
+            )
+        """
+        const val INSERCAO_NA_VERSAO_5_ASSINATURA_LEGADA = """
+            INSERT INTO assinaturas (
+                publicId, estabelecimento, estabelecimentoNormalizado, valorReferenciaCentavos,
+                ultimaCobranca, proximaCobrancaEstimada, status, criadoEm, atualizadoEm, excluidoEm
+            ) VALUES (
+                'assinatura-legada', 'Spotify', 'SPOTIFY', 2190,
+                21092, 21123, 'CONFIRMADA', 1762788000000, 1762788000000, NULL
+            )
+        """
+        const val INSERCAO_NA_VERSAO_5_LANCAMENTO_COM_ASSINATURA = """
+            INSERT INTO lancamentos (
+                publicId, instrumentoPublicId, categoriaPublicId, faturaPublicId, assinaturaPublicId,
+                compraPaiPublicId, estornoDePublicId, transferenciaId, valorCentavos, dataHora, tipo,
+                tipoSemTransferencia, estabelecimento, status, origem, instituicaoOrigem, confianca,
+                motivoPendencia, hashDuplicata, observacao, parcelaNumero, totalParcelas,
+                valorTotalCompraCentavos, criadoEm, atualizadoEm, excluidoEm, textoBruto
+            ) VALUES (
+                'lanc-legado-sub', 'inst-credito-incompleto', NULL, NULL, 'assinatura-legada',
+                NULL, NULL, NULL, 2190, 1762788000000, 'DESPESA',
+                NULL, 'Spotify', 'CONFIRMADO', 'MANUAL', 'NUBANK', 1.0,
+                NULL, NULL, NULL, 1, 1,
+                NULL, 1762788000000, 1762788000000, NULL, NULL
+            )
+        """
     }
 }

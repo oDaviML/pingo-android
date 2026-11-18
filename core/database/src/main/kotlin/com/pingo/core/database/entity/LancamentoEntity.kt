@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.pingo.core.model.BeneficioVoucher
 import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.OrigemLancamento
 import com.pingo.core.model.StatusLancamento
@@ -61,6 +62,8 @@ import java.time.Instant
         Index("atualizadoEm"),
         Index("excluidoEm"),
         Index("hashDuplicata"),
+        Index("excluidoEm", "status", "tipo", "dataHora"),
+        Index("estabelecimentoNormalizado"),
     ],
 )
 data class LancamentoEntity(
@@ -91,4 +94,7 @@ data class LancamentoEntity(
     val atualizadoEm: Instant,
     val excluidoEm: Instant?,
     val textoBruto: String?,
+    val estabelecimentoNormalizado: String? = null,
+    val beneficio: BeneficioVoucher? = null,
+    val saldoObservadoCentavos: Long? = null,
 )

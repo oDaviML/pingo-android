@@ -13,7 +13,9 @@ import com.pingo.core.model.MotivoPendencia
 import com.pingo.core.model.OrigemLancamento
 import com.pingo.core.model.StatusLancamento
 import com.pingo.core.model.TipoCategoria
+import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.assinatura.NormalizadorDeAssinatura
 import com.pingo.core.model.direcaoDaTransferencia
 import com.pingo.core.model.direcaoOposta
 import kotlinx.coroutines.flow.first
@@ -165,6 +167,11 @@ class EditarLancamento @Inject constructor(
         val agora = clock.instant()
         val estabelecimento = edicao.estabelecimento?.trim()?.takeIf { it.isNotEmpty() }
         val motivo = motivoReavaliado(original, instrumento, categoria, estabelecimento)
+        val beneficioAtualizado = if (instrumento?.tipo == TipoInstrumento.VOUCHER && original.beneficio == null) {
+            instrumento.beneficio
+        } else {
+            original.beneficio
+        }
         val lancamento = original.copy(
             tipo = edicao.tipo,
             valorCentavos = edicao.valorCentavos,
@@ -178,6 +185,8 @@ class EditarLancamento @Inject constructor(
             transferenciaId = null,
             tipoSemTransferencia = null,
             atualizadoEm = agora,
+            estabelecimentoNormalizado = NormalizadorDeAssinatura.normalizar(estabelecimento)?.take(LIMITE_NORMALIZADO),
+            beneficio = beneficioAtualizado,
         )
 
         lancamentoRepository.salvar(lancamento)
@@ -265,6 +274,7 @@ class EditarLancamento @Inject constructor(
         estabelecimento: String?,
     ): MotivoPendencia? = when {
         original.status == StatusLancamento.CONFIRMADO -> null
+        original.motivoPendencia == MotivoPendencia.DIVERGENCIA_RECARGA.name -> MotivoPendencia.DIVERGENCIA_RECARGA
         instrumento == null -> motivoDeInstrumento(original.motivoPendencia)
         original.motivoPendencia == MotivoPendencia.MOEDA_ESTRANGEIRA.name -> MotivoPendencia.MOEDA_ESTRANGEIRA
         original.motivoPendencia == MotivoPendencia.POSSIVEL_DUPLICATA.name -> MotivoPendencia.POSSIVEL_DUPLICATA
@@ -273,12 +283,10 @@ class EditarLancamento @Inject constructor(
         else -> null
     }
 
-    private fun motivoDeInstrumento(motivo: String?): MotivoPendencia = if (motivo ==
-        MotivoPendencia.INSTRUMENTO_AMBIGUO.name
-    ) {
-        MotivoPendencia.INSTRUMENTO_AMBIGUO
-    } else {
-        MotivoPendencia.INSTRUMENTO_NAO_ENCONTRADO
+    private fun motivoDeInstrumento(motivo: String?): MotivoPendencia = when (motivo) {
+        MotivoPendencia.INSTRUMENTO_AMBIGUO.name -> MotivoPendencia.INSTRUMENTO_AMBIGUO
+        MotivoPendencia.BENEFICIO_AMBIGUO.name -> MotivoPendencia.BENEFICIO_AMBIGUO
+        else -> MotivoPendencia.INSTRUMENTO_NAO_ENCONTRADO
     }
 
     private fun statusDe(original: StatusLancamento, motivo: MotivoPendencia?): StatusLancamento =
@@ -297,5 +305,9 @@ class EditarLancamento @Inject constructor(
         }
 
         categoriaAprendida.aprender(estabelecimento, categoria.publicId, agora)
+    }
+
+    private companion object {
+        const val LIMITE_NORMALIZADO = 200
     }
 }

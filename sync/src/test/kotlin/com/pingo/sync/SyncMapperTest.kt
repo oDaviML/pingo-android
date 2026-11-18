@@ -1,18 +1,29 @@
 package com.pingo.sync
 
+import com.pingo.core.database.entity.AssinaturaEntity
+import com.pingo.core.database.entity.ConfiguracaoCartaoEntity
 import com.pingo.core.database.entity.InstrumentoEntity
 import com.pingo.core.database.entity.LancamentoEntity
+import com.pingo.core.database.entity.RecargaProgramadaVoucherEntity
+import com.pingo.core.database.entity.ReferenciaSaldoVoucherEntity
 import com.pingo.core.model.BeneficioVoucher
 import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.OrigemLancamento
+import com.pingo.core.model.StatusAssinatura
 import com.pingo.core.model.StatusLancamento
 import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.voucher.StatusRecargaProgramada
+import com.pingo.core.model.voucher.TipoReferenciaSaldoVoucher
+import com.pingo.core.network.sync.AssinaturaSnapshotDto
 import com.pingo.core.network.sync.CampoPresenca
+import com.pingo.core.network.sync.ConfiguracaoCartaoSnapshotDto
 import com.pingo.core.network.sync.InstrumentoChangeDto
 import com.pingo.core.network.sync.InstrumentoSnapshotDto
 import com.pingo.core.network.sync.LancamentoChangeDto
 import com.pingo.core.network.sync.LancamentoSnapshotDto
+import com.pingo.core.network.sync.RecargaProgramadaVoucherSnapshotDto
+import com.pingo.core.network.sync.ReferenciaSaldoVoucherSnapshotDto
 import com.pingo.core.network.sync.jsonDeSync
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
@@ -21,6 +32,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
+import java.time.LocalDate
 
 class SyncMapperTest {
     @Test
@@ -422,6 +434,143 @@ class SyncMapperTest {
         excluidoEm = null,
         textoBruto = textoBruto,
     )
+
+    @Test
+    fun `round trip F2 mapeia configuracao cartao`() {
+        val inst = Instant.parse("2026-11-10T12:00:00Z")
+        val cfg = ConfiguracaoCartaoEntity("cfg-1", "inst-1", inst, 5, 12, inst, inst, null)
+        val cfgDto = cfg.toChangeDto()
+        assertEquals(5, cfgDto.fechamentoDia)
+        assertEquals(12, cfgDto.vencimentoDia)
+        val cfgVolta = ConfiguracaoCartaoSnapshotDto(
+            publicId = cfgDto.publicId,
+            instrumentoPublicId = cfgDto.instrumentoPublicId,
+            vigenciaInicio = cfgDto.vigenciaInicio,
+            fechamentoDia = cfgDto.fechamentoDia,
+            vencimentoDia = cfgDto.vencimentoDia,
+            criadoEm = inst.toString(),
+            atualizadoEm = inst.toString(),
+        ).toEntity()
+        assertEquals(cfg, cfgVolta)
+    }
+
+    @Test
+    fun `round trip F2 mapeia referencia saldo voucher com centavos`() {
+        val inst = Instant.parse("2026-11-10T12:00:00Z")
+        val ref = ReferenciaSaldoVoucherEntity(
+            publicId = "ref-1",
+            instrumentoPublicId = "inst-2",
+            tipoReferencia = TipoReferenciaSaldoVoucher.OBSERVADO_APOS_TRANSACAO,
+            saldoCentavos = 45000L,
+            deltaCentavos = null,
+            instanteReferencia = inst,
+            lancamentoPublicId = "lanc-1",
+            criadoEm = inst,
+            atualizadoEm = inst,
+            excluidoEm = null,
+        )
+        val refDto = ref.toChangeDto()
+        assertEquals("Observado", refDto.tipoReferencia)
+        assertEquals(45000L, refDto.saldoCentavos)
+        val refVolta = ReferenciaSaldoVoucherSnapshotDto(
+            publicId = refDto.publicId,
+            instrumentoPublicId = refDto.instrumentoPublicId,
+            tipoReferencia = refDto.tipoReferencia,
+            saldoCentavos = refDto.saldoCentavos,
+            deltaCentavos = refDto.deltaCentavos,
+            instanteReferencia = refDto.instanteReferencia,
+            lancamentoPublicId = refDto.lancamentoPublicId,
+            criadoEm = inst.toString(),
+            atualizadoEm = inst.toString(),
+        ).toEntity()
+        assertEquals(ref, refVolta)
+    }
+
+    @Test
+    fun `round trip F2 mapeia recarga programada voucher`() {
+        val inst = Instant.parse("2026-11-10T12:00:00Z")
+        val rec = RecargaProgramadaVoucherEntity(
+            publicId = "rec-1",
+            instrumentoPublicId = "inst-2",
+            beneficio = BeneficioVoucher.VA,
+            competenciaMes = LocalDate.of(2026, 11, 1),
+            dataPrevista = LocalDate.of(2026, 11, 5),
+            valorPrevistoCentavos = 60000L,
+            status = StatusRecargaProgramada.SUBSTITUIDA,
+            lancamentoPublicId = "lanc-1",
+            criadoEm = inst,
+            atualizadoEm = inst,
+            excluidoEm = null,
+        )
+        val recDto = rec.toChangeDto()
+        assertEquals("Substituida", recDto.status)
+        val recVolta = RecargaProgramadaVoucherSnapshotDto(
+            publicId = recDto.publicId,
+            instrumentoPublicId = recDto.instrumentoPublicId,
+            beneficio = CampoPresenca.de(recDto.beneficio),
+            competenciaMes = recDto.competenciaMes,
+            dataPrevista = recDto.dataPrevista,
+            valorPrevistoCentavos = recDto.valorPrevistoCentavos,
+            status = recDto.status,
+            lancamentoPublicId = recDto.lancamentoPublicId,
+            criadoEm = inst.toString(),
+            atualizadoEm = inst.toString(),
+        ).toEntity()
+        assertEquals(rec, recVolta)
+    }
+
+    @Test
+    fun `snapshot legado preserva instrumentoPublicId de assinatura quando ausente`() {
+        val inst = Instant.parse("2026-11-10T12:00:00Z")
+        val assinaturaLocal = AssinaturaEntity(
+            publicId = "sub-1",
+            estabelecimento = "Spotify",
+            estabelecimentoNormalizado = "SPOTIFY",
+            valorReferenciaCentavos = 2190L,
+            ultimaCobranca = LocalDate.of(2026, 11, 1),
+            proximaCobrancaEstimada = LocalDate.of(2026, 12, 1),
+            status = StatusAssinatura.CONFIRMADA,
+            criadoEm = inst,
+            atualizadoEm = inst,
+            excluidoEm = null,
+            instrumentoPublicId = "inst-cartao",
+        )
+        val subLegada = AssinaturaSnapshotDto(
+            publicId = "sub-1",
+            estabelecimento = "Spotify",
+            estabelecimentoNormalizado = "SPOTIFY",
+            valorReferencia = 21.9,
+            status = "Confirmada",
+            criadoEm = inst.toString(),
+            atualizadoEm = inst.plusSeconds(10).toString(),
+        ).toEntity(assinaturaLocal)
+        assertEquals("inst-cartao", subLegada.instrumentoPublicId)
+    }
+
+    @Test
+    fun `snapshot legado preserva campos F2 e textoBruto de lancamento`() {
+        val inst = Instant.parse("2026-11-10T12:00:00Z")
+        val lancLocal = lancamentoEntity(textoBruto = TEXTO_BRUTO).copy(
+            estabelecimentoNormalizado = "CLARO",
+            beneficio = BeneficioVoucher.VR,
+            saldoObservadoCentavos = 32000L,
+        )
+        val lancLegado = LancamentoSnapshotDto(
+            publicId = "lancamento-1",
+            valor = 37.90,
+            dataHora = inst.toString(),
+            tipo = "Despesa",
+            status = "Confirmado",
+            origem = "Notificacao",
+            confianca = 1.0,
+            criadoEm = inst.toString(),
+            atualizadoEm = inst.plusSeconds(10).toString(),
+        ).toEntity(lancLocal)
+        assertEquals("CLARO", lancLegado.estabelecimentoNormalizado)
+        assertEquals(BeneficioVoucher.VR, lancLegado.beneficio)
+        assertEquals(32000L, lancLegado.saldoObservadoCentavos)
+        assertEquals(TEXTO_BRUTO, lancLegado.textoBruto)
+    }
 
     private companion object {
         const val TEXTO_BRUTO = "Olá! Compra aprovada de R$ 37,90 em CLARO *31987905690 no dia 10/11 às 00:55"

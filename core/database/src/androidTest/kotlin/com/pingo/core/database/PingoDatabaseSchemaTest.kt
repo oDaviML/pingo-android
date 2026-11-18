@@ -49,6 +49,9 @@ class PingoDatabaseSchemaTest {
             "faturas",
             "assinaturas",
             "regras_parser",
+            "configuracoes_cartao",
+            "referencias_saldo_voucher",
+            "recargas_programadas_voucher",
         ).forEach { tabela ->
             assertTrue("Tabela ausente: $tabela", tabela in tables)
         }
@@ -66,6 +69,24 @@ class PingoDatabaseSchemaTest {
         assertTrue(
             "tipoSemTransferencia deveria existir e aceitar nulo",
             colunas.single { coluna -> coluna.nome == "tipoSemTransferencia" }.aceitaNulo,
+        )
+        assertTrue(
+            "estabelecimentoNormalizado deveria existir e aceitar nulo",
+            colunas.single { coluna -> coluna.nome == "estabelecimentoNormalizado" }.aceitaNulo,
+        )
+        assertTrue(
+            "beneficio deveria existir e aceitar nulo",
+            colunas.single { coluna -> coluna.nome == "beneficio" }.aceitaNulo,
+        )
+        assertTrue(
+            "saldoObservadoCentavos deveria existir e aceitar nulo",
+            colunas.single { coluna -> coluna.nome == "saldoObservadoCentavos" }.aceitaNulo,
+        )
+
+        val colunasDaAssinatura = colunasDe(database, "assinaturas")
+        assertTrue(
+            "instrumentoPublicId da assinatura deveria existir e aceitar nulo",
+            colunasDaAssinatura.single { coluna -> coluna.nome == "instrumentoPublicId" }.aceitaNulo,
         )
 
         val colunasDaFatura = colunasDe(database, "faturas")

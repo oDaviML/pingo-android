@@ -14,9 +14,10 @@ internal fun AssinaturaEntity.toChangeDto(): AssinaturaChangeDto = AssinaturaCha
     proximaCobrancaEstimada = proximaCobrancaEstimada?.toApiValue(),
     status = status.toApiValue(),
     excluidoEm = excluidoEm?.toApiValue(),
+    instrumentoPublicId = instrumentoPublicId,
 )
 
-internal fun AssinaturaSnapshotDto.toEntity(): AssinaturaEntity = AssinaturaEntity(
+internal fun AssinaturaSnapshotDto.toEntity(local: AssinaturaEntity? = null): AssinaturaEntity = AssinaturaEntity(
     publicId = publicId,
     estabelecimento = estabelecimento,
     estabelecimentoNormalizado = estabelecimentoNormalizado,
@@ -27,4 +28,5 @@ internal fun AssinaturaSnapshotDto.toEntity(): AssinaturaEntity = AssinaturaEnti
     criadoEm = criadoEm.toInstantValue(),
     atualizadoEm = atualizadoEm.toInstantValue(),
     excluidoEm = excluidoEm?.toInstantValue(),
+    instrumentoPublicId = instrumentoPublicId.resolver { local?.instrumentoPublicId },
 )

@@ -12,6 +12,9 @@ interface CategoriaDao {
     @Query("SELECT * FROM categorias WHERE excluidoEm IS NULL ORDER BY nome")
     fun observeAtivas(): Flow<List<CategoriaEntity>>
 
+    @Query("SELECT * FROM categorias WHERE excluidoEm IS NULL ORDER BY nome")
+    suspend fun listarAtivas(): List<CategoriaEntity>
+
     @Query("SELECT * FROM categorias WHERE publicId = :publicId")
     suspend fun buscar(publicId: String): CategoriaEntity?
 

@@ -22,6 +22,7 @@ object PingoDatabaseFactory {
                 PingoMigrations.MIGRACAO_2_3,
                 PingoMigrations.MIGRACAO_3_4,
                 PingoMigrations.MIGRACAO_4_5,
+                PingoMigrations.MIGRACAO_5_6,
             )
             .addCallback(ForeignKeysCallback)
             .build()

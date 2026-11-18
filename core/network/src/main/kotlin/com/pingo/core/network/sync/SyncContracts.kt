@@ -18,15 +18,21 @@ data class PushChangesPayload(
     val assinaturas: List<AssinaturaChangeDto> = emptyList(),
     val faturas: List<FaturaChangeDto> = emptyList(),
     val lancamentos: List<LancamentoChangeDto> = emptyList(),
+    val configuracoesCartao: List<ConfiguracaoCartaoChangeDto> = emptyList(),
+    val referenciasSaldoVoucher: List<ReferenciaSaldoVoucherChangeDto> = emptyList(),
+    val recargasProgramadasVoucher: List<RecargaProgramadaVoucherChangeDto> = emptyList(),
 ) {
     val isEmpty: Boolean
         get() = contas.isEmpty() &&
             instrumentos.isEmpty() &&
+            configuracoesCartao.isEmpty() &&
             categorias.isEmpty() &&
             regrasCategoria.isEmpty() &&
             assinaturas.isEmpty() &&
             faturas.isEmpty() &&
-            lancamentos.isEmpty()
+            lancamentos.isEmpty() &&
+            referenciasSaldoVoucher.isEmpty() &&
+            recargasProgramadasVoucher.isEmpty()
 }
 
 @Serializable
@@ -86,6 +92,42 @@ data class AssinaturaChangeDto(
     val proximaCobrancaEstimada: String? = null,
     val status: String,
     val excluidoEm: String? = null,
+    val instrumentoPublicId: String? = null,
+)
+
+@Serializable
+data class ConfiguracaoCartaoChangeDto(
+    val publicId: String,
+    val instrumentoPublicId: String,
+    val vigenciaInicio: String,
+    val fechamentoDia: Int? = null,
+    val vencimentoDia: Int? = null,
+    val excluidoEm: String? = null,
+)
+
+@Serializable
+data class ReferenciaSaldoVoucherChangeDto(
+    val publicId: String,
+    val instrumentoPublicId: String,
+    val tipoReferencia: String,
+    val saldoCentavos: Long,
+    val deltaCentavos: Long? = null,
+    val instanteReferencia: String,
+    val lancamentoPublicId: String? = null,
+    val excluidoEm: String? = null,
+)
+
+@Serializable
+data class RecargaProgramadaVoucherChangeDto(
+    val publicId: String,
+    val instrumentoPublicId: String,
+    val beneficio: String? = null,
+    val competenciaMes: String,
+    val dataPrevista: String,
+    val valorPrevistoCentavos: Long,
+    val status: String,
+    val lancamentoPublicId: String? = null,
+    val excluidoEm: String? = null,
 )
 
 @Serializable
@@ -129,6 +171,9 @@ data class LancamentoChangeDto(
     val totalParcelas: Int = 1,
     val valorTotalCompra: Double? = null,
     val excluidoEm: String? = null,
+    val estabelecimentoNormalizado: String? = null,
+    val beneficio: String? = null,
+    val saldoObservadoCentavos: Long? = null,
 )
 
 @Serializable
@@ -142,6 +187,9 @@ data class PushChangesResult(
     val lancamentos: Int = 0,
     val ignorados: Int = 0,
     val aliases: List<PublicIdAliasDto> = emptyList(),
+    val configuracoesCartao: Int = 0,
+    val referenciasSaldoVoucher: Int = 0,
+    val recargasProgramadasVoucher: Int = 0,
 )
 
 @Serializable
@@ -158,6 +206,9 @@ data class PullChangesResult(
     val assinaturas: List<AssinaturaSnapshotDto> = emptyList(),
     val faturas: List<FaturaSnapshotDto> = emptyList(),
     val lancamentos: List<LancamentoSnapshotDto> = emptyList(),
+    val configuracoesCartao: List<ConfiguracaoCartaoSnapshotDto> = emptyList(),
+    val referenciasSaldoVoucher: List<ReferenciaSaldoVoucherSnapshotDto> = emptyList(),
+    val recargasProgramadasVoucher: List<RecargaProgramadaVoucherSnapshotDto> = emptyList(),
 )
 
 @Serializable
@@ -227,6 +278,48 @@ data class AssinaturaSnapshotDto(
     val criadoEm: String,
     val atualizadoEm: String,
     val excluidoEm: String? = null,
+    val instrumentoPublicId: CampoPresenca<String> = CampoPresenca.ausente(),
+)
+
+@Serializable
+data class ConfiguracaoCartaoSnapshotDto(
+    val publicId: String,
+    val instrumentoPublicId: String,
+    val vigenciaInicio: String,
+    val fechamentoDia: Int? = null,
+    val vencimentoDia: Int? = null,
+    val criadoEm: String,
+    val atualizadoEm: String,
+    val excluidoEm: String? = null,
+)
+
+@Serializable
+data class ReferenciaSaldoVoucherSnapshotDto(
+    val publicId: String,
+    val instrumentoPublicId: String,
+    val tipoReferencia: String,
+    val saldoCentavos: Long,
+    val deltaCentavos: Long? = null,
+    val instanteReferencia: String,
+    val lancamentoPublicId: String? = null,
+    val criadoEm: String,
+    val atualizadoEm: String,
+    val excluidoEm: String? = null,
+)
+
+@Serializable
+data class RecargaProgramadaVoucherSnapshotDto(
+    val publicId: String,
+    val instrumentoPublicId: String,
+    val beneficio: CampoPresenca<String> = CampoPresenca.ausente(),
+    val competenciaMes: String,
+    val dataPrevista: String,
+    val valorPrevistoCentavos: Long,
+    val status: String,
+    val lancamentoPublicId: String? = null,
+    val criadoEm: String,
+    val atualizadoEm: String,
+    val excluidoEm: String? = null,
 )
 
 @Serializable
@@ -274,4 +367,7 @@ data class LancamentoSnapshotDto(
     val criadoEm: String,
     val atualizadoEm: String,
     val excluidoEm: String? = null,
+    val estabelecimentoNormalizado: CampoPresenca<String> = CampoPresenca.ausente(),
+    val beneficio: CampoPresenca<String> = CampoPresenca.ausente(),
+    val saldoObservadoCentavos: CampoPresenca<Long> = CampoPresenca.ausente(),
 )

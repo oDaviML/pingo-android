@@ -29,9 +29,12 @@ internal fun LancamentoEntity.toChangeDto(): LancamentoChangeDto = LancamentoCha
     totalParcelas = totalParcelas,
     valorTotalCompra = valorTotalCompraCentavos?.toApiReais(),
     excluidoEm = excluidoEm?.toApiValue(),
+    estabelecimentoNormalizado = estabelecimentoNormalizado,
+    beneficio = beneficio?.toApiValue(),
+    saldoObservadoCentavos = saldoObservadoCentavos,
 )
 
-internal fun LancamentoSnapshotDto.toEntity(): LancamentoEntity = LancamentoEntity(
+internal fun LancamentoSnapshotDto.toEntity(local: LancamentoEntity? = null): LancamentoEntity = LancamentoEntity(
     publicId = publicId,
     instrumentoPublicId = instrumentoPublicId,
     categoriaPublicId = categoriaPublicId,
@@ -58,5 +61,8 @@ internal fun LancamentoSnapshotDto.toEntity(): LancamentoEntity = LancamentoEnti
     criadoEm = criadoEm.toInstantValue(),
     atualizadoEm = atualizadoEm.toInstantValue(),
     excluidoEm = excluidoEm?.toInstantValue(),
-    textoBruto = null,
+    textoBruto = local?.textoBruto,
+    estabelecimentoNormalizado = estabelecimentoNormalizado.resolver { local?.estabelecimentoNormalizado },
+    beneficio = beneficio.resolver { local?.beneficio?.toApiValue() }?.let(::beneficioFromApi),
+    saldoObservadoCentavos = saldoObservadoCentavos.resolver { local?.saldoObservadoCentavos },
 )

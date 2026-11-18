@@ -5,6 +5,7 @@ import com.pingo.core.data.ContaRepository
 import com.pingo.core.data.TransacaoLocal
 import com.pingo.core.data.mapper.toEntity
 import com.pingo.core.data.mapper.toModel
+import com.pingo.core.data.reconciliacao.CoordenadorDeContaFinanceiro
 import com.pingo.core.database.dao.ContaDao
 import com.pingo.core.database.dao.InstrumentoDao
 import com.pingo.core.model.Conta
@@ -22,6 +23,7 @@ class ContaRepositoryImpl @Inject constructor(
     private val contaDao: ContaDao,
     private val instrumentoDao: InstrumentoDao,
     private val transacao: TransacaoLocal,
+    private val financeiro: CoordenadorDeContaFinanceiro = CoordenadorDeContaFinanceiro.NoOp,
 ) : ContaRepository {
     override fun observeContas(): Flow<List<Conta>> = contaDao.observeNaoExcluidas().map { contas -> contas.map { it.toModel() } }
 
@@ -35,9 +37,12 @@ class ContaRepositoryImpl @Inject constructor(
 
         val criadas = contas.mapIndexed { indice, conta -> conta.criar(agora, publicIds.getOrNull(indice)) }
 
+        val novosInstrumentos = criadas.flatMap { it.instrumentos }
+
         transacao.executar {
             contaDao.upsertAll(criadas.map { it.conta.toEntity() })
-            instrumentoDao.upsertAll(criadas.flatMap { it.instrumentos }.map { it.toEntity() })
+            instrumentoDao.upsertAll(novosInstrumentos.map { it.toEntity() })
+            financeiro.aoCriarInstrumentos(novosInstrumentos, agora)
         }
 
         return criadas.map { CadastroSalvo(conta = it.conta, instrumentos = it.instrumentos) }
@@ -58,10 +63,12 @@ class ContaRepositoryImpl @Inject constructor(
                 atualizadoEm = agora,
             )
 
-            val instrumentos = edicao.instrumentos.map { it.salvar(contaPublicId = conta.publicId, agora = agora) }
+            val alteracoes = edicao.instrumentos.map { it.salvarConhecendoAnterior(contaPublicId = conta.publicId, agora = agora) }
+            val instrumentos = alteracoes.map { it.second }
 
             contaDao.upsert(conta.toEntity())
             instrumentoDao.upsertAll(instrumentos.map { it.toEntity() })
+            financeiro.aoSalvarInstrumentos(alteracoes, agora)
 
             CadastroSalvo(conta = conta, instrumentos = instrumentos)
         }
@@ -105,7 +112,10 @@ class ContaRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun InstrumentoEditado.salvar(contaPublicId: String, agora: Instant): Instrumento {
+    private suspend fun InstrumentoEditado.salvarConhecendoAnterior(
+        contaPublicId: String,
+        agora: Instant,
+    ): Pair<Instrumento?, Instrumento> {
         val atual = publicId?.let { id ->
             instrumentoDao.buscar(id)
                 ?.takeIf { it.contaPublicId == contaPublicId && it.excluidoEm == null }
@@ -113,7 +123,7 @@ class ContaRepositoryImpl @Inject constructor(
                 ?: throw IllegalArgumentException("Instrumento não pertence à conta")
         }
 
-        return Instrumento(
+        val salvo = Instrumento(
             publicId = atual?.publicId ?: publicId ?: UUID.randomUUID().toString(),
             contaPublicId = contaPublicId,
             tipo = tipo,
@@ -131,5 +141,6 @@ class ContaRepositoryImpl @Inject constructor(
             criadoEm = atual?.criadoEm ?: agora,
             atualizadoEm = agora,
         )
+        return atual to salvo
     }
 }

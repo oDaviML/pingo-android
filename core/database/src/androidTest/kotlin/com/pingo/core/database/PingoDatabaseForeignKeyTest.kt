@@ -2,17 +2,25 @@ package com.pingo.core.database
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.pingo.core.database.entity.AssinaturaEntity
+import com.pingo.core.database.entity.ConfiguracaoCartaoEntity
 import com.pingo.core.database.entity.ContaEntity
 import com.pingo.core.database.entity.FaturaEntity
 import com.pingo.core.database.entity.InstrumentoEntity
 import com.pingo.core.database.entity.LancamentoEntity
+import com.pingo.core.database.entity.RecargaProgramadaVoucherEntity
+import com.pingo.core.database.entity.ReferenciaSaldoVoucherEntity
+import com.pingo.core.model.BeneficioVoucher
 import com.pingo.core.model.InstituicaoFinanceira
 import com.pingo.core.model.OrigemLancamento
+import com.pingo.core.model.StatusAssinatura
 import com.pingo.core.model.StatusFatura
 import com.pingo.core.model.StatusLancamento
 import com.pingo.core.model.TipoConta
 import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.voucher.StatusRecargaProgramada
+import com.pingo.core.model.voucher.TipoReferenciaSaldoVoucher
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -85,6 +93,92 @@ class PingoDatabaseForeignKeyTest {
 
         assertNotNull(database.lancamentoDao().buscar(LANCAMENTO_ID))
         assertEquals(LANCAMENTO_ID, database.faturaDao().buscar(FATURA_ID)?.pagamentoLancamentoPublicId)
+    }
+
+    @Test
+    fun configuracaoCartaoRequiresExistingInstrument() = runBlocking {
+        val cfg = ConfiguracaoCartaoEntity(
+            publicId = "cfg-1",
+            instrumentoPublicId = INSTRUMENTO_ID,
+            vigenciaInicio = INSTANTE,
+            fechamentoDia = 5,
+            vencimentoDia = 12,
+            criadoEm = INSTANTE,
+            atualizadoEm = INSTANTE,
+            excluidoEm = null,
+        )
+        assertTrue(runCatching { database.configuracaoCartaoDao().upsert(cfg) }.isFailure)
+
+        database.contaDao().upsert(conta())
+        database.instrumentoDao().upsert(instrumento())
+        database.configuracaoCartaoDao().upsert(cfg)
+        assertNotNull(database.configuracaoCartaoDao().buscar("cfg-1"))
+    }
+
+    @Test
+    fun voucherTablesValidateInstrumentAndLancamentoForeignKeys() = runBlocking {
+        database.contaDao().upsert(conta())
+        database.instrumentoDao().upsert(instrumento())
+
+        val refInvalida = ReferenciaSaldoVoucherEntity(
+            publicId = "ref-bad",
+            instrumentoPublicId = INSTRUMENTO_ID,
+            tipoReferencia = TipoReferenciaSaldoVoucher.OBSERVADO_APOS_TRANSACAO,
+            saldoCentavos = 10000L,
+            deltaCentavos = null,
+            instanteReferencia = INSTANTE,
+            lancamentoPublicId = "lanc-inexistente",
+            criadoEm = INSTANTE,
+            atualizadoEm = INSTANTE,
+            excluidoEm = null,
+        )
+        assertTrue(runCatching { database.referenciaSaldoVoucherDao().upsert(refInvalida) }.isFailure)
+
+        val recInvalida = RecargaProgramadaVoucherEntity(
+            publicId = "rec-bad",
+            instrumentoPublicId = "inst-inexistente",
+            beneficio = BeneficioVoucher.VA,
+            competenciaMes = LocalDate.of(2026, 11, 1),
+            dataPrevista = LocalDate.of(2026, 11, 5),
+            valorPrevistoCentavos = 50000L,
+            status = StatusRecargaProgramada.PENDENTE,
+            lancamentoPublicId = null,
+            criadoEm = INSTANTE,
+            atualizadoEm = INSTANTE,
+            excluidoEm = null,
+        )
+        assertTrue(runCatching { database.recargaProgramadaVoucherDao().upsert(recInvalida) }.isFailure)
+
+        val recSemLanc = recInvalida.copy(publicId = "rec-ok", instrumentoPublicId = INSTRUMENTO_ID)
+        database.recargaProgramadaVoucherDao().upsert(recSemLanc)
+        assertNotNull(database.recargaProgramadaVoucherDao().buscar("rec-ok"))
+    }
+
+    @Test
+    fun assinaturaAllowsNullInstrumentAndValidatesNonNullInstrument() = runBlocking {
+        val subNull = AssinaturaEntity(
+            publicId = "sub-null",
+            estabelecimento = "Netflix",
+            estabelecimentoNormalizado = "NETFLIX",
+            valorReferenciaCentavos = 5590L,
+            ultimaCobranca = null,
+            proximaCobrancaEstimada = null,
+            status = StatusAssinatura.SUGERIDA,
+            criadoEm = INSTANTE,
+            atualizadoEm = INSTANTE,
+            excluidoEm = null,
+            instrumentoPublicId = null,
+        )
+        database.assinaturaDao().upsert(subNull)
+        assertNotNull(database.assinaturaDao().buscar("sub-null"))
+
+        val subBad = subNull.copy(publicId = "sub-bad", instrumentoPublicId = "inst-inexistente")
+        assertTrue(runCatching { database.assinaturaDao().upsert(subBad) }.isFailure)
+
+        database.contaDao().upsert(conta())
+        database.instrumentoDao().upsert(instrumento())
+        database.assinaturaDao().upsert(subNull.copy(publicId = "sub-ok", instrumentoPublicId = INSTRUMENTO_ID))
+        assertNotNull(database.assinaturaDao().buscar("sub-ok"))
     }
 
     private fun conta() = ContaEntity(

@@ -16,4 +16,5 @@ data class Assinatura(
     val criadoEm: Instant,
     val atualizadoEm: Instant,
     val excluidoEm: Instant? = null,
+    val instrumentoPublicId: String? = null,
 )

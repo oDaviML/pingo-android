@@ -50,6 +50,8 @@ internal class FakeCategoriaDao(categorias: List<CategoriaEntity> = emptyList())
     override fun observeAtivas(): Flow<List<CategoriaEntity>> =
         tabela.map { categorias -> categorias.filter { it.excluidoEm == null }.sortedBy { it.nome } }
 
+    override suspend fun listarAtivas(): List<CategoriaEntity> = tabela.value.filter { it.excluidoEm == null }.sortedBy { it.nome }
+
     override suspend fun buscar(publicId: String): CategoriaEntity? = tabela.value.firstOrNull { it.publicId == publicId }
 
     override suspend fun atualizadasDesde(desde: Instant): List<CategoriaEntity> = tabela.value.filter { it.atualizadoEm >= desde }

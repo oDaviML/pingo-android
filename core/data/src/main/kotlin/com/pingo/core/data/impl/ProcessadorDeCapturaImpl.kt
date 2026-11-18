@@ -11,6 +11,8 @@ import com.pingo.core.data.captura.ProcessadorDeCaptura
 import com.pingo.core.data.captura.ResolucaoDeInstrumento
 import com.pingo.core.data.captura.ResultadoProcessamento
 import com.pingo.core.data.categoria.CategoriaAprendida
+import com.pingo.core.data.reconciliacao.ReconciliadorVoucherCaptura
+import com.pingo.core.data.reconciliacao.ResolucaoCapturaCaju
 import com.pingo.core.model.Categoria
 import com.pingo.core.model.EstabelecimentoNormalizado
 import com.pingo.core.model.InstituicaoFinanceira
@@ -21,10 +23,13 @@ import com.pingo.core.model.OrigemLancamento
 import com.pingo.core.model.StatusLancamento
 import com.pingo.core.model.TipoCategoria
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.assinatura.NormalizadorDeAssinatura
 import com.pingo.core.model.direcaoDaTransferencia
+import com.pingo.core.model.voucher.BeneficioCajuMapper
 import com.pingo.core.parser.DataHoraDoLancamento
 import com.pingo.core.parser.DirecaoPadrao
 import com.pingo.core.parser.HashDuplicata
+import com.pingo.core.parser.TipoLancamentoPadrao
 import com.pingo.core.parser.TransacaoExtraida
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
@@ -43,10 +48,28 @@ class ProcessadorDeCapturaImpl @Inject constructor(
     private val instrumentoRepository: InstrumentoRepository,
     private val categoriaRepository: CategoriaRepository,
     private val categoriaAprendida: CategoriaAprendida,
-    private val transacaoLocal: TransacaoLocal,
-    private val clock: Clock,
-    private val dispatchers: AppDispatchers,
+    private val contexto: ContextoDeCaptura,
 ) : ProcessadorDeCaptura {
+    constructor(
+        lancamentoRepository: LancamentoRepository,
+        instrumentoRepository: InstrumentoRepository,
+        categoriaRepository: CategoriaRepository,
+        categoriaAprendida: CategoriaAprendida,
+        transacaoLocal: TransacaoLocal,
+        clock: Clock,
+        dispatchers: AppDispatchers,
+    ) : this(
+        lancamentoRepository = lancamentoRepository,
+        instrumentoRepository = instrumentoRepository,
+        categoriaRepository = categoriaRepository,
+        categoriaAprendida = categoriaAprendida,
+        contexto = ContextoDeCaptura(transacaoLocal, clock, dispatchers, ReconciliadorVoucherCaptura.NoOp),
+    )
+
+    private val transacaoLocal = contexto.transacaoLocal
+    private val clock = contexto.clock
+    private val dispatchers = contexto.dispatchers
+    private val reconciliadorVoucher = contexto.reconciliadorVoucher
     private val mutex = Mutex()
 
     override suspend fun processar(captura: CapturaParaProcessar): ResultadoProcessamento = withContext(dispatchers.io) {
@@ -84,64 +107,93 @@ class ProcessadorDeCapturaImpl @Inject constructor(
         if (lancamentoRepository.buscarPorHash(hash) != null) {
             return ResultadoProcessamento.Duplicada
         }
-
-        val instrumentos = instrumentosElegiveis(captura.instituicao)
-        val categoria = resolverCategoria(captura.transacao)
         val transacao = captura.transacao
-        val resolucao = ResolucaoDeInstrumento.de(transacao.digitos, instrumentos)
-        val candidatos = resolucao.instrumento?.let { instrumento ->
-            candidatosDeTransferencia(captura, instrumento, dataHora)
-        }.orEmpty()
-        val motivo = motivoDe(transacao, resolucao, categoria)
+        val depositoCaju = captura.instituicao == InstituicaoFinanceira.CAJU && transacao.tipo == TipoLancamentoPadrao.DEPOSITO
+        val resolucaoCaju = resolverSeCaju(captura, depositoCaju, dataHora)
+        val resolucaoPadrao = if (resolucaoCaju == null) {
+            ResolucaoDeInstrumento.de(transacao.digitos, instrumentosElegiveis(captura.instituicao))
+        } else {
+            null
+        }
+        val instrumentoResolvido = resolucaoCaju?.instrumento ?: resolucaoPadrao?.instrumento
+        val motivoInstrumento = if (resolucaoCaju != null) resolucaoCaju.motivo else resolucaoPadrao?.motivo
+        val categoria = resolverCategoria(transacao, depositoCaju)
+        val candidatos = instrumentoResolvido?.let { candidatosDeTransferencia(captura, it, dataHora) }.orEmpty()
+        val motivo = motivoDe(transacao, motivoInstrumento, categoria, depositoCaju)
             ?: if (candidatos.size > 1) MotivoPendencia.TRANSFERENCIA_AMBIGUA else null
-        val par = candidatos.singleOrNull()
         val agora = clock.instant()
         val lancamento = lancamentoDe(
             DadosDoLancamento(
                 captura = captura,
-                resolucao = resolucao,
+                instrumento = instrumentoResolvido,
+                resolucaoCaju = resolucaoCaju,
+                depositoCaju = depositoCaju,
                 categoria = categoria,
                 dataHora = dataHora,
                 motivo = motivo,
                 hash = hash,
-                par = par,
+                par = candidatos.singleOrNull(),
                 agora = agora,
             ),
         )
-
-        salvar(lancamento, par)
-
+        salvar(lancamento, candidatos.singleOrNull())
+        if (resolucaoCaju != null) {
+            reconciliadorVoucher.confirmarEfeitoAposGravar(lancamento, resolucaoCaju, agora)
+        }
         return ResultadoProcessamento.Gravado(lancamento)
     }
 
-    private fun lancamentoDe(dados: DadosDoLancamento): Lancamento = Lancamento(
-        publicId = UUID.randomUUID().toString(),
-        instrumentoPublicId = dados.resolucao.instrumento?.publicId,
-        categoriaPublicId = dados.categoria?.publicId,
-        transferenciaId = dados.par?.let { UUID.randomUUID().toString() },
-        valorCentavos = dados.captura.transacao.valorCentavos,
-        dataHora = dados.dataHora,
-        tipo = if (dados.par == null) tipoDe(dados.captura.transacao.direcao) else TipoLancamento.TRANSFERENCIA,
-        tipoSemTransferencia = tipoDe(dados.captura.transacao.direcao).takeIf { dados.par != null },
-        estabelecimento = dados.captura.transacao.estabelecimento,
-        status = if (dados.motivo == null) StatusLancamento.CONFIRMADO else StatusLancamento.PENDENTE,
-        origem = OrigemLancamento.NOTIFICACAO,
-        instituicaoOrigem = dados.captura.instituicao,
-        confianca = ConfiancaDaLeitura.calcular(
-            dados.captura.transacao.valorCentavos,
-            dados.captura.transacao.estabelecimento,
-            dados.categoria,
-        ),
-        motivoPendencia = dados.motivo?.name,
-        hashDuplicata = dados.hash,
-        criadoEm = dados.agora,
-        atualizadoEm = dados.agora,
-        textoBruto = dados.captura.textoBruto,
-    )
+    private suspend fun resolverSeCaju(captura: CapturaParaProcessar, depositoCaju: Boolean, dataHora: Instant): ResolucaoCapturaCaju? {
+        if (captura.instituicao != InstituicaoFinanceira.CAJU) {
+            return null
+        }
+        return reconciliadorVoucher.resolverCaju(
+            instrumentosAtivos = instrumentosElegiveis(captura.instituicao),
+            beneficioBruto = captura.transacao.beneficio,
+            digitos = captura.transacao.digitos,
+            ehDeposito = depositoCaju,
+            valorCentavos = captura.transacao.valorCentavos,
+            dataHora = dataHora,
+        )
+    }
+
+    private fun lancamentoDe(dados: DadosDoLancamento): Lancamento {
+        val estabelecimentoExibicao = dados.captura.transacao.estabelecimento
+            ?: if (dados.depositoCaju) ESTABELECIMENTO_DEPOSITO_CAJU else null
+        return Lancamento(
+            publicId = UUID.randomUUID().toString(),
+            instrumentoPublicId = dados.instrumento?.publicId,
+            categoriaPublicId = dados.categoria?.publicId,
+            transferenciaId = dados.par?.let { UUID.randomUUID().toString() },
+            valorCentavos = dados.captura.transacao.valorCentavos,
+            dataHora = dados.dataHora,
+            tipo = if (dados.par == null) tipoDe(dados.captura.transacao.direcao) else TipoLancamento.TRANSFERENCIA,
+            tipoSemTransferencia = tipoDe(dados.captura.transacao.direcao).takeIf { dados.par != null },
+            estabelecimento = estabelecimentoExibicao,
+            status = if (dados.motivo == null) StatusLancamento.CONFIRMADO else StatusLancamento.PENDENTE,
+            origem = OrigemLancamento.NOTIFICACAO,
+            instituicaoOrigem = dados.captura.instituicao,
+            confianca = ConfiancaDaLeitura.calcular(
+                dados.captura.transacao.valorCentavos,
+                estabelecimentoExibicao,
+                dados.categoria,
+            ),
+            motivoPendencia = dados.motivo?.name,
+            hashDuplicata = dados.hash,
+            criadoEm = dados.agora,
+            atualizadoEm = dados.agora,
+            textoBruto = dados.captura.textoBruto,
+            estabelecimentoNormalizado = NormalizadorDeAssinatura.normalizar(estabelecimentoExibicao)?.take(LIMITE_NORMALIZADO),
+            beneficio = dados.resolucaoCaju?.beneficio ?: BeneficioCajuMapper.mapear(dados.captura.transacao.beneficio),
+            saldoObservadoCentavos = dados.captura.transacao.saldoCentavos,
+        )
+    }
 
     private data class DadosDoLancamento(
         val captura: CapturaParaProcessar,
-        val resolucao: ResolucaoDeInstrumento,
+        val instrumento: Instrumento?,
+        val resolucaoCaju: ResolucaoCapturaCaju?,
+        val depositoCaju: Boolean,
         val categoria: Categoria?,
         val dataHora: Instant,
         val motivo: MotivoPendencia?,
@@ -164,8 +216,14 @@ class ProcessadorDeCapturaImpl @Inject constructor(
         }
     }
 
-    private suspend fun resolverCategoria(transacao: TransacaoExtraida): Categoria? =
-        categoriaAprendida.resolver(transacao.estabelecimento) ?: categoriaPadrao(transacao.direcao)
+    private suspend fun resolverCategoria(transacao: TransacaoExtraida, depositoCaju: Boolean): Categoria? {
+        if (depositoCaju) {
+            val receitas = categoriaRepository.observeEscolhiveis().first().filter { it.tipo == TipoCategoria.RECEITA }
+            return receitas.firstOrNull { it.nome.equals(CATEGORIA_BENEFICIO, ignoreCase = true) }
+                ?: receitas.firstOrNull { it.nome.equals(CATEGORIA_PADRAO, ignoreCase = true) }
+        }
+        return categoriaAprendida.resolver(transacao.estabelecimento) ?: categoriaPadrao(transacao.direcao)
+    }
 
     private suspend fun categoriaPadrao(direcao: DirecaoPadrao): Categoria? {
         val tipo = tipoDaCategoria(direcao)
@@ -175,10 +233,16 @@ class ProcessadorDeCapturaImpl @Inject constructor(
         }
     }
 
-    private fun motivoDe(transacao: TransacaoExtraida, resolucao: ResolucaoDeInstrumento, categoria: Categoria?): MotivoPendencia? = when {
-        resolucao.motivo != null -> resolucao.motivo
+    private fun motivoDe(
+        transacao: TransacaoExtraida,
+        motivoInstrumento: MotivoPendencia?,
+        categoria: Categoria?,
+        depositoCaju: Boolean,
+    ): MotivoPendencia? = when {
+        motivoInstrumento != null -> motivoInstrumento
         transacao.moeda != MOEDA_NACIONAL -> MotivoPendencia.MOEDA_ESTRANGEIRA
-        transacao.valorCentavos <= 0 || transacao.estabelecimento.isNullOrBlank() -> MotivoPendencia.CAMPOS_INCOMPLETOS
+        transacao.valorCentavos <= 0 || (!depositoCaju && transacao.estabelecimento.isNullOrBlank()) ->
+            MotivoPendencia.CAMPOS_INCOMPLETOS
         categoria == null -> MotivoPendencia.CATEGORIA_DESCONHECIDA
         else -> null
     }
@@ -224,6 +288,9 @@ class ProcessadorDeCapturaImpl @Inject constructor(
     private companion object {
         const val MOEDA_NACIONAL = "BRL"
         const val CATEGORIA_PADRAO = "Outros"
+        const val CATEGORIA_BENEFICIO = "Benefício"
+        const val ESTABELECIMENTO_DEPOSITO_CAJU = "Recarga Caju"
+        const val LIMITE_NORMALIZADO = 200
         val JANELA_DE_TRANSFERENCIA: Duration = Duration.ofMinutes(15)
     }
 }

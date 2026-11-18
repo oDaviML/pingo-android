@@ -2,14 +2,18 @@ package com.pingo.core.data.mapper
 
 import com.pingo.core.database.entity.AssinaturaEntity
 import com.pingo.core.database.entity.CategoriaEntity
+import com.pingo.core.database.entity.ConfiguracaoCartaoEntity
 import com.pingo.core.database.entity.ContaEntity
 import com.pingo.core.database.entity.FaturaEntity
 import com.pingo.core.database.entity.InstrumentoEntity
 import com.pingo.core.database.entity.LancamentoEntity
+import com.pingo.core.database.entity.RecargaProgramadaVoucherEntity
+import com.pingo.core.database.entity.ReferenciaSaldoVoucherEntity
 import com.pingo.core.database.entity.RegraCategoriaEntity
 import com.pingo.core.database.entity.RegraParserEntity
 import com.pingo.core.database.entity.UsuarioEntity
 import com.pingo.core.model.Assinatura
+import com.pingo.core.model.BeneficioVoucher
 import com.pingo.core.model.Categoria
 import com.pingo.core.model.Conta
 import com.pingo.core.model.Fatura
@@ -18,6 +22,9 @@ import com.pingo.core.model.Lancamento
 import com.pingo.core.model.RegraCategoria
 import com.pingo.core.model.RegraParser
 import com.pingo.core.model.Usuario
+import com.pingo.core.model.fatura.VigenciaDeCartao
+import com.pingo.core.model.voucher.RecargaProgramada
+import com.pingo.core.model.voucher.ReferenciaSaldoVoucher
 
 fun UsuarioEntity.toModel(): Usuario = Usuario(
     publicId = publicId,
@@ -143,6 +150,9 @@ fun LancamentoEntity.toModel(): Lancamento = Lancamento(
     atualizadoEm = atualizadoEm,
     excluidoEm = excluidoEm,
     textoBruto = textoBruto,
+    estabelecimentoNormalizado = estabelecimentoNormalizado,
+    beneficio = beneficio,
+    saldoObservadoCentavos = saldoObservadoCentavos,
 )
 
 fun Lancamento.toEntity(): LancamentoEntity = LancamentoEntity(
@@ -173,6 +183,9 @@ fun Lancamento.toEntity(): LancamentoEntity = LancamentoEntity(
     atualizadoEm = atualizadoEm,
     excluidoEm = excluidoEm,
     textoBruto = textoBruto,
+    estabelecimentoNormalizado = estabelecimentoNormalizado,
+    beneficio = beneficio,
+    saldoObservadoCentavos = saldoObservadoCentavos,
 )
 
 fun CategoriaEntity.toModel(): Categoria = Categoria(
@@ -258,6 +271,7 @@ fun AssinaturaEntity.toModel(): Assinatura = Assinatura(
     criadoEm = criadoEm,
     atualizadoEm = atualizadoEm,
     excluidoEm = excluidoEm,
+    instrumentoPublicId = instrumentoPublicId,
 )
 
 fun Assinatura.toEntity(): AssinaturaEntity = AssinaturaEntity(
@@ -270,6 +284,39 @@ fun Assinatura.toEntity(): AssinaturaEntity = AssinaturaEntity(
     status = status,
     criadoEm = criadoEm,
     atualizadoEm = atualizadoEm,
+    excluidoEm = excluidoEm,
+    instrumentoPublicId = instrumentoPublicId,
+)
+
+fun ConfiguracaoCartaoEntity.toVigencia(): VigenciaDeCartao = VigenciaDeCartao(
+    publicId = publicId,
+    instrumentoPublicId = instrumentoPublicId,
+    vigenciaInicio = vigenciaInicio,
+    fechamentoDia = fechamentoDia,
+    vencimentoDia = vencimentoDia,
+    excluidoEm = excluidoEm,
+)
+
+fun ReferenciaSaldoVoucherEntity.toModel(): ReferenciaSaldoVoucher = ReferenciaSaldoVoucher(
+    publicId = publicId,
+    instrumentoPublicId = instrumentoPublicId,
+    tipo = tipoReferencia,
+    saldoCentavos = saldoCentavos,
+    deltaCentavos = deltaCentavos ?: 0L,
+    instanteReferencia = instanteReferencia,
+    lancamentoPublicId = lancamentoPublicId,
+    excluidoEm = excluidoEm,
+)
+
+fun RecargaProgramadaVoucherEntity.toModel(beneficioResolvido: BeneficioVoucher): RecargaProgramada = RecargaProgramada(
+    publicId = publicId,
+    instrumentoPublicId = instrumentoPublicId,
+    beneficio = beneficio ?: beneficioResolvido,
+    competenciaMes = competenciaMes,
+    dataPrevista = dataPrevista,
+    valorPrevistoCentavos = valorPrevistoCentavos,
+    status = status,
+    lancamentoPublicId = lancamentoPublicId,
     excluidoEm = excluidoEm,
 )
 

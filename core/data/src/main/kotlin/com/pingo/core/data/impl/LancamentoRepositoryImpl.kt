@@ -1,18 +1,25 @@
 package com.pingo.core.data.impl
 
 import com.pingo.core.data.LancamentoRepository
+import com.pingo.core.data.TransacaoLocal
 import com.pingo.core.data.mapper.toEntity
 import com.pingo.core.data.mapper.toModel
+import com.pingo.core.data.reconciliacao.ReconciliadorFinanceiro
 import com.pingo.core.database.dao.LancamentoDao
 import com.pingo.core.model.Lancamento
 import com.pingo.core.model.OrigemLancamento
 import com.pingo.core.model.TipoLancamento
+import com.pingo.core.model.assinatura.NormalizadorDeAssinatura
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.Instant
 import javax.inject.Inject
 
-class LancamentoRepositoryImpl @Inject constructor(private val lancamentoDao: LancamentoDao) : LancamentoRepository {
+class LancamentoRepositoryImpl @Inject constructor(
+    private val lancamentoDao: LancamentoDao,
+    private val transacaoLocal: TransacaoLocal = TransacaoLocal.Direta,
+    private val reconciliador: ReconciliadorFinanceiro = ReconciliadorFinanceiro.NoOp,
+) : LancamentoRepository {
     override fun observeLancamentos(): Flow<List<Lancamento>> =
         lancamentoDao.observeAtivos().map { lancamentos -> lancamentos.map { it.toModel() } }
 
@@ -46,20 +53,53 @@ class LancamentoRepositoryImpl @Inject constructor(private val lancamentoDao: La
         .map { it.toModel() }
 
     override suspend fun salvar(lancamento: Lancamento) {
-        lancamentoDao.upsert(lancamento.toEntity())
+        transacaoLocal.executar {
+            val antes = lancamentoDao.buscar(lancamento.publicId)?.toModel()
+            val normalizado = enriquecerNormalizacao(lancamento)
+            lancamentoDao.upsert(normalizado.toEntity())
+            reconciliador.aoAlterarLancamentos(listOf(antes to normalizado))
+        }
     }
 
     override suspend fun salvarTodos(lancamentos: List<Lancamento>) {
-        val ordenados = lancamentos.sortedBy { lancamento -> if (lancamento.compraPaiPublicId == null) 0 else 1 }
-        val semEstorno = ordenados.map { lancamento -> lancamento.copy(estornoDePublicId = null).toEntity() }
-        val comEstorno = ordenados
-            .filter { lancamento -> lancamento.estornoDePublicId != null }
-            .map { lancamento -> lancamento.toEntity() }
-
-        lancamentoDao.upsertEmDuasPassadas(semEstorno, comEstorno)
+        if (lancamentos.isEmpty()) {
+            return
+        }
+        transacaoLocal.executar {
+            val paresAntes = lancamentos.map { item -> lancamentoDao.buscar(item.publicId)?.toModel() }
+            val normalizados = lancamentos.map { enriquecerNormalizacao(it) }
+            val ordenados = normalizados.sortedBy { lancamento -> if (lancamento.compraPaiPublicId == null) 0 else 1 }
+            val semEstorno = ordenados.map { lancamento -> lancamento.copy(estornoDePublicId = null).toEntity() }
+            val comEstorno = ordenados
+                .filter { lancamento -> lancamento.estornoDePublicId != null }
+                .map { lancamento -> lancamento.toEntity() }
+            lancamentoDao.upsertEmDuasPassadas(semEstorno, comEstorno)
+            reconciliador.aoAlterarLancamentos(paresAntes.zip(normalizados))
+        }
     }
 
     override suspend fun excluir(publicId: String, quando: Instant) {
-        lancamentoDao.marcarExcluido(publicId, quando)
+        transacaoLocal.executar {
+            val antes = lancamentoDao.buscar(publicId)?.toModel()
+            lancamentoDao.marcarExcluido(publicId, quando)
+            val depois = lancamentoDao.buscar(publicId)?.toModel()
+            if (antes != null || depois != null) {
+                reconciliador.aoAlterarLancamentos(listOf(antes to depois))
+            }
+        }
+    }
+
+    private fun enriquecerNormalizacao(lancamento: Lancamento): Lancamento {
+        val normalizado = lancamento.estabelecimentoNormalizado
+            ?: NormalizadorDeAssinatura.normalizar(lancamento.estabelecimento)?.take(LIMITE_ESTABELECIMENTO_NORMALIZADO)
+        return if (normalizado == lancamento.estabelecimentoNormalizado) {
+            lancamento
+        } else {
+            lancamento.copy(estabelecimentoNormalizado = normalizado)
+        }
+    }
+
+    private companion object {
+        const val LIMITE_ESTABELECIMENTO_NORMALIZADO = 200
     }
 }
