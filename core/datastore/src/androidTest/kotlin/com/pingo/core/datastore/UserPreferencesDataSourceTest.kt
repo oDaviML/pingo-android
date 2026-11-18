@@ -110,4 +110,46 @@ class UserPreferencesDataSourceTest {
 
         assertFalse(dataSource.avisoAssinaturasAtivo.first())
     }
+
+    @Test
+    fun preferenciasF3PersistemValoresPadraoEPermitemLimpeza() = runBlocking {
+        dataSource.clear()
+
+        assertFalse(dataSource.biometriaAtiva.first())
+        assertFalse(dataSource.biometriaOnboardingConcluido())
+        assertEquals(300L, dataSource.tempoBloqueioSegundos.first())
+        assertTrue(dataSource.revisarPelaNotificacaoAtivo.first())
+        assertTrue(dataSource.alertaCapturaParadaAtivo.first())
+        assertFalse(dataSource.telemetriaOptIn.first())
+        assertNull(dataSource.emailUsuario.first())
+        assertNull(dataSource.nomeUsuario.first())
+
+        dataSource.setBiometriaAtiva(true)
+        dataSource.setBiometriaOnboardingConcluido(true)
+        dataSource.setTempoBloqueioSegundos(60L)
+        dataSource.setRevisarPelaNotificacaoAtivo(false)
+        dataSource.setAlertaCapturaParadaAtivo(false)
+        dataSource.setTelemetriaOptIn(true)
+        dataSource.salvarPerfilUsuario(email = "lucas@pingo.app", nome = "Lucas Martins")
+
+        assertTrue(dataSource.biometriaAtiva.first())
+        assertTrue(dataSource.biometriaOnboardingConcluido())
+        assertEquals(60L, dataSource.tempoBloqueioSegundos.first())
+        assertFalse(dataSource.revisarPelaNotificacaoAtivo.first())
+        assertFalse(dataSource.alertaCapturaParadaAtivo.first())
+        assertTrue(dataSource.telemetriaOptIn.first())
+        assertEquals("lucas@pingo.app", dataSource.emailUsuario.first())
+        assertEquals("Lucas Martins", dataSource.nomeUsuario.first())
+
+        dataSource.clear()
+
+        assertFalse(dataSource.biometriaAtiva.first())
+        assertFalse(dataSource.biometriaOnboardingConcluido())
+        assertEquals(300L, dataSource.tempoBloqueioSegundos.first())
+        assertTrue(dataSource.revisarPelaNotificacaoAtivo.first())
+        assertTrue(dataSource.alertaCapturaParadaAtivo.first())
+        assertFalse(dataSource.telemetriaOptIn.first())
+        assertNull(dataSource.emailUsuario.first())
+        assertNull(dataSource.nomeUsuario.first())
+    }
 }

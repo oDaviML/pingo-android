@@ -4,7 +4,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
 
@@ -14,10 +17,22 @@ class UserPreferencesDataSourceDefaultTest {
         val fake = FakeMinimo()
 
         assertFalse(fake.avisoAssinaturasAtivo.first())
+        assertFalse(fake.biometriaAtiva.first())
+        assertFalse(fake.biometriaOnboardingConcluido())
+        assertEquals(300L, fake.tempoBloqueioSegundos.first())
+        assertTrue(fake.revisarPelaNotificacaoAtivo.first())
+        assertTrue(fake.alertaCapturaParadaAtivo.first())
+        assertFalse(fake.telemetriaOptIn.first())
+        assertNull(fake.emailUsuario.first())
+        assertNull(fake.nomeUsuario.first())
 
         fake.setAvisoAssinaturasAtivo(true)
+        fake.setBiometriaAtiva(true)
+        fake.setTelemetriaOptIn(true)
 
         assertFalse(fake.avisoAssinaturasAtivo.first())
+        assertFalse(fake.biometriaAtiva.first())
+        assertFalse(fake.telemetriaOptIn.first())
     }
 
     private class FakeMinimo : UserPreferencesDataSource {
