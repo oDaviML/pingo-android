@@ -13,6 +13,7 @@ android {
 
 dependencies {
     implementation(project(":core:common"))
+    implementation(project(":core:datastore"))
     implementation(libs.auth0.android)
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.credentials)

@@ -20,4 +20,8 @@ abstract class AuthModule {
     @Binds
     @Singleton
     abstract fun bindAuthRepository(implementation: Auth0Repository): AuthRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAutenticadorDoSistema(implementation: AutenticadorBiometricoAndroid): AutenticadorDoSistema
 }

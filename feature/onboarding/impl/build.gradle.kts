@@ -14,6 +14,7 @@ dependencies {
     implementation(project(":core:datastore"))
     implementation(project(":core:notifications"))
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.biometric)
     implementation(libs.androidx.core.ktx)
     testImplementation(project(":core:testing"))
     testImplementation(libs.kotlinx.coroutines.test)

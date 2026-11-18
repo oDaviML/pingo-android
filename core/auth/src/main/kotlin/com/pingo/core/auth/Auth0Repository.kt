@@ -7,6 +7,7 @@ import com.auth0.android.authentication.AuthenticationAPIClient
 import com.auth0.android.authentication.AuthenticationException
 import com.auth0.android.result.Credentials
 import com.pingo.core.common.AppDispatchers
+import com.pingo.core.datastore.UserPreferencesDataSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -26,6 +27,7 @@ class Auth0Repository @Inject constructor(
     private val tokenStore: TokenStore,
     private val googleSignIn: GoogleSignIn,
     private val dispatchers: AppDispatchers,
+    private val preferences: UserPreferencesDataSource,
 ) : AuthRepository {
     private val account: Auth0? by lazy {
         if (config.domain.isNotBlank() && config.clientId.isNotBlank()) {
@@ -77,6 +79,7 @@ class Auth0Repository @Inject constructor(
             .await()
 
         tokenStore.write(credentials.toStoredTokens())
+        salvarPerfil(auth0IdToken = credentials.idToken, googleIdToken = idToken)
         mutableSession.value = SessionState.LoggedIn
 
         LoginResult.Success
@@ -137,6 +140,18 @@ class Auth0Repository @Inject constructor(
     }
 
     private fun AuthenticationException.invalidatesSession(): Boolean = isRefreshTokenDeleted || isInvalidRefreshToken
+
+    private suspend fun salvarPerfil(auth0IdToken: String?, googleIdToken: String) {
+        val perfis = listOfNotNull(
+            auth0IdToken?.let(JwtSubject::perfil),
+            JwtSubject.perfil(googleIdToken),
+        )
+        val email = perfis.firstNotNullOfOrNull { it.email }
+        val nome = perfis.firstNotNullOfOrNull { it.nome }
+        if (email != null || nome != null) {
+            runCatching { preferences.salvarPerfilUsuario(email = email, nome = nome) }
+        }
+    }
 
     private fun Credentials.toStoredTokens(fallbackRefreshToken: String? = null): StoredTokens = StoredTokens(
         accessToken = accessToken,
