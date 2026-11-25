@@ -520,6 +520,57 @@ class DetalheDoLancamentoViewModelTest {
         assertEquals(listOf(1430L, 1430L, 1430L), parcelas.map { it.valorCentavos })
     }
 
+    @Test
+    fun `lancamento capturado pendente sem instrumento exibe campo de parcelamento e habilita ao escolher credito`() = runTest {
+        val pendente = lancamentoDeTeste(
+            publicId = "pendente-sem-cartao",
+            dataHora = agora.minus(Duration.ofMinutes(15)),
+            valorCentavos = 9000L,
+            status = StatusLancamento.PENDENTE,
+            instrumentoPublicId = null,
+            instituicaoOrigem = InstituicaoFinanceira.NUBANK,
+            motivoPendencia = MotivoPendencia.INSTRUMENTO_NAO_ENCONTRADO.name,
+            textoBruto = "Pagamento com NuPay aprovado",
+        )
+        val cenario = criarViewModel(publicId = pendente.publicId, lancamentos = listOf(pendente))
+        advanceUntilIdle()
+
+        val antes = cenario.viewModel.uiState.value
+        assertTrue(antes.exibirCampoParcelamento)
+        assertFalse(antes.podeParcelar)
+        assertEquals("Escolha um cartão de crédito para parcelar", RotulosDoDetalhe.mensagemDasParcelas(antes))
+
+        cenario.viewModel.onEvent(DetalheDoLancamentoEvent.SelecionarInstrumento(instrumentoNubank.publicId))
+        advanceUntilIdle()
+
+        assertTrue(cenario.viewModel.uiState.value.podeParcelar)
+    }
+
+    @Test
+    fun `compra ja parcelada abre com parcelas editaveis e atualiza todas as parcelas ao salvar`() = runTest {
+        val parcelas = listOf(
+            parcelaDe("p1", numero = 1, diasAtras = 60, paiId = null, totalCompra = 30000),
+            parcelaDe("p2", numero = 2, diasAtras = 30, paiId = "p1"),
+            parcelaDe("p3", numero = 3, diasAtras = 0, paiId = "p1"),
+        )
+        val cenario = criarViewModel(publicId = "p2", lancamentos = parcelas)
+        advanceUntilIdle()
+
+        val estado = cenario.viewModel.uiState.value
+        assertTrue(estado.podeParcelar)
+        assertEquals(3, estado.totalParcelas)
+        assertEquals(ModoParcelamento.VALOR_PARCELA, estado.modoParcelamento)
+
+        cenario.viewModel.onEvent(DetalheDoLancamentoEvent.SelecionarParcelas(5))
+        cenario.viewModel.onEvent(DetalheDoLancamentoEvent.Salvar)
+        advanceUntilIdle()
+
+        assertTrue(cenario.viewModel.uiState.value.salvo)
+        val atualizadas = cenario.lancamentos.listarParcelasDaCompra("p1")
+        assertEquals(5, atualizadas.size)
+        assertEquals(50000L, atualizadas.first().valorTotalCompraCentavos)
+    }
+
     private fun parcelaDe(publicId: String, numero: Int, diasAtras: Long, paiId: String?, totalCompra: Long? = null): Lancamento =
         lancamentoDeTeste(
             publicId = publicId,

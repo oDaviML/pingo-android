@@ -16,7 +16,7 @@ internal object CompiladorPadrao {
         val tipo = requireNotNull(padrao.tipoLancamento) { "padrão transacional ${padrao.id} sem tipoLancamento" }
         val direcao = requireNotNull(padrao.direcao) { "padrão transacional ${padrao.id} sem direção" }
         require(padrao.extracoes.containsKey(CampoExtracao.VALOR.chave)) { "padrão transacional ${padrao.id} sem extração de valor" }
-        return PadraoTransacional(padrao.id, ancoras, exclusoes, tipo, direcao, extratoresDe(padrao))
+        return PadraoTransacional(padrao.id, ancoras, exclusoes, tipo, direcao, padrao.tipoInstrumento, extratoresDe(padrao))
     }
 
     private fun ancorasDe(padrao: PadraoRegra): List<String> {

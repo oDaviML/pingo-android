@@ -133,6 +133,8 @@ class ReportsContentTest {
         composeRule.onNode(hasTestTag("relatorios-assinatura-ass-1") and hasText("Netflix") and hasText("R$ 44,90"))
             .performScrollTo()
             .assertIsDisplayed()
+        composeRule.onNode(hasTestTag("relatorios-assinatura-ass-1") and hasText("Próxima cobrança: 18/11"))
+            .assertIsDisplayed()
     }
 
     @Test
@@ -289,9 +291,10 @@ class ReportsContentTest {
         chaveTexto = "inst-nu|spotify",
         card = PingoSubscriptionSuggestionUi(
             merchant = "Spotify",
-            instrumentName = "Nubank · Roxinho 1234 · Próx. ≈ 12/11",
+            instrumentName = "Nubank · Roxinho 1234",
             amountFormatted = "R$ 21,90",
             tagLabel = "Parece assinatura · Mensal",
+            nextChargeLabel = "Próxima cobrança: 12/11",
         ),
     )
 
@@ -300,8 +303,9 @@ class ReportsContentTest {
         estabelecimento = "Netflix",
         row = PingoSubscriptionRowUi(
             title = "Netflix",
-            subtitle = "Próxima cobrança ≈ 18/11 · Inter · Crédito 5678",
+            subtitle = "Inter · Crédito 5678",
             amountFormatted = "R$ 44,90",
+            nextChargeLabel = "Próxima cobrança: 18/11",
         ),
     )
 }

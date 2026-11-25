@@ -13,4 +13,6 @@ data class TransacaoExtraida(
     val saldoCentavos: Long? = null,
     val beneficio: String? = null,
     val dataHoraTexto: String? = null,
+    val totalParcelas: Int = 1,
+    val tipoInstrumento: TipoInstrumentoPadrao? = null,
 )

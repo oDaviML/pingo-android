@@ -109,6 +109,123 @@ class EditarLancamentoParceladoTest {
         assertTrue(CampoDoDetalhe.PARCELAS in invalido.campos)
     }
 
+    @Test
+    fun `aumenta parcelas de compra ja parcelada preservando ids existentes e criando novas`() = runBlocking {
+        val ambiente = AmbienteDoDetalhe()
+        val credito = ambiente.instrumento(ambiente.conta("Itaú", InstituicaoFinanceira.ITAU))
+        val categoria = ambiente.categoria("Compras", TipoCategoria.DESPESA)
+        val editor = criarEditorComConfiguracao(ambiente)
+        val p1 = lancamentoCapturado(ambiente, "p1", credito.publicId, 10000L, "O Boticário", categoria.publicId)
+        ambiente.lancamentos.salvar(p1)
+        editor.editar(edicaoDe(p1, credito.publicId, categoria.publicId, totalParcelas = 2, modo = ModoParcelamento.VALOR_PARCELA))
+        val iniciais = ambiente.lancamentos.listarParcelasDaCompra("p1")
+        val idP2 = iniciais[1].publicId
+
+        val resultado = editor.editar(
+            edicaoDe(
+                iniciais[1],
+                credito.publicId,
+                categoria.publicId,
+                totalParcelas = 4,
+                modo = ModoParcelamento.VALOR_PARCELA,
+                valorCentavos = 10000L,
+            ),
+        )
+
+        assertTrue(resultado is ResultadoDaEdicao.Salvo)
+        val atualizadas = ambiente.lancamentos.listarParcelasDaCompra("p1")
+        assertEquals(4, atualizadas.size)
+        assertEquals("p1", atualizadas[0].publicId)
+        assertEquals(idP2, atualizadas[1].publicId)
+        assertEquals(40000L, atualizadas[0].valorTotalCompraCentavos)
+        assertEquals(listOf(10000L, 10000L, 10000L, 10000L), atualizadas.map { it.valorCentavos })
+    }
+
+    @Test
+    fun `reduz parcelas de compra ja parcelada e exclui excedentes`() = runBlocking {
+        val ambiente = AmbienteDoDetalhe()
+        val credito = ambiente.instrumento(ambiente.conta("Itaú", InstituicaoFinanceira.ITAU))
+        val categoria = ambiente.categoria("Compras", TipoCategoria.DESPESA)
+        val editor = criarEditorComConfiguracao(ambiente)
+        val p1 = lancamentoCapturado(ambiente, "p1", credito.publicId, 30000L, "Loja", categoria.publicId)
+        ambiente.lancamentos.salvar(p1)
+        editor.editar(edicaoDe(p1, credito.publicId, categoria.publicId, totalParcelas = 4, modo = ModoParcelamento.VALOR_TOTAL))
+
+        val resultado = editor.editar(
+            edicaoDe(
+                ambiente.lancamentos.buscar("p1")!!,
+                credito.publicId,
+                categoria.publicId,
+                totalParcelas = 2,
+                modo = ModoParcelamento.VALOR_TOTAL,
+                valorCentavos = 30000L,
+            ),
+        )
+
+        assertTrue(resultado is ResultadoDaEdicao.Salvo)
+        val atualizadas = ambiente.lancamentos.listarParcelasDaCompra("p1")
+        assertEquals(2, atualizadas.size)
+        assertEquals(listOf(15000L, 15000L), atualizadas.map { it.valorCentavos })
+        assertEquals(2, ambiente.lancamentos.todos().count { it.excluidoEm != null })
+    }
+
+    @Test
+    fun `converte compra ja parcelada de volta para a vista excluindo parcelas filhas`() = runBlocking {
+        val ambiente = AmbienteDoDetalhe()
+        val credito = ambiente.instrumento(ambiente.conta("Nubank", InstituicaoFinanceira.NUBANK))
+        val categoria = ambiente.categoria("Compras", TipoCategoria.DESPESA)
+        val editor = criarEditorComConfiguracao(ambiente)
+        val p1 = lancamentoCapturado(ambiente, "p1", credito.publicId, 30000L, "Loja", categoria.publicId)
+        ambiente.lancamentos.salvar(p1)
+        editor.editar(edicaoDe(p1, credito.publicId, categoria.publicId, totalParcelas = 3, modo = ModoParcelamento.VALOR_TOTAL))
+
+        val resultado = editor.editar(
+            edicaoDe(
+                ambiente.lancamentos.buscar("p1")!!,
+                credito.publicId,
+                categoria.publicId,
+                totalParcelas = 1,
+                modo = ModoParcelamento.VALOR_TOTAL,
+                valorCentavos = 25000L,
+            ),
+        )
+
+        val salvo = (resultado as ResultadoDaEdicao.Salvo).lancamento
+        assertEquals(1, salvo.totalParcelas)
+        assertEquals(25000L, salvo.valorCentavos)
+        assertNull(salvo.valorTotalCompraCentavos)
+        assertEquals(1, ambiente.lancamentos.listarParcelasDaCompra("p1").size)
+    }
+
+    @Test
+    fun `editar apenas categoria em compra parcelada nao altera centavos das parcelas`() = runBlocking {
+        val ambiente = AmbienteDoDetalhe()
+        val credito = ambiente.instrumento(ambiente.conta("Itaú", InstituicaoFinanceira.ITAU))
+        val cat1 = ambiente.categoria("Compras", TipoCategoria.DESPESA)
+        val cat2 = ambiente.categoria("Presentes", TipoCategoria.DESPESA)
+        val editor = criarEditorComConfiguracao(ambiente)
+        val p1 = lancamentoCapturado(ambiente, "p1", credito.publicId, 10000L, "O Boticário", cat1.publicId)
+        ambiente.lancamentos.salvar(p1)
+        editor.editar(edicaoDe(p1, credito.publicId, cat1.publicId, totalParcelas = 3, modo = ModoParcelamento.VALOR_TOTAL))
+        val parcelasAntes = ambiente.lancamentos.listarParcelasDaCompra("p1")
+
+        editor.editar(
+            edicaoDe(
+                parcelasAntes[1],
+                credito.publicId,
+                cat2.publicId,
+                totalParcelas = 3,
+                modo = ModoParcelamento.VALOR_PARCELA,
+                valorCentavos = parcelasAntes[1].valorCentavos,
+            ),
+        )
+
+        val parcelasDepois = ambiente.lancamentos.listarParcelasDaCompra("p1")
+        assertEquals(listOf(3334L, 3333L, 3333L), parcelasDepois.map { it.valorCentavos })
+        assertEquals(10000L, parcelasDepois.first().valorTotalCompraCentavos)
+        assertTrue(parcelasDepois.all { it.categoriaPublicId == cat2.publicId })
+    }
+
     private fun assertFilhasConfirmadas(paiId: String, filhas: List<Lancamento>) {
         assertTrue(filhas.isNotEmpty())
         filhas.forEach { filha ->
@@ -153,10 +270,11 @@ class EditarLancamentoParceladoTest {
         categoriaId: String?,
         totalParcelas: Int,
         modo: ModoParcelamento,
+        valorCentavos: Long = original.valorCentavos,
     ): EdicaoDoLancamento = EdicaoDoLancamento(
         publicId = original.publicId,
         tipo = TipoLancamento.DESPESA,
-        valorCentavos = original.valorCentavos,
+        valorCentavos = valorCentavos,
         instrumentoPublicId = instrumentoId,
         categoriaPublicId = categoriaId,
         dataHora = original.dataHora,

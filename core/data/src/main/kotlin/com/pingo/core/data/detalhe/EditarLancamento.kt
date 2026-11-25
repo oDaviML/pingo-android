@@ -92,6 +92,8 @@ class EditarLancamento @Inject constructor(
         val destinoAtivo = edicao.destinoPublicId?.let { instrumentoRepository.buscarAtivo(it) }
         val categoria = resolverCategoria(edicao.categoriaPublicId)
         val destinoOriginal = destinoOriginalDe(original, edicao.destinoPublicId)
+        val grupoAtivo = carregarGrupoParcelado(original)
+        val paiGrupo = grupoAtivo.firstOrNull { it.parcelaNumero == 1 && it.compraPaiPublicId == null }
         val invalidos = validar(
             ValidacaoDaEdicao(
                 edicao = edicao,
@@ -102,15 +104,28 @@ class EditarLancamento @Inject constructor(
                 destinoAtivo = destinoAtivo,
                 destinoOriginal = destinoOriginal,
                 categoria = categoria,
+                paiGrupo = paiGrupo,
             ),
         )
 
         return when {
             invalidos.isNotEmpty() -> ResultadoDaEdicao.Invalido(invalidos)
             edicao.tipo == TipoLancamento.TRANSFERENCIA -> editarTransferencia(original, edicao, instrumento, destino)
+            grupoAtivo.isNotEmpty() && paiGrupo != null ->
+                editarGrupoParcelado(original, paiGrupo, grupoAtivo, edicao, instrumento, categoria)
             edicao.totalParcelas > 1 -> aplicarEdicaoParcelada(original, edicao, requireNotNull(instrumento), categoria)
             else -> aplicarEdicao(original, edicao, instrumento, categoria)
         }
+    }
+
+    private suspend fun carregarGrupoParcelado(original: Lancamento): List<Lancamento> {
+        if (original.totalParcelas <= 1 && original.compraPaiPublicId == null) {
+            return emptyList()
+        }
+        val raizPublicId = original.compraPaiPublicId ?: original.publicId
+        return lancamentoRepository.listarParcelasDaCompra(raizPublicId)
+            .filter { it.excluidoEm == null }
+            .sortedBy { it.parcelaNumero }
     }
 
     private suspend fun resolverInstrumento(publicId: String?): Instrumento? = publicId
@@ -193,12 +208,22 @@ class EditarLancamento @Inject constructor(
             add(CampoDoDetalhe.PARCELAS)
             return
         }
+        val jaParcelado = dados.original.totalParcelas > 1 || dados.original.compraPaiPublicId != null
+        if (jaParcelado) {
+            val alterouParcelamento = edicao.totalParcelas != dados.original.totalParcelas ||
+                edicao.valorCentavos != dados.original.valorCentavos ||
+                edicao.instrumentoPublicId != dados.original.instrumentoPublicId ||
+                edicao.recalcularParcelas
+            if (alterouParcelamento && dados.paiGrupo == null) {
+                add(CampoDoDetalhe.PARCELAS)
+                return
+            }
+        }
         if (edicao.totalParcelas <= 1) {
             return
         }
-        val originalElegivel = dados.original.totalParcelas == 1 && dados.original.compraPaiPublicId == null
         val instrumentoCredito = dados.instrumento?.tipo == TipoInstrumento.CREDITO
-        if (!originalElegivel || edicao.tipo != TipoLancamento.DESPESA || !instrumentoCredito) {
+        if (edicao.tipo != TipoLancamento.DESPESA || !instrumentoCredito) {
             add(CampoDoDetalhe.PARCELAS)
         } else if (
             edicao.modoParcelamento == ModoParcelamento.VALOR_TOTAL &&
@@ -217,6 +242,7 @@ class EditarLancamento @Inject constructor(
         val destinoAtivo: Instrumento?,
         val destinoOriginal: String?,
         val categoria: Categoria?,
+        val paiGrupo: Lancamento? = null,
     )
 
     private fun exigeInstrumento(original: Lancamento): Boolean =
@@ -278,6 +304,174 @@ class EditarLancamento @Inject constructor(
         aprender(edicao, estabelecimento, categoria, agora)
 
         return ResultadoDaEdicao.Salvo(primeiraSalva)
+    }
+
+    @Suppress("LongParameterList")
+    private suspend fun editarGrupoParcelado(
+        original: Lancamento,
+        pai: Lancamento,
+        grupoAtivo: List<Lancamento>,
+        edicao: EdicaoDoLancamento,
+        instrumento: Instrumento?,
+        categoria: Categoria?,
+    ): ResultadoDaEdicao {
+        val precisaReplanejar = edicao.totalParcelas != original.totalParcelas ||
+            edicao.valorCentavos != original.valorCentavos ||
+            edicao.instrumentoPublicId != original.instrumentoPublicId ||
+            edicao.recalcularParcelas ||
+            (original.publicId == pai.publicId && edicao.dataHora != pai.dataHora)
+
+        return when {
+            !precisaReplanejar -> atualizarMetadadosGrupoParcelado(original, pai, grupoAtivo, edicao, instrumento, categoria)
+            edicao.totalParcelas == 1 -> converterGrupoParaAVista(original, pai, grupoAtivo, edicao, instrumento, categoria)
+            else -> replanejarGrupoParcelado(original, pai, grupoAtivo, edicao, requireNotNull(instrumento), categoria)
+        }
+    }
+
+    @Suppress("LongParameterList")
+    private suspend fun atualizarMetadadosGrupoParcelado(
+        original: Lancamento,
+        pai: Lancamento,
+        grupoAtivo: List<Lancamento>,
+        edicao: EdicaoDoLancamento,
+        instrumento: Instrumento?,
+        categoria: Categoria?,
+    ): ResultadoDaEdicao {
+        val agora = clock.instant()
+        val estabelecimento = edicao.estabelecimento?.trim()?.takeIf { it.isNotEmpty() }
+        val atualizados = grupoAtivo.map { item ->
+            val dataItem = if (item.publicId == original.publicId) edicao.dataHora else item.dataHora
+            val edicaoItem = edicao.copy(valorCentavos = item.valorCentavos, dataHora = dataItem)
+            val base = construirBaseAtualizada(item, edicaoItem, instrumento, categoria, agora).copy(
+                compraPaiPublicId = item.compraPaiPublicId,
+                parcelaNumero = item.parcelaNumero,
+                totalParcelas = item.totalParcelas,
+                valorTotalCompraCentavos = item.valorTotalCompraCentavos,
+            )
+            if (item.publicId == pai.publicId) confirmadorDeAssinatura.aoEditarLancamento(pai, base, categoria) else base
+        }
+        lancamentoRepository.salvarTodos(atualizados)
+        aprender(edicao, estabelecimento, categoria, agora)
+        return ResultadoDaEdicao.Salvo(atualizados.firstOrNull { it.publicId == original.publicId } ?: atualizados.first())
+    }
+
+    @Suppress("LongParameterList")
+    private suspend fun converterGrupoParaAVista(
+        original: Lancamento,
+        pai: Lancamento,
+        grupoAtivo: List<Lancamento>,
+        edicao: EdicaoDoLancamento,
+        instrumento: Instrumento?,
+        categoria: Categoria?,
+    ): ResultadoDaEdicao {
+        val agora = clock.instant()
+        val estabelecimento = edicao.estabelecimento?.trim()?.takeIf { it.isNotEmpty() }
+        val dataUnica = if (original.publicId == pai.publicId) edicao.dataHora else pai.dataHora
+        val base = construirBaseAtualizada(pai, edicao.copy(dataHora = dataUnica), instrumento, categoria, agora).copy(
+            compraPaiPublicId = null,
+            parcelaNumero = 1,
+            totalParcelas = 1,
+            valorTotalCompraCentavos = null,
+        )
+        val salvo = confirmadorDeAssinatura.aoEditarLancamento(pai, base, categoria)
+        lancamentoRepository.salvar(salvo)
+        val filhasIds = grupoAtivo.filter { it.publicId != pai.publicId }.map { it.publicId }
+        if (filhasIds.isNotEmpty()) {
+            lancamentoRepository.excluirTodos(filhasIds, agora)
+        }
+        aprender(edicao, estabelecimento, categoria, agora)
+        return ResultadoDaEdicao.Salvo(salvo)
+    }
+
+    @Suppress("LongParameterList")
+    private suspend fun replanejarGrupoParcelado(
+        original: Lancamento,
+        pai: Lancamento,
+        grupoAtivo: List<Lancamento>,
+        edicao: EdicaoDoLancamento,
+        cartao: Instrumento,
+        categoria: Categoria?,
+    ): ResultadoDaEdicao {
+        val agora = clock.instant()
+        val estabelecimento = edicao.estabelecimento?.trim()?.takeIf { it.isNotEmpty() }
+        val vigencias = configuracaoCartaoRepository.listarPorInstrumento(cartao.publicId)
+        val dataHoraBase = if (original.publicId == pai.publicId) edicao.dataHora else pai.dataHora
+        val planejadas = GeradorDeParcelas.planejar(
+            valorBaseCentavos = edicao.valorCentavos,
+            totalParcelas = edicao.totalParcelas,
+            modo = edicao.modoParcelamento,
+            dataHoraInicial = dataHoraBase,
+            instrumento = cartao,
+            vigencias = vigencias,
+        )
+        val primeiraSalva = atualizarParcelaPai(pai, planejadas.first(), edicao, cartao, categoria, agora)
+        val porNumero = grupoAtivo.associateBy { it.parcelaNumero }
+        val restantes = planejadas.drop(1).map { parcela ->
+            atualizarOuCriarParcelaFilha(pai, primeiraSalva, porNumero[parcela.numero], parcela, agora)
+        }
+        val novasParcelas = listOf(primeiraSalva) + restantes
+        lancamentoRepository.salvarTodos(novasParcelas)
+        val excedentesIds = grupoAtivo
+            .filter { it.publicId != pai.publicId && it.parcelaNumero > edicao.totalParcelas }
+            .map { it.publicId }
+        if (excedentesIds.isNotEmpty()) {
+            lancamentoRepository.excluirTodos(excedentesIds, agora)
+        }
+        aprender(edicao, estabelecimento, categoria, agora)
+        return ResultadoDaEdicao.Salvo(novasParcelas.firstOrNull { it.publicId == original.publicId } ?: primeiraSalva)
+    }
+
+    @Suppress("LongParameterList")
+    private suspend fun atualizarParcelaPai(
+        pai: Lancamento,
+        primeiraPlanejada: ParcelaPlanejada,
+        edicao: EdicaoDoLancamento,
+        cartao: Instrumento,
+        categoria: Categoria?,
+        agora: Instant,
+    ): Lancamento {
+        val primeiraBase = construirBaseAtualizada(
+            pai,
+            edicao.copy(valorCentavos = primeiraPlanejada.valorCentavos, dataHora = primeiraPlanejada.dataHora),
+            cartao,
+            categoria,
+            agora,
+        ).copy(
+            tipo = TipoLancamento.DESPESA,
+            compraPaiPublicId = null,
+            parcelaNumero = primeiraPlanejada.numero,
+            totalParcelas = primeiraPlanejada.totalParcelas,
+            valorTotalCompraCentavos = primeiraPlanejada.valorTotalCompraCentavos,
+        )
+        return confirmadorDeAssinatura.aoEditarLancamento(pai, primeiraBase, categoria)
+    }
+
+    private fun atualizarOuCriarParcelaFilha(
+        pai: Lancamento,
+        primeiraSalva: Lancamento,
+        candidata: Lancamento?,
+        parcela: ParcelaPlanejada,
+        agora: Instant,
+    ): Lancamento {
+        val existente = candidata?.takeIf { it.publicId != pai.publicId }
+            ?: return montarParcelaFilha(pai, primeiraSalva, parcela, agora)
+        return existente.copy(
+            instrumentoPublicId = primeiraSalva.instrumentoPublicId,
+            categoriaPublicId = primeiraSalva.categoriaPublicId,
+            compraPaiPublicId = pai.publicId,
+            valorCentavos = parcela.valorCentavos,
+            dataHora = parcela.dataHora,
+            tipo = TipoLancamento.DESPESA,
+            estabelecimento = primeiraSalva.estabelecimento,
+            status = StatusLancamento.CONFIRMADO,
+            confianca = 1.0,
+            motivoPendencia = null,
+            parcelaNumero = parcela.numero,
+            totalParcelas = parcela.totalParcelas,
+            valorTotalCompraCentavos = null,
+            atualizadoEm = agora,
+            estabelecimentoNormalizado = primeiraSalva.estabelecimentoNormalizado,
+        )
     }
 
     private fun construirBaseAtualizada(

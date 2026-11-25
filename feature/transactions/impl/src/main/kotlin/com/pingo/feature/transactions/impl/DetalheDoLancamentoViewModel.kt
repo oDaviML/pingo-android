@@ -164,13 +164,12 @@ class DetalheDoLancamentoViewModel @Inject constructor(
 
     private fun tratarAcao(evento: DetalheDoLancamentoEvent): Boolean = when (evento) {
         is DetalheDoLancamentoEvent.SelecionarParcelas -> {
-            val validado = evento.totalParcelas.coerceIn(GeradorDeParcelas.MIN_PARCELAS, GeradorDeParcelas.MAX_PARCELAS)
-            controle.update { it.copy(totalParcelas = validado, erros = emptySet()) }
+            atualizarParcelamento(totalParcelas = evento.totalParcelas)
             true
         }
 
         is DetalheDoLancamentoEvent.SelecionarModoParcelamento -> {
-            controle.update { it.copy(modoParcelamento = evento.modo, erros = emptySet()) }
+            atualizarParcelamento(modo = evento.modo)
             true
         }
 
@@ -195,6 +194,23 @@ class DetalheDoLancamentoViewModel @Inject constructor(
         }
 
         else -> tratarExclusao(evento)
+    }
+
+    private fun atualizarParcelamento(
+        totalParcelas: Int = controle.value.totalParcelas,
+        modo: ModoParcelamento = controle.value.modoParcelamento,
+    ) {
+        val validado = totalParcelas.coerceIn(GeradorDeParcelas.MIN_PARCELAS, GeradorDeParcelas.MAX_PARCELAS)
+        controle.update { atual ->
+            val mudou = validado != atual.totalParcelas || modo != atual.modoParcelamento
+            val eraParcelado = (registroAtual?.totalParcelas ?: 1) > 1
+            atual.copy(
+                totalParcelas = validado,
+                modoParcelamento = modo,
+                recalcularParcelas = atual.recalcularParcelas || (mudou && eraParcelado),
+                erros = emptySet(),
+            )
+        }
     }
 
     private fun tratarExclusao(evento: DetalheDoLancamentoEvent): Boolean = when (evento) {
@@ -247,6 +263,9 @@ class DetalheDoLancamentoViewModel @Inject constructor(
                     categoriaPublicId = registro.categoriaPublicId,
                     dataHora = registro.dataHora,
                     estabelecimento = registro.estabelecimento.orEmpty(),
+                    totalParcelas = registro.totalParcelas.coerceIn(GeradorDeParcelas.MIN_PARCELAS, GeradorDeParcelas.MAX_PARCELAS),
+                    modoParcelamento = if (registro.totalParcelas > 1) ModoParcelamento.VALOR_PARCELA else ModoParcelamento.VALOR_TOTAL,
+                    recalcularParcelas = false,
                 )
             }
 
@@ -300,7 +319,14 @@ class DetalheDoLancamentoViewModel @Inject constructor(
             return
         }
 
-        controle.update { it.copy(valorCentavos = valor, erros = emptySet()) }
+        val eraParcelado = (registroAtual?.totalParcelas ?: 1) > 1
+        controle.update {
+            it.copy(
+                valorCentavos = valor,
+                recalcularParcelas = it.recalcularParcelas || (eraParcelado && valor != it.valorCentavos),
+                erros = emptySet(),
+            )
+        }
     }
 
     private fun apagar() {
@@ -308,7 +334,15 @@ class DetalheDoLancamentoViewModel @Inject constructor(
             return
         }
 
-        controle.update { it.copy(valorCentavos = it.valorCentavos / 10, erros = emptySet()) }
+        val eraParcelado = (registroAtual?.totalParcelas ?: 1) > 1
+        controle.update {
+            val novoValor = it.valorCentavos / 10
+            it.copy(
+                valorCentavos = novoValor,
+                recalcularParcelas = it.recalcularParcelas || (eraParcelado && novoValor != it.valorCentavos),
+                erros = emptySet(),
+            )
+        }
     }
 
     private fun selecionarTipo(tipo: TipoDoLancamentoManual) {
@@ -333,11 +367,13 @@ class DetalheDoLancamentoViewModel @Inject constructor(
 
     private fun selecionarInstrumento(publicId: String) {
         val ehCredito = dados.value.instrumentos.firstOrNull { it.publicId == publicId }?.tipo == TipoInstrumento.CREDITO
+        val eraParcelado = (registroAtual?.totalParcelas ?: 1) > 1
         controle.update {
             it.copy(
                 instrumentoPublicId = publicId,
                 totalParcelas = if (ehCredito) it.totalParcelas else 1,
                 modoParcelamento = if (ehCredito) it.modoParcelamento else ModoParcelamento.VALOR_TOTAL,
+                recalcularParcelas = it.recalcularParcelas || (eraParcelado && publicId != it.instrumentoPublicId),
                 painel = null,
                 erros = emptySet(),
             )
@@ -399,7 +435,8 @@ class DetalheDoLancamentoViewModel @Inject constructor(
         controle.update { it.copy(ocupado = true, mensagem = null, erros = emptySet()) }
         viewModelScope.launch {
             when (val resultado = marcarTransferencia.desfazer(publicId)) {
-                is ResultadoDaTransferencia.Desfeita -> ressemearDosDesfeitos(resultado.lancamentos)
+                is ResultadoDaTransferencia.Desfeita ->
+                    resultado.lancamentos.firstOrNull { it.publicId == publicId }?.let { ressemear(it, null) }
                 is ResultadoDaTransferencia.Recusada -> controle.update { it.copy(mensagem = mensagemDaRecusa(resultado.motivo)) }
                 ResultadoDaTransferencia.NaoEncontrado -> controle.update { it.copy(naoEncontrado = true) }
                 is ResultadoDaTransferencia.Marcada -> Unit
@@ -475,21 +512,20 @@ class DetalheDoLancamentoViewModel @Inject constructor(
                 aplicarCategoriaATodos = false,
                 totalParcelas = 1,
                 modoParcelamento = ModoParcelamento.VALOR_TOTAL,
+                recalcularParcelas = false,
                 painel = null,
                 erros = emptySet(),
             )
         }
     }
 
-    private fun ressemearDosDesfeitos(lancamentosDesfeitos: List<Lancamento>) {
-        val registro = lancamentosDesfeitos.firstOrNull { it.publicId == publicId } ?: return
-        ressemear(registro, null)
-    }
-
     private fun edicaoDe(atual: ControleDoDetalhe): EdicaoDoLancamento {
         val transferencia = atual.tipo == TipoLancamento.TRANSFERENCIA
         val ehCredito = dados.value.instrumentos.firstOrNull { it.publicId == atual.instrumentoPublicId }?.tipo == TipoInstrumento.CREDITO
-        val podeParcelar = !transferencia && atual.tipo == TipoLancamento.DESPESA && ehCredito && registroAtual?.totalParcelas == 1
+        val podeParcelar = !transferencia &&
+            atual.tipo == TipoLancamento.DESPESA &&
+            ehCredito &&
+            podeEditarParcelamentoDe(registroAtual, dados.value.lancamentos)
 
         return EdicaoDoLancamento(
             publicId = publicId,
@@ -503,6 +539,7 @@ class DetalheDoLancamentoViewModel @Inject constructor(
             aplicarCategoriaATodos = atual.aplicarCategoriaATodos && !transferencia,
             totalParcelas = if (podeParcelar) atual.totalParcelas else 1,
             modoParcelamento = if (podeParcelar) atual.modoParcelamento else ModoParcelamento.VALOR_TOTAL,
+            recalcularParcelas = atual.recalcularParcelas,
         )
     }
 
@@ -517,6 +554,7 @@ class DetalheDoLancamentoViewModel @Inject constructor(
         val aplicarCategoriaATodos: Boolean = false,
         val totalParcelas: Int = 1,
         val modoParcelamento: ModoParcelamento = ModoParcelamento.VALOR_TOTAL,
+        val recalcularParcelas: Boolean = false,
         val painel: PainelDoDetalhe? = null,
         val calendarioVisivel: Boolean = false,
         val tecladoVisivel: Boolean = false,
@@ -557,6 +595,10 @@ class DetalheDoLancamentoViewModel @Inject constructor(
             totalParcelas = atual.totalParcelas,
             modoParcelamento = atual.modoParcelamento,
             parcelamento = parcelamentoDe(registro),
+            podeEditarParcelamento = podeEditarParcelamentoDe(registro, base.lancamentos),
+            parcelamentoAlterado = atual.recalcularParcelas ||
+                (registro != null && atual.totalParcelas != registro.totalParcelas) ||
+                (registro != null && registro.totalParcelas > 1 && atual.valorCentavos != registro.valorCentavos),
             instrumentos = opcoes.instrumentos,
             destinosDaTransferencia = opcoes.destinos,
             categorias = opcoes.categorias,
@@ -584,6 +626,13 @@ private fun parcelamentoDe(registro: Lancamento?): ParcelamentoDetalheUi? = regi
         totalParcelas = item.totalParcelas,
         valorTotalCompraCentavos = item.valorTotalCompraCentavos,
     )
+}
+
+private fun podeEditarParcelamentoDe(registro: Lancamento?, lancamentos: List<Lancamento>): Boolean {
+    if (registro == null) return true
+    if (registro.totalParcelas == 1 && registro.compraPaiPublicId == null) return true
+    val raizId = registro.compraPaiPublicId ?: registro.publicId
+    return lancamentos.any { it.publicId == raizId && it.excluidoEm == null && it.parcelaNumero == 1 && it.compraPaiPublicId == null }
 }
 
 private fun atualizarLancamentosNaBase(atuais: List<Lancamento>, registro: Lancamento, par: Lancamento?): List<Lancamento> {

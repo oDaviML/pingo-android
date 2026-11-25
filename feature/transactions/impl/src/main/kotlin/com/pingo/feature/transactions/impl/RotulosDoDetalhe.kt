@@ -44,6 +44,12 @@ internal object RotulosDoDetalhe {
     fun mensagemDasParcelas(state: DetalheDoLancamentoUiState): String? = when {
         CampoDoDetalhe.PARCELAS in state.erros ->
             "Parcelamento disponível apenas em despesa no crédito"
+        state.instrumento == null && state.exibirCampoParcelamento ->
+            "Escolha um cartão de crédito para parcelar"
+        state.parcelamento != null && state.parcelamentoAlterado && state.totalParcelas <= 1 ->
+            "Converterá para à vista e removerá as demais parcelas"
+        state.parcelamento != null && state.parcelamentoAlterado && state.valorCentavos > 0L ->
+            resumoParcelas(state)?.let { "Atualizará todas as parcelas · $it" }
         state.parcelamentoConfigurado && state.valorCentavos > 0L -> resumoParcelas(state)
         else -> null
     }

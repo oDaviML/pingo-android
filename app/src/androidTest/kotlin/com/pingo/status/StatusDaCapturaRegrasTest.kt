@@ -130,7 +130,7 @@ class StatusDaCapturaRegrasTest {
                 }
             }
 
-            aguardarTexto("Versão 1", substring = true)
+            aguardarTexto("Versão ${RegrasParserSeed.VERSAO}", substring = true)
 
             val antes = runBlocking {
                 DefaultParserEngine().classificar(
@@ -142,8 +142,9 @@ class StatusDaCapturaRegrasTest {
 
             composeRule.onNodeWithText("Atualizar regras").performScrollTo().performClick()
 
-            aguardarTexto("Regras atualizadas para a versão 2.")
-            aguardarTexto("Versão 2", substring = true)
+            val novaVersao = RegrasParserSeed.VERSAO + 1
+            aguardarTexto("Regras atualizadas para a versão $novaVersao.")
+            aguardarTexto("Versão $novaVersao", substring = true)
 
             val (versaoMaxima, versaoDoItau, transacao) = runBlocking {
                 Triple(
@@ -157,8 +158,8 @@ class StatusDaCapturaRegrasTest {
                 )
             }
 
-            assertEquals(2, versaoMaxima)
-            assertEquals(2, versaoDoItau)
+            assertEquals(novaVersao, versaoMaxima)
+            assertEquals(novaVersao, versaoDoItau)
             assertEquals(1234L, (transacao as ResultadoParse.Transacao).dados.valorCentavos)
         } finally {
             runBlocking { publicarNoServidor(itauV1) }
@@ -189,7 +190,7 @@ class StatusDaCapturaRegrasTest {
     }
 
     private fun itauV2(regra: RegraParser): RegraParser = regra.copy(
-        versao = 2,
+        versao = RegrasParserSeed.VERSAO + 1,
         padroes = PadroesRegraCodec.codificar(
             PadroesRegraCodec.decodificar(regra.padroes) + PadraoRegra(
                 id = "itau-pagamento-fora-do-padrao",

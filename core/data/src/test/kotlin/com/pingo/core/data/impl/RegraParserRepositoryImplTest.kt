@@ -26,17 +26,31 @@ class RegraParserRepositoryImplTest {
     }
 
     @Test
-    fun `cache com regras devolve somente as do cache`() = runBlocking {
-        val doServidor = regra(publicId = "servidor-nubank-v2", instituicao = InstituicaoFinanceira.NUBANK, versao = 2)
+    fun `cache com regras mais novas ou iguais devolve somente as do cache`() = runBlocking {
+        val doServidor = regra(publicId = "servidor-nubank-v3", instituicao = InstituicaoFinanceira.NUBANK, versao = 3)
 
         assertEquals(listOf(doServidor), repositorioComCache(listOf(doServidor)).observeRegrasAtivas().first())
+    }
+
+    @Test
+    fun `cache com versao antiga menor que o seed e atualizado pelo seed embutido`() = runBlocking {
+        val antigaV1 = regra(publicId = "servidor-nubank-v1", instituicao = InstituicaoFinanceira.NUBANK, versao = 1)
+        val atualV2 = regra(publicId = "servidor-itau-v2", instituicao = InstituicaoFinanceira.ITAU, versao = 2)
+
+        val ativas = repositorioComCache(listOf(antigaV1, atualV2)).observeRegrasAtivas().first()
+
+        assertEquals(
+            RegrasParserSeed.regras.single { it.instituicao == InstituicaoFinanceira.NUBANK },
+            ativas.first { it.instituicao == InstituicaoFinanceira.NUBANK },
+        )
+        assertEquals(atualV2, ativas.first { it.instituicao == InstituicaoFinanceira.ITAU })
     }
 
     @Test
     fun `seed vigora ate o cache receber regras e depois o cache substitui o seed`() = runBlocking {
         val cache = MutableStateFlow<List<RegraParserEntity>>(emptyList())
         val repositorio = RegraParserRepositoryImpl(FakeRegraParserDao(cache))
-        val doServidor = regra(publicId = "servidor-caju-v2", instituicao = InstituicaoFinanceira.CAJU, versao = 2)
+        val doServidor = regra(publicId = "servidor-caju-v3", instituicao = InstituicaoFinanceira.CAJU, versao = 3)
 
         val antesDoDownload = repositorio.observeRegrasAtivas().first()
         cache.value = listOf(doServidor.toEntity())
@@ -46,8 +60,8 @@ class RegraParserRepositoryImplTest {
     }
 
     @Test
-    fun `versao vigente do seed e a versao 1 quando o cache esta vazio`() = runBlocking {
-        assertEquals(1, repositorioComCache(emptyList()).observeVersaoVigente().first())
+    fun `versao vigente do seed e a versao atual quando o cache esta vazio`() = runBlocking {
+        assertEquals(RegrasParserSeed.VERSAO, repositorioComCache(emptyList()).observeVersaoVigente().first())
     }
 
     @Test
@@ -57,18 +71,18 @@ class RegraParserRepositoryImplTest {
 
     @Test
     fun `substituir vigentes grava as cinco instituicoes e desativa a versao anterior`() = runBlocking {
-        val anterior = regra(publicId = "seed-nubank-v1", instituicao = InstituicaoFinanceira.NUBANK, versao = 1)
+        val anterior = regra(publicId = "seed-nubank-v2", instituicao = InstituicaoFinanceira.NUBANK, versao = 2)
         val repositorio = repositorioComCache(listOf(anterior))
         val novas = InstituicaoFinanceira.entries
             .filter { instituicao -> instituicao != InstituicaoFinanceira.OUTRA }
-            .map { instituicao -> regra(publicId = "servidor-${instituicao.name.lowercase()}-v2", instituicao = instituicao, versao = 2) }
+            .map { instituicao -> regra(publicId = "servidor-${instituicao.name.lowercase()}-v3", instituicao = instituicao, versao = 3) }
 
         repositorio.substituirVigentes(novas)
 
         assertEquals(novas.map { it.publicId }.toSet(), repositorio.observeRegrasAtivas().first().map { it.publicId }.toSet())
-        assertEquals(2, repositorio.versoesEmCache().values.maxOrNull())
+        assertEquals(3, repositorio.versoesEmCache().values.maxOrNull())
         assertEquals(5, repositorio.versoesEmCache().size)
-        assertEquals(2, repositorio.observeVersaoVigente().first())
+        assertEquals(3, repositorio.observeVersaoVigente().first())
         assertFalse(repositorio.buscar(anterior.publicId)!!.ativa)
     }
 

@@ -247,7 +247,7 @@ private fun CamposDoLancamento(state: DetalheDoLancamentoUiState, onEvent: (Deta
         ),
         onClick = { onEvent(DetalheDoLancamentoEvent.AbrirPainel(PainelDoDetalhe.INSTRUMENTO)) },
     )
-    if (state.podeParcelar) {
+    if (state.exibirCampoParcelamento) {
         CampoParcelamentoDoDetalhe(state = state, onEvent = onEvent)
     }
     CampoDeSelecao(
@@ -275,6 +275,7 @@ private fun CamposDoLancamento(state: DetalheDoLancamentoUiState, onEvent: (Deta
 
 @Composable
 private fun CampoParcelamentoDoDetalhe(state: DetalheDoLancamentoUiState, onEvent: (DetalheDoLancamentoEvent) -> Unit) {
+    val destino = if (state.podeParcelar) PainelDoDetalhe.PARCELAS else PainelDoDetalhe.INSTRUMENTO
     CampoDeSelecao(
         campo = CampoSelecionavel(
             rotulo = "Parcelamento",
@@ -285,7 +286,7 @@ private fun CampoParcelamentoDoDetalhe(state: DetalheDoLancamentoUiState, onEven
             erro = CampoDoDetalhe.PARCELAS in state.erros,
             mensagem = RotulosDoDetalhe.mensagemDasParcelas(state),
         ),
-        onClick = { onEvent(DetalheDoLancamentoEvent.AbrirPainel(PainelDoDetalhe.PARCELAS)) },
+        onClick = { onEvent(DetalheDoLancamentoEvent.AbrirPainel(destino)) },
     )
 }
 

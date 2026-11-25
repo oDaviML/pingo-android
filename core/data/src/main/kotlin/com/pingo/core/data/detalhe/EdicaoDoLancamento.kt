@@ -25,6 +25,7 @@ data class EdicaoDoLancamento(
     val aplicarCategoriaATodos: Boolean = false,
     val totalParcelas: Int = 1,
     val modoParcelamento: ModoParcelamento = ModoParcelamento.VALOR_TOTAL,
+    val recalcularParcelas: Boolean = false,
 )
 
 sealed interface ResultadoDaEdicao {

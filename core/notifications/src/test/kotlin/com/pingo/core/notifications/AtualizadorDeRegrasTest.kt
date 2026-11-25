@@ -54,9 +54,9 @@ class AtualizadorDeRegrasTest {
 
         val resultado = atualizador(FakePingoApiClient { respostaV1() }, repositorio, regras).atualizar()
 
-        assertEquals(ResultadoAtualizacaoRegras.Atualizado(1), resultado)
+        assertEquals(ResultadoAtualizacaoRegras.Atualizado(RegrasParserSeed.VERSAO), resultado)
         assertEquals(1, repositorio.substituicoes)
-        assertEquals(1, repositorio.versoesEmCache().values.maxOrNull())
+        assertEquals(RegrasParserSeed.VERSAO, repositorio.versoesEmCache().values.maxOrNull())
         assertEquals(
             INSTITUICOES,
             repositorio.observeRegrasAtivas().first().map { it.instituicao }.toSet(),
@@ -79,8 +79,8 @@ class AtualizadorDeRegrasTest {
 
         val resultado = atualizador(FakePingoApiClient { respostaV2() }, repositorio, regras).atualizar()
 
-        assertEquals(ResultadoAtualizacaoRegras.Atualizado(2), resultado)
-        assertEquals(2, repositorio.versoesEmCache().values.maxOrNull())
+        assertEquals(ResultadoAtualizacaoRegras.Atualizado(RegrasParserSeed.VERSAO + 1), resultado)
+        assertEquals(RegrasParserSeed.VERSAO + 1, repositorio.versoesEmCache().values.maxOrNull())
         val transacao = engine.classificar(
             NotificacaoBruta(texto = textoNovo),
             regras.versaoDe(InstituicaoFinanceira.ITAU),
@@ -164,25 +164,26 @@ class AtualizadorDeRegrasTest {
         val regras = RegrasParaCaptura(repositorio)
         val atualizador = atualizador(FakePingoApiClient { respostaV1() }, repositorio, regras)
 
-        assertEquals(ResultadoAtualizacaoRegras.Atualizado(1), atualizador.atualizar())
-        assertEquals(ResultadoAtualizacaoRegras.SemAlteracao(1), atualizador.atualizar())
+        assertEquals(ResultadoAtualizacaoRegras.Atualizado(RegrasParserSeed.VERSAO), atualizador.atualizar())
+        assertEquals(ResultadoAtualizacaoRegras.SemAlteracao(RegrasParserSeed.VERSAO), atualizador.atualizar())
         assertEquals(1, repositorio.substituicoes)
     }
 
     @Test
     fun `versao nova por instituicao atualiza mesmo com a versao maxima igual`() = runTest {
+        val proximaVersao = RegrasParserSeed.VERSAO + 1
         val cache = RegrasParserSeed.regras.map { regra ->
-            if (regra.instituicao == InstituicaoFinanceira.ITAU) regra.copy(versao = 2) else regra
+            if (regra.instituicao == InstituicaoFinanceira.ITAU) regra.copy(versao = proximaVersao) else regra
         }
         val repositorio = FakeRegraParserRepository(cache)
         val regras = RegrasParaCaptura(repositorio)
-        val remoto = respostaComVersao(mapOf(InstituicaoFinanceira.ITAU to 2, InstituicaoFinanceira.INTER to 2))
+        val remoto = respostaComVersao(mapOf(InstituicaoFinanceira.ITAU to proximaVersao, InstituicaoFinanceira.INTER to proximaVersao))
 
         val resultado = atualizador(FakePingoApiClient { remoto }, repositorio, regras).atualizar()
 
-        assertEquals(ResultadoAtualizacaoRegras.Atualizado(2), resultado)
+        assertEquals(ResultadoAtualizacaoRegras.Atualizado(proximaVersao), resultado)
         assertEquals(1, repositorio.substituicoes)
-        assertEquals(2, repositorio.versoesEmCache()[InstituicaoFinanceira.INTER])
+        assertEquals(proximaVersao, repositorio.versoesEmCache()[InstituicaoFinanceira.INTER])
     }
 
     private suspend fun engineAindaExtrai(regras: RegrasParaCaptura): Boolean {
@@ -197,7 +198,10 @@ class AtualizadorDeRegrasTest {
     private fun atualizador(api: PingoApiClient, repositorio: RegraParserRepository, regras: RegrasParaCaptura) =
         AtualizadorDeRegras(api, repositorio, regras, capturaDataSource, clock, dispatchers)
 
-    private fun respostaV1() = ParserRulesResponse(versao = 1, regras = RegrasParserSeed.regras.map { it.paraResposta() })
+    private fun respostaV1() = ParserRulesResponse(
+        versao = RegrasParserSeed.VERSAO,
+        regras = RegrasParserSeed.regras.map { it.paraResposta() },
+    )
 
     private fun respostaComVersao(versoes: Map<InstituicaoFinanceira, Int>): ParserRulesResponse = ParserRulesResponse(
         versao = versoes.values.max(),
@@ -207,13 +211,14 @@ class AtualizadorDeRegrasTest {
     )
 
     private fun respostaV2(): ParserRulesResponse {
+        val novaVersao = RegrasParserSeed.VERSAO + 1
         val regras = RegrasParserSeed.regras.map { regra ->
             if (regra.instituicao != InstituicaoFinanceira.ITAU) {
                 regra
             } else {
                 regra.copy(
-                    publicId = "servidor-itau-v2",
-                    versao = 2,
+                    publicId = "servidor-itau-v$novaVersao",
+                    versao = novaVersao,
                     padroes = PadroesRegraCodec.codificar(
                         PadroesRegraCodec.decodificar(regra.padroes) + PadraoRegra(
                             id = "itau-pagamento-fora-do-padrao",
@@ -227,7 +232,7 @@ class AtualizadorDeRegrasTest {
             }
         }
 
-        return ParserRulesResponse(versao = 2, regras = regras.map { it.paraResposta() })
+        return ParserRulesResponse(versao = novaVersao, regras = regras.map { it.paraResposta() })
     }
 
     private fun RegraParser.paraResposta() = ParserRuleResponse(

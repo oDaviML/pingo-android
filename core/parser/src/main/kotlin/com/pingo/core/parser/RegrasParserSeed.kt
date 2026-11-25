@@ -10,8 +10,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.time.Instant
 
 object RegrasParserSeed {
-    private const val RECURSO = "/regras/regras-v1.json"
-    private const val VERSAO = 1
+    private const val RECURSO = "/regras/regras-v2.json"
+    const val VERSAO = 2
 
     val regras: List<RegraParser> by lazy { Json.parseToJsonElement(recurso()).jsonArray.map(::regraDe) }
 

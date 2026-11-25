@@ -68,6 +68,8 @@ data class DetalheDoLancamentoUiState(
     val totalParcelas: Int = 1,
     val modoParcelamento: ModoParcelamento = ModoParcelamento.VALOR_TOTAL,
     val parcelamento: ParcelamentoDetalheUi? = null,
+    val podeEditarParcelamento: Boolean = true,
+    val parcelamentoAlterado: Boolean = false,
     val instrumentos: List<OpcaoDeInstrumento> = emptyList(),
     val destinosDaTransferencia: List<OpcaoDeInstrumento> = emptyList(),
     val categorias: List<OpcaoDeCategoria> = emptyList(),
@@ -92,15 +94,25 @@ data class DetalheDoLancamentoUiState(
     val podeParcelar: Boolean
         get() = !carregando &&
             !ehTransferencia &&
-            parcelamento == null &&
+            podeEditarParcelamento &&
             tipo == TipoDoLancamentoManual.DESPESA &&
             instrumento?.ehCredito == true
+
+    val exibirCampoParcelamento: Boolean
+        get() = !carregando &&
+            !ehTransferencia &&
+            podeEditarParcelamento &&
+            tipo == TipoDoLancamentoManual.DESPESA &&
+            (instrumento == null || instrumento.ehCredito)
 
     val parcelamentoConfigurado: Boolean
         get() = podeParcelar && totalParcelas > 1
 
+    val exibirPreviewParcelamento: Boolean
+        get() = parcelamentoConfigurado && valorCentavos > 0L && (parcelamento == null || parcelamentoAlterado)
+
     val valorTotalPreviewCentavos: Long?
-        get() = if (!parcelamentoConfigurado || valorCentavos <= 0L) {
+        get() = if (!exibirPreviewParcelamento) {
             null
         } else {
             when (modoParcelamento) {
@@ -110,7 +122,7 @@ data class DetalheDoLancamentoUiState(
         }
 
     val valorParcelaPreviewCentavos: Long?
-        get() = if (!parcelamentoConfigurado || valorCentavos <= 0L) {
+        get() = if (!exibirPreviewParcelamento) {
             null
         } else {
             when (modoParcelamento) {

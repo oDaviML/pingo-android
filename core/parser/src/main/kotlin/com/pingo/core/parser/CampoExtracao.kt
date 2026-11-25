@@ -11,6 +11,7 @@ internal enum class CampoExtracao(val chave: String, private val captura: String
     DIGITOS("digitos", """\d+"""),
     MOEDA("moeda", """[A-Za-z]{3}"""),
     DATA_HORA("dataHora", DATA_HORA_EMBUTIDA),
+    PARCELAS("parcelas", """\d{1,2}"""),
     ;
 
     fun regexDeCaptura(seguidoDeTexto: Boolean): String = if (seguidoDeTexto) capturaSeguidaDeTexto else captura

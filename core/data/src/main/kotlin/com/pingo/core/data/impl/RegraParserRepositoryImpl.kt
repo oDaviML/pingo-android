@@ -12,8 +12,18 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class RegraParserRepositoryImpl @Inject constructor(private val regraParserDao: RegraParserDao) : RegraParserRepository {
-    override fun observeRegrasAtivas(): Flow<List<RegraParser>> =
-        regraParserDao.observeAtivas().map { regras -> regras.map { it.toModel() }.ifEmpty { RegrasParserSeed.regras } }
+    override fun observeRegrasAtivas(): Flow<List<RegraParser>> = regraParserDao.observeAtivas().map { entidades ->
+        val emCache = entidades.map { it.toModel() }
+        if (emCache.isEmpty()) {
+            RegrasParserSeed.regras
+        } else {
+            val seedPorInstituicao = RegrasParserSeed.regras.associateBy(RegraParser::instituicao)
+            emCache.map { regra ->
+                val seed = seedPorInstituicao[regra.instituicao]
+                if (seed != null && seed.versao > regra.versao) seed else regra
+            }
+        }
+    }
 
     override fun observeVersaoVigente(): Flow<Int?> = observeRegrasAtivas().map { regras ->
         regras.filter(RegraParser::ativa).maxOfOrNull(RegraParser::versao)

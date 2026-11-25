@@ -182,6 +182,11 @@ class ReportsViewModelTest {
         assertTrue(instItau.contains("Itaú") && instItau.contains("5678"))
         assertEquals(5490L, estado.totalMensalAssinaturasCentavos)
         assertEquals("R$ 54,90", estado.totalMensalAssinaturasFormatado)
+        val sugestaoNuCard = estado.sugestoesAssinatura.first { it.chave.instrumentoPublicId == cartaoNubank.publicId }.card
+        assertEquals("Próxima cobrança: 02/12", sugestaoNuCard.nextChargeLabel)
+        val confirmadaNetflix = estado.assinaturasConfirmadas.first { it.estabelecimento == "Netflix" }.row
+        assertFalse(confirmadaNetflix.subtitle.contains("Próxima cobrança"))
+        assertEquals("Próxima cobrança: 01/12", confirmadaNetflix.nextChargeLabel)
         assertTrue(estado.assinaturasConfirmadas.any { it.row.subtitle.contains("VR") })
     }
 

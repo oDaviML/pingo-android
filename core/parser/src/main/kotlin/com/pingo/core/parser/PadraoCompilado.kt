@@ -17,10 +17,15 @@ internal class PadraoTransacional(
     exclusoes: List<String>,
     private val tipo: TipoLancamentoPadrao,
     private val direcao: DirecaoPadrao,
+    private val tipoInstrumento: TipoInstrumentoPadrao? = null,
     private val extratores: Map<CampoExtracao, Regex>,
 ) : PadraoCompilado(id, ancoras, exclusoes) {
     override fun resultadoPara(texto: String): ResultadoParse {
         val centavos = extrair(texto, CampoExtracao.VALOR)?.let(ValorMonetario::centavos) ?: return ResultadoParse.NaoEntendida
+        val totalParcelas = extrair(texto, CampoExtracao.PARCELAS)
+            ?.toIntOrNull()
+            ?.takeIf { it in 1..MAX_PARCELAS }
+            ?: 1
         return ResultadoParse.Transacao(
             TransacaoExtraida(
                 padraoId = id,
@@ -33,6 +38,8 @@ internal class PadraoTransacional(
                 saldoCentavos = extrair(texto, CampoExtracao.SALDO)?.let(ValorMonetario::centavos),
                 beneficio = extrair(texto, CampoExtracao.BENEFICIO),
                 dataHoraTexto = extrair(texto, CampoExtracao.DATA_HORA),
+                totalParcelas = totalParcelas,
+                tipoInstrumento = tipoInstrumento,
             ),
         )
     }
@@ -42,5 +49,6 @@ internal class PadraoTransacional(
 
     private companion object {
         const val QUANTIDADE_DIGITOS_CARTAO = 4
+        const val MAX_PARCELAS = 99
     }
 }

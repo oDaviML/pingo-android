@@ -74,11 +74,16 @@ internal class FakeInstrumentos(private val contas: FakeContas) : InstrumentoRep
         apelido: String = "Cartão ${instrumentos.size + 1}",
     ): Instrumento = criarNaConta(contas.criar(instituicao), digitos, apelido)
 
-    fun criarNaConta(conta: Conta, digitos: String? = null, apelido: String = "Cartão ${instrumentos.size + 1}"): Instrumento {
+    fun criarNaConta(
+        conta: Conta,
+        digitos: String? = null,
+        apelido: String = "Cartão ${instrumentos.size + 1}",
+        tipo: TipoInstrumento = TipoInstrumento.CREDITO,
+    ): Instrumento {
         val instrumento = Instrumento(
             publicId = UUID.randomUUID().toString(),
             contaPublicId = conta.publicId,
-            tipo = TipoInstrumento.CREDITO,
+            tipo = tipo,
             apelido = apelido,
             ultimosDigitos = digitos,
             criadoEm = AGORA_DA_CAPTURA,
@@ -217,6 +222,10 @@ internal class FakeLancamentos(private val instrumentos: FakeInstrumentos) : Lan
         if (posicao >= 0) {
             lancamentos[posicao] = lancamentos[posicao].copy(excluidoEm = quando, atualizadoEm = quando)
         }
+    }
+
+    override suspend fun excluirTodos(publicIds: List<String>, quando: Instant) {
+        publicIds.forEach { excluir(it, quando) }
     }
 
     override suspend fun listarParcelasDaCompra(raizPublicId: String): List<Lancamento> = lancamentos

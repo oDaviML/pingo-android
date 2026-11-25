@@ -91,7 +91,7 @@ class RegrasHttpIntegrationTest {
         val regras = RegrasParaCaptura(repositorio)
         val captura = FakeCapturaDataSource()
 
-        assertEquals(1, repositorio.observeVersaoVigente().first())
+        assertEquals(RegrasParserSeed.VERSAO, repositorio.observeVersaoVigente().first())
         assertTrue(repositorio.versoesEmCache().isEmpty())
 
         val api = HttpPingoApiClient(PingoApiConfig(host!!), FixtureAuth("rules-${System.nanoTime()}"), dispatchers)
@@ -99,10 +99,10 @@ class RegrasHttpIntegrationTest {
 
         val resultado = atualizador(api, repositorio, regras, captura).atualizar()
 
-        assertEquals(ResultadoAtualizacaoRegras.Atualizado(1), resultado)
+        assertEquals(ResultadoAtualizacaoRegras.Atualizado(RegrasParserSeed.VERSAO), resultado)
         assertEquals(5, banco.regraParserDao().observeAtivas().first().size)
-        assertEquals(1, banco.regraParserDao().versaoAtivaMaxima())
-        assertEquals(1, repositorio.observeVersaoVigente().first())
+        assertEquals(RegrasParserSeed.VERSAO, banco.regraParserDao().versaoAtivaMaxima())
+        assertEquals(RegrasParserSeed.VERSAO, repositorio.observeVersaoVigente().first())
         INSTITUICOES.forEach { instituicao -> assertNotNull(regras.versaoDe(instituicao)) }
         assertEquals(3790L, transacaoItau(regras).valorCentavos)
         assertNotNull(captura.estadoDasRegras().atualizadoEm)
@@ -130,7 +130,7 @@ class RegrasHttpIntegrationTest {
 
         assertTrue(resultado is ResultadoAtualizacaoRegras.Falha)
         assertEquals(5, banco.regraParserDao().observeAtivas().first().size)
-        assertEquals(1, repositorio.versoesEmCache().values.maxOrNull())
+        assertEquals(RegrasParserSeed.VERSAO, repositorio.versoesEmCache().values.maxOrNull())
         assertNotNull(captura.estadoDasRegras().motivoFalha)
         assertEquals(3790L, transacaoItau(regras).valorCentavos)
     }
@@ -145,7 +145,7 @@ class RegrasHttpIntegrationTest {
 
         atualizador(FakePingoApiClient { respostaV1() }, repositorio, regras, captura).atualizar()
 
-        assertEquals(1, banco.regraParserDao().versaoAtivaMaxima())
+        assertEquals(RegrasParserSeed.VERSAO, banco.regraParserDao().versaoAtivaMaxima())
         assertTrue(
             DefaultParserEngine().classificar(
                 NotificacaoBruta(texto = textoNovo),
@@ -155,11 +155,12 @@ class RegrasHttpIntegrationTest {
 
         val resultado = atualizador(FakePingoApiClient { respostaV2() }, repositorio, regras, captura).atualizar()
 
-        assertEquals(ResultadoAtualizacaoRegras.Atualizado(2), resultado)
-        assertEquals(2, banco.regraParserDao().versaoAtivaMaxima())
+        val proximaVersao = RegrasParserSeed.VERSAO + 1
+        assertEquals(ResultadoAtualizacaoRegras.Atualizado(proximaVersao), resultado)
+        assertEquals(proximaVersao, banco.regraParserDao().versaoAtivaMaxima())
         val ativas = banco.regraParserDao().observeAtivas().first()
         assertEquals(5, ativas.size)
-        assertEquals(2, ativas.single { it.instituicao == InstituicaoFinanceira.ITAU }.versao)
+        assertEquals(proximaVersao, ativas.single { it.instituicao == InstituicaoFinanceira.ITAU }.versao)
         val transacao = DefaultParserEngine().classificar(
             NotificacaoBruta(texto = textoNovo),
             regras.versaoDe(InstituicaoFinanceira.ITAU),
@@ -194,10 +195,10 @@ class RegrasHttpIntegrationTest {
 
             val resultado = atualizador(api, repositorio, regras, captura).atualizar()
 
-            assertEquals(ResultadoAtualizacaoRegras.Atualizado(2), resultado)
-            assertEquals(2, banco.regraParserDao().versaoAtivaMaxima())
+            assertEquals(ResultadoAtualizacaoRegras.Atualizado(RegrasParserSeed.VERSAO + 1), resultado)
+            assertEquals(RegrasParserSeed.VERSAO + 1, banco.regraParserDao().versaoAtivaMaxima())
             assertEquals(
-                2,
+                RegrasParserSeed.VERSAO + 1,
                 banco.regraParserDao().observeAtivas().first()
                     .single { it.instituicao == InstituicaoFinanceira.ITAU }.versao,
             )
@@ -228,7 +229,7 @@ class RegrasHttpIntegrationTest {
     }
 
     private fun itauV2(regra: RegraParser): RegraParser = regra.copy(
-        versao = 2,
+        versao = RegrasParserSeed.VERSAO + 1,
         padroes = PadroesRegraCodec.codificar(
             PadroesRegraCodec.decodificar(regra.padroes) + PadraoRegra(
                 id = "itau-pagamento-fora-do-padrao",
@@ -266,16 +267,22 @@ class RegrasHttpIntegrationTest {
         )
         .build()
 
-    private fun respostaV1() = ParserRulesResponse(versao = 1, regras = RegrasParserSeed.regras.map { it.paraResposta() })
+    private fun respostaV1() = ParserRulesResponse(
+        versao = RegrasParserSeed.VERSAO,
+        regras = RegrasParserSeed.regras.map {
+            it.paraResposta()
+        },
+    )
 
     private fun respostaV2(): ParserRulesResponse {
+        val novaVersao = RegrasParserSeed.VERSAO + 1
         val regras = RegrasParserSeed.regras.map { regra ->
             if (regra.instituicao != InstituicaoFinanceira.ITAU) {
                 regra
             } else {
                 regra.copy(
-                    publicId = "servidor-itau-v2",
-                    versao = 2,
+                    publicId = "servidor-itau-v$novaVersao",
+                    versao = novaVersao,
                     padroes = PadroesRegraCodec.codificar(
                         PadroesRegraCodec.decodificar(regra.padroes) + PadraoRegra(
                             id = "itau-pagamento-fora-do-padrao",
@@ -289,7 +296,7 @@ class RegrasHttpIntegrationTest {
             }
         }
 
-        return ParserRulesResponse(versao = 2, regras = regras.map { it.paraResposta() })
+        return ParserRulesResponse(versao = novaVersao, regras = regras.map { it.paraResposta() })
     }
 
     private fun RegraParser.paraResposta() = ParserRuleResponse(

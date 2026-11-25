@@ -25,13 +25,18 @@ import com.pingo.core.model.MotivoPendencia
 import com.pingo.core.model.OrigemLancamento
 import com.pingo.core.model.StatusLancamento
 import com.pingo.core.model.TipoCategoria
+import com.pingo.core.model.TipoInstrumento
 import com.pingo.core.model.TipoLancamento
 import com.pingo.core.model.assinatura.NormalizadorDeAssinatura
 import com.pingo.core.model.direcaoDaTransferencia
+import com.pingo.core.model.fatura.GeradorDeParcelas
+import com.pingo.core.model.fatura.ModoParcelamento
+import com.pingo.core.model.fatura.ParcelaPlanejada
 import com.pingo.core.model.voucher.BeneficioCajuMapper
 import com.pingo.core.parser.DataHoraDoLancamento
 import com.pingo.core.parser.DirecaoPadrao
 import com.pingo.core.parser.HashDuplicata
+import com.pingo.core.parser.TipoInstrumentoPadrao
 import com.pingo.core.parser.TipoLancamentoPadrao
 import com.pingo.core.parser.TransacaoExtraida
 import kotlinx.coroutines.flow.first
@@ -130,33 +135,119 @@ class ProcessadorDeCapturaImpl @Inject constructor(
         val transacao = captura.transacao
         val depositoCaju = captura.instituicao == InstituicaoFinanceira.CAJU && transacao.tipo == TipoLancamentoPadrao.DEPOSITO
         val resolucaoCaju = resolverSeCaju(captura, depositoCaju, dataHora)
-        val resolucaoPadrao = if (resolucaoCaju == null) {
-            ResolucaoDeInstrumento.de(transacao.digitos, instrumentosElegiveis(captura.instituicao))
-        } else {
-            null
-        }
+        val resolucaoPadrao = resolverPadraoSeNecessario(captura, resolucaoCaju)
         val instrumentoResolvido = resolucaoCaju?.instrumento ?: resolucaoPadrao?.instrumento
         val motivoInstrumento = if (resolucaoCaju != null) resolucaoCaju.motivo else resolucaoPadrao?.motivo
         val agora = clock.instant()
         val candidatos = instrumentoResolvido?.let { candidatosDeTransferencia(captura, it, dataHora) }.orEmpty()
-        val lancamento = criarLancamento(
+        val base = criarLancamento(
+            captura, resolucaoCaju, depositoCaju, instrumentoResolvido,
+            motivoInstrumento, candidatos, dataHora, hash, agora,
+        )
+        val lancamentoSalvo = persistirCaptura(
+            base,
             captura,
-            resolucaoCaju,
-            depositoCaju,
             instrumentoResolvido,
-            motivoInstrumento,
-            candidatos,
+            resolucaoCaju,
+            candidatos.singleOrNull(),
             dataHora,
-            hash,
             agora,
         )
-        salvar(lancamento, candidatos.singleOrNull())
-        if (resolucaoCaju != null) {
-            reconciliadorVoucher.confirmarEfeitoAposGravar(lancamento, resolucaoCaju, agora)
-        }
-        registrarTelemetria(captura.instituicao, lancamento.status)
-        return ResultadoProcessamento.Gravado(lancamento)
+        registrarTelemetria(captura.instituicao, lancamentoSalvo.status)
+        return ResultadoProcessamento.Gravado(lancamentoSalvo)
     }
+
+    private suspend fun resolverPadraoSeNecessario(
+        captura: CapturaParaProcessar,
+        resolucaoCaju: ResolucaoCapturaCaju?,
+    ): ResolucaoDeInstrumento? {
+        if (resolucaoCaju != null) return null
+        val transacao = captura.transacao
+        return ResolucaoDeInstrumento.de(
+            digitos = transacao.digitos,
+            instrumentos = instrumentosElegiveis(captura.instituicao),
+            tipoEsperado = transacao.tipoInstrumento?.paraTipoInstrumento(),
+        )
+    }
+
+    @Suppress("LongParameterList")
+    private suspend fun persistirCaptura(
+        base: Lancamento,
+        captura: CapturaParaProcessar,
+        instrumentoResolvido: Instrumento?,
+        resolucaoCaju: ResolucaoCapturaCaju?,
+        candidatoPar: Lancamento?,
+        dataHora: Instant,
+        agora: Instant,
+    ): Lancamento {
+        val transacao = captura.transacao
+        val gerarParcelas = transacao.totalParcelas > 1 &&
+            instrumentoResolvido?.tipo == TipoInstrumento.CREDITO &&
+            transacao.direcao == DirecaoPadrao.DESPESA &&
+            transacao.moeda == MOEDA_NACIONAL &&
+            transacao.valorCentavos >= transacao.totalParcelas
+        if (gerarParcelas) {
+            return gravarParcelado(base, requireNotNull(instrumentoResolvido), transacao.totalParcelas, dataHora, agora)
+        }
+        salvar(base, candidatoPar)
+        if (resolucaoCaju != null) {
+            reconciliadorVoucher.confirmarEfeitoAposGravar(base, resolucaoCaju, agora)
+        }
+        return base
+    }
+
+    private suspend fun gravarParcelado(
+        base: Lancamento,
+        instrumento: Instrumento,
+        totalParcelas: Int,
+        dataHora: Instant,
+        agora: Instant,
+    ): Lancamento {
+        val vigencias = contexto.configuracaoCartaoRepository.listarPorInstrumento(instrumento.publicId)
+        val planejadas = GeradorDeParcelas.planejar(
+            valorBaseCentavos = base.valorCentavos,
+            totalParcelas = totalParcelas,
+            modo = ModoParcelamento.VALOR_TOTAL,
+            dataHoraInicial = dataHora,
+            instrumento = instrumento,
+            vigencias = vigencias,
+        )
+        val primeiraPlanejada = planejadas.first()
+        val primeira = base.copy(
+            valorCentavos = primeiraPlanejada.valorCentavos,
+            dataHora = primeiraPlanejada.dataHora,
+            compraPaiPublicId = null,
+            parcelaNumero = primeiraPlanejada.numero,
+            totalParcelas = primeiraPlanejada.totalParcelas,
+            valorTotalCompraCentavos = primeiraPlanejada.valorTotalCompraCentavos,
+        )
+        val filhas = planejadas.drop(1).map { parcela -> montarParcelaFilha(primeira, parcela, agora) }
+        lancamentoRepository.salvarTodos(listOf(primeira) + filhas)
+        return primeira
+    }
+
+    private fun montarParcelaFilha(primeira: Lancamento, parcela: ParcelaPlanejada, agora: Instant): Lancamento = Lancamento(
+        publicId = UUID.randomUUID().toString(),
+        instrumentoPublicId = primeira.instrumentoPublicId,
+        categoriaPublicId = primeira.categoriaPublicId,
+        compraPaiPublicId = primeira.publicId,
+        valorCentavos = parcela.valorCentavos,
+        dataHora = parcela.dataHora,
+        tipo = TipoLancamento.DESPESA,
+        estabelecimento = primeira.estabelecimento,
+        status = StatusLancamento.CONFIRMADO,
+        origem = OrigemLancamento.NOTIFICACAO,
+        instituicaoOrigem = primeira.instituicaoOrigem,
+        confianca = primeira.confianca,
+        parcelaNumero = parcela.numero,
+        totalParcelas = parcela.totalParcelas,
+        valorTotalCompraCentavos = null,
+        hashDuplicata = null,
+        criadoEm = agora,
+        atualizadoEm = agora,
+        textoBruto = null,
+        estabelecimentoNormalizado = primeira.estabelecimentoNormalizado,
+    )
 
     @Suppress("LongParameterList")
     private suspend fun criarLancamento(
@@ -313,7 +404,7 @@ class ProcessadorDeCapturaImpl @Inject constructor(
         instrumento: Instrumento,
         dataHora: Instant,
     ): List<Lancamento> {
-        if (captura.transacao.moeda != MOEDA_NACIONAL) {
+        if (captura.transacao.moeda != MOEDA_NACIONAL || captura.transacao.totalParcelas > 1) {
             return emptyList()
         }
 
@@ -345,6 +436,12 @@ class ProcessadorDeCapturaImpl @Inject constructor(
     }
 
     private fun Lancamento.direcaoDaCaptura(): TipoLancamento? = tipoSemTransferencia ?: tipo.direcaoDaTransferencia
+
+    private fun TipoInstrumentoPadrao.paraTipoInstrumento(): TipoInstrumento = when (this) {
+        TipoInstrumentoPadrao.CREDITO -> TipoInstrumento.CREDITO
+        TipoInstrumentoPadrao.DEBITO -> TipoInstrumento.DEBITO
+        TipoInstrumentoPadrao.VOUCHER -> TipoInstrumento.VOUCHER
+    }
 
     private companion object {
         const val MOEDA_NACIONAL = "BRL"

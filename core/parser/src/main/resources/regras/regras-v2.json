@@ -3,13 +3,40 @@
     "instituicao": "NUBANK",
     "padroes": [
       {
+        "id": "nubank-compra-nupay-debito",
+        "tipoLancamento": "COMPRA",
+        "direcao": "DESPESA",
+        "tipoInstrumento": "DEBITO",
+        "ancoras": ["NuPay", "no débito", "APROVADO em"],
+        "exclusoes": ["negada", "recusado", "cancelado"],
+        "extracoes": {
+          "valor": "R$ {valor}",
+          "estabelecimento": "APROVADO em {estabelecimento}"
+        }
+      },
+      {
+        "id": "nubank-compra-nupay-credito",
+        "tipoLancamento": "COMPRA",
+        "direcao": "DESPESA",
+        "tipoInstrumento": "CREDITO",
+        "ancoras": ["NuPay", "APROVADO em"],
+        "exclusoes": ["negada", "recusado", "cancelado", "no débito"],
+        "extracoes": {
+          "valor": "R$ {valor}",
+          "parcelas": "R$ {valor} em {parcelas}x",
+          "estabelecimento": "APROVADO em {estabelecimento}"
+        }
+      },
+      {
         "id": "nubank-compra-credito-aprovada",
         "tipoLancamento": "COMPRA",
         "direcao": "DESPESA",
+        "tipoInstrumento": "CREDITO",
         "ancoras": ["Compra de R$", "APROVADA em"],
         "exclusoes": ["negada"],
         "extracoes": {
-          "valor": "Compra de R$ {valor} APROVADA",
+          "valor": "Compra de R$ {valor}",
+          "parcelas": "Compra de R$ {valor} em {parcelas}x",
           "estabelecimento": "APROVADA em {estabelecimento} para",
           "digitos": "cartão com final {digitos}"
         }
@@ -152,10 +179,12 @@
         "id": "inter-compra-credito",
         "tipoLancamento": "COMPRA",
         "direcao": "DESPESA",
+        "tipoInstrumento": "CREDITO",
         "ancoras": ["Você acaba de comprar R$"],
         "exclusoes": ["negada"],
         "extracoes": {
           "valor": "comprar R$ {valor} em",
+          "parcelas": "comprar R$ {valor} em {parcelas}x",
           "estabelecimento": "comprar R$ {valor} em {estabelecimento}. A compra",
           "digitos": "cartão final {digitos}"
         }
@@ -281,6 +310,21 @@
         }
       },
       {
+        "id": "itau-compra-parcelada-aprovada",
+        "tipoLancamento": "COMPRA",
+        "direcao": "DESPESA",
+        "tipoInstrumento": "CREDITO",
+        "ancoras": ["Compra parcelada aprovada de R$"],
+        "exclusoes": ["negada"],
+        "extracoes": {
+          "valor": "Compra parcelada aprovada de R$ {valor} em",
+          "parcelas": "de R$ {valor} em {parcelas}x",
+          "estabelecimento": "em {parcelas}x em {estabelecimento} no dia",
+          "digitos": "cartão final {digitos}",
+          "dataHora": "no dia {dataHora}"
+        }
+      },
+      {
         "id": "itau-compra-aprovada",
         "tipoLancamento": "COMPRA",
         "direcao": "DESPESA",
@@ -359,7 +403,8 @@
         "ancoras": ["Você pagou R$", "próxima fatura"],
         "exclusoes": ["negada"],
         "extracoes": {
-          "valor": "Você pagou R$ {valor} a",
+          "valor": "Você pagou R$ {valor}",
+          "parcelas": "Você pagou R$ {valor} em {parcelas}x",
           "estabelecimento": "Você pagou R$ {valor} a {estabelecimento}"
         }
       },
@@ -370,7 +415,8 @@
         "ancoras": ["Você pagou R$", "Confira mais detalhes"],
         "exclusoes": ["negada"],
         "extracoes": {
-          "valor": "Você pagou R$ {valor} para",
+          "valor": "Você pagou R$ {valor}",
+          "parcelas": "Você pagou R$ {valor} em {parcelas}x",
           "estabelecimento": "Você pagou R$ {valor} para {estabelecimento}"
         }
       },

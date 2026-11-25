@@ -37,7 +37,12 @@ data class PingoIncomeExpensePoint(
 )
 
 @Immutable
-data class PingoSubscriptionRowUi(val title: String, val subtitle: String, val amountFormatted: String)
+data class PingoSubscriptionRowUi(
+    val title: String,
+    val subtitle: String,
+    val amountFormatted: String,
+    val nextChargeLabel: String? = null,
+)
 
 @Immutable
 data class PingoSubscriptionSuggestionUi(
@@ -47,4 +52,5 @@ data class PingoSubscriptionSuggestionUi(
     val tagLabel: String = "Parece assinatura",
     val confirmLabel: String = "Confirmar",
     val dismissLabel: String = "Recusar",
+    val nextChargeLabel: String? = null,
 )

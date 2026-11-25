@@ -222,9 +222,10 @@ private fun mapearSugestao(
         chaveTexto = chaveTextoDe(sugestao.chave),
         card = PingoSubscriptionSuggestionUi(
             merchant = sugestao.estabelecimentoExibicao,
-            instrumentName = "$rotuloInstrumento · Próx. ≈ $proxima",
+            instrumentName = rotuloInstrumento,
             amountFormatted = Valores.formatar(sugestao.valorReferenciaCentavos),
             tagLabel = if (sugestao.porCategoria) "Categoria Assinaturas · Mensal" else "Parece assinatura · Mensal",
+            nextChargeLabel = "Próxima cobrança: $proxima",
         ),
     )
 }
@@ -239,16 +240,17 @@ private fun mapearAssinaturaConfirmada(
         instrumentosPorId = instrumentosPorId,
         contasPorId = contasPorId,
     )
-    val subtitulo = assinatura.proximaCobrancaEstimada?.let { data ->
-        "Próxima cobrança ≈ ${formatarDiaMes(data)} · $rotuloInstrumento"
-    } ?: rotuloInstrumento
+    val nextChargeLabel = assinatura.proximaCobrancaEstimada?.let { data ->
+        "Próxima cobrança: ${formatarDiaMes(data)}"
+    }
     return AssinaturaConfirmadaUi(
         publicId = assinatura.publicId,
         estabelecimento = assinatura.estabelecimento,
         row = PingoSubscriptionRowUi(
             title = assinatura.estabelecimento,
-            subtitle = subtitulo,
+            subtitle = rotuloInstrumento,
             amountFormatted = Valores.formatar(assinatura.valorReferenciaCentavos),
+            nextChargeLabel = nextChargeLabel,
         ),
     )
 }
