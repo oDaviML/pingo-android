@@ -53,12 +53,11 @@ O workflow `Release` publica o APK assinado em GitHub Releases ao enviar uma tag
 
 Variáveis do repositório (Settings → Secrets and variables → Actions → Variables): `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_AUDIENCE`, `AUTH0_GOOGLE_WEB_CLIENT_ID` e, opcional, `ANDROID_KEY_ALIAS` (padrão `pingo-release`).
 
-Secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD` e `ANDROID_KEY_PASSWORD`. Sem eles o workflow falha antes de construir.
+Secrets: `ANDROID_KEYSTORE_BASE64` e `ANDROID_KEYSTORE_PASSWORD` (no PKCS12 a senha do keystore e da chave são a mesma via `--ks-pass`). Sem eles o workflow falha antes de construir.
 
 ```bash
 gh secret set ANDROID_KEYSTORE_BASE64 --repo oDaviML/pingo-android < <(base64 -w0 ../release-private/pingo-release.p12)
-gh secret set ANDROID_KEYSTORE_PASSWORD --repo oDaviML/pingo-android < ../release-private/pingo-release.password
-gh secret set ANDROID_KEY_PASSWORD --repo oDaviML/pingo-android < ../release-private/pingo-release.password
+tr -d '\r\n' < ../release-private/pingo-release.password | gh secret set ANDROID_KEYSTORE_PASSWORD --repo oDaviML/pingo-android
 ```
 
 A tag define a `versionName` (`v0.2.0` gera `0.2.0`); o `versionCode` continua sendo alterado em `app/build.gradle.kts`.
